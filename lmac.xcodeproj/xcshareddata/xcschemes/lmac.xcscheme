@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "tests/0_empty.clite"
+            argument = "tests/1_lex.clite"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

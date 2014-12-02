@@ -1,0 +1,15 @@
+// This is a comment
+/* This is also a comment */
+
+/*
+ * This is
+ * a multiline comment
+ */
+
+int a = 3;
+int b = 4;
+
+int main() {
+    int c = 5;
+    return a + b + c;
+}

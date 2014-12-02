@@ -8,17 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		F84DD9301A2D2C9C00ED052E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD92F1A2D2C9C00ED052E /* main.c */; };
-		F84DD9381A2D2EFF00ED052E /* 0_empty.clite in CopyFiles */ = {isa = PBXBuildFile; fileRef = F84DD9371A2D2EBF00ED052E /* 0_empty.clite */; };
+		F84DD93B1A2D318600ED052E /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = F84DD93A1A2D316700ED052E /* tests */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		F84DD92A1A2D2C9C00ED052E /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 12;
-			dstPath = tests;
+			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
-				F84DD9381A2D2EFF00ED052E /* 0_empty.clite in CopyFiles */,
+				F84DD93B1A2D318600ED052E /* tests in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -27,7 +27,7 @@
 /* Begin PBXFileReference section */
 		F84DD92C1A2D2C9C00ED052E /* lmac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lmac; sourceTree = BUILT_PRODUCTS_DIR; };
 		F84DD92F1A2D2C9C00ED052E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		F84DD9371A2D2EBF00ED052E /* 0_empty.clite */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = 0_empty.clite; path = tests/0_empty.clite; sourceTree = "<group>"; };
+		F84DD93A1A2D316700ED052E /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,18 +60,10 @@
 		F84DD92E1A2D2C9C00ED052E /* lmac */ = {
 			isa = PBXGroup;
 			children = (
-				F84DD9361A2D2EA300ED052E /* tests */,
+				F84DD93A1A2D316700ED052E /* tests */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
 			);
 			path = lmac;
-			sourceTree = "<group>";
-		};
-		F84DD9361A2D2EA300ED052E /* tests */ = {
-			isa = PBXGroup;
-			children = (
-				F84DD9371A2D2EBF00ED052E /* 0_empty.clite */,
-			);
-			name = tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
