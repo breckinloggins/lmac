@@ -25,26 +25,26 @@ typedef enum {
 } TokenKind;
 
 typedef struct {
-  const char *file;
-  uint32_t line;
-  uint8_t *range_start;
-  uint8_t *range_end;
+    const char *file;
+    uint32_t line;
+    uint8_t *range_start;
+    uint8_t *range_end;
 } SourceLocation;
 
 typedef struct {
-  TokenKind kind;
-  SourceLocation location;
+    TokenKind kind;
+    SourceLocation location;
 } Token;
 
 typedef struct {
-  const char *file;
-  
-  /* The entire contents of the current translation unit */
-  uint8_t *buf;
-  
-  /* Current position indicators */
-  uint8_t *pos;
-  uint32_t line;
+    const char *file;
+    
+    /* The entire contents of the current translation unit */
+    uint8_t *buf;
+    
+    /* Current position indicators */
+    uint8_t *pos;
+    uint32_t line;
 } Context;
 
 const char *token_get_kind_name(TokenKind kind);

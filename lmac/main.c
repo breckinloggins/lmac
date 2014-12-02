@@ -56,6 +56,9 @@ int main(int argc, const char * argv[]) {
         
         if (t.kind == TOK_END) {
             break;
+        } else if (t.kind == TOK_UNKOWN) {
+            fprintf(stderr, "Unknown token\n");
+            return ERR_LEX;
         }
     }
     
