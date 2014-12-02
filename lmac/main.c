@@ -6,8 +6,6 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #include "clite.h"
@@ -16,6 +14,14 @@
 // on variables, but I make an exception for globals. They should be rare
 // and they should stand out.
 global_variable Context g_ctx;
+
+int print_visitor(ASTBase *node, void *ctx) {
+    
+    FILE *f = stderr;
+    fprintf(f, "%s\n", ast_get_kind_name(node->kind));
+    
+    return VISIT_OK;
+}
 
 int main(int argc, const char * argv[]) {
     if (argc != 2) {
@@ -52,6 +58,8 @@ int main(int argc, const char * argv[]) {
         fprintf(stderr, "Unexpected end of input\n");
         return ERR_LEX;
     }
+    
+    ast_visit((ASTBase*)g_ctx.ast, print_visitor, NULL);
     
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit

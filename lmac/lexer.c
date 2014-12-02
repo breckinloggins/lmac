@@ -7,7 +7,6 @@
 //
 
 #include <ctype.h>
-#include <stdlib.h>
 
 #include "clite.h"
 

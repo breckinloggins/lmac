@@ -6,7 +6,6 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-#include <stdlib.h>
 #include <stdbool.h>
 
 #include "clite.h"
@@ -81,7 +80,7 @@ fail_parse:
     return false;
 }
 
-bool parse_defn_var(Context *ctx) {
+ASTDefn *parse_defn_var(Context *ctx) {
     // TODO(bloggins): Snapshotting works but can be slow (because we might
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
@@ -99,14 +98,14 @@ bool parse_defn_var(Context *ctx) {
     
     t = expect_token(ctx, TOK_SEMICOLON);
     
-    return true;
+    return ast_create_defn();
     
 fail_parse:
     restore(ctx, s);
-    return false;
+    return NULL;
 }
 
-bool parse_defn_fn(Context *ctx) {
+ASTDefn *parse_defn_fn(Context *ctx) {
     Context s = snapshot(ctx);
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
@@ -133,28 +132,38 @@ bool parse_defn_fn(Context *ctx) {
     
     t = expect_token(ctx, TOK_RBRACE);
     
-    return true;
+    return ast_create_defn();
     
 fail_parse:
     restore(ctx, s);
-    return false;
+    return NULL;
 }
 
 void parse_end(Context *ctx) {
     expect_token(ctx, TOK_END);
 }
 
-bool parse_toplevel(Context *ctx) {
-    while (parse_defn_var(ctx) || parse_defn_fn(ctx)) {
-        // Keep on doing that
+ASTTopLevel *parse_toplevel(Context *ctx) {
+    ASTList *defns = NULL;
+    
+    ASTBase *defn;
+    while ((defn = (ASTBase*)parse_defn_var(ctx)) || (defn = (ASTBase*)parse_defn_fn(ctx))) {
+        ast_list_add(&defns, defn);
     }
     
     parse_end(ctx);
-    return true;
+    
+    ASTTopLevel *tl = ast_create_toplevel();
+    tl->definitions = defns;
+    
+    return tl;
 }
 
 void parser_parse(Context *ctx) {
-    if (!parse_toplevel(ctx)) {
+    ASTTopLevel *tl = parse_toplevel(ctx);
+    if (!tl) {
         exit(ERR_PARSE);
     }
+    
+    ctx->ast = tl;
 }

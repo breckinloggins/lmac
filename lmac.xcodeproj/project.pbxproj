@@ -12,6 +12,7 @@
 		F84DD9301A2D2C9C00ED052E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD92F1A2D2C9C00ED052E /* main.c */; };
 		F84DD93B1A2D318600ED052E /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = F84DD93A1A2D316700ED052E /* tests */; };
 		F84DD93E1A2E3D0800ED052E /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD93D1A2E3D0800ED052E /* parser.c */; };
+		F84DD9401A2E504D00ED052E /* ast.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD93F1A2E504D00ED052E /* ast.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,6 +37,8 @@
 		F84DD93A1A2D316700ED052E /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
 		F84DD93C1A2D3FD600ED052E /* tokens.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tokens.def.h; sourceTree = "<group>"; };
 		F84DD93D1A2E3D0800ED052E /* parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
+		F84DD93F1A2E504D00ED052E /* ast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ast.c; sourceTree = "<group>"; };
+		F84DD9411A2E50CB00ED052E /* ast.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.def.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,10 +74,12 @@
 				F84DD93A1A2D316700ED052E /* tests */,
 				F84A7AE81A2D88480051862A /* clite.h */,
 				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
+				F84DD9411A2E50CB00ED052E /* ast.def.h */,
 				F84A7AE51A2D87D10051862A /* lexer.c */,
 				F84A7AE91A2D88DA0051862A /* token.c */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
 				F84DD93D1A2E3D0800ED052E /* parser.c */,
+				F84DD93F1A2E504D00ED052E /* ast.c */,
 			);
 			path = lmac;
 			sourceTree = "<group>";
@@ -136,6 +141,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F84A7AEB1A2D88DA0051862A /* token.c in Sources */,
+				F84DD9401A2E504D00ED052E /* ast.c in Sources */,
 				F84A7AE71A2D87D10051862A /* lexer.c in Sources */,
 				F84DD93E1A2E3D0800ED052E /* parser.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
