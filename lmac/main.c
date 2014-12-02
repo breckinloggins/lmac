@@ -46,8 +46,9 @@ typedef struct {
     /* The entire contents of the current translation unit */
     uint8_t *buf;
     
-    /* The position of the lex / parse cursor */
+    /* Current position indicators */
     uint8_t *pos;
+    uint32_t line;
 } Context;
 
 // INFO(bloggins): I normally don't use any kind of "hungarian" prefixes
@@ -55,10 +56,32 @@ typedef struct {
 // and they should stand out.
 global_variable Context g_ctx;
 
+void fprint_token(FILE *f, Token t) {
+    fprintf(f, "{\n");
+    fprintf(f, "\ttype: \"Token\",\n");
+    fprintf(f, "\tkind: \"%s\",\n", g_token_names[t.kind]);
+    fprintf(f, "\tline: %d,\n", t.location.line);
+    if (t.kind == TOK_COMMENT || t.kind == TOK_IDENT) {
+        fprintf(f, "\tcontent: \"");
+        for (char *cp = (char*)t.location.range_start; cp < (char*)t.location.range_end; cp++) {
+            if (*cp == '\n') {
+                fprintf(f, "\\n");
+            } else if (*cp == '\t') {
+                fprintf(f, "\\t");
+            } else {
+                fprintf(f, "%c", *cp);
+            }
+        }
+        fprintf(f, "\",\n");
+    }
+    fprintf(f, "}\n");
+}
+
 Token next_token(Context *ctx) {
     Token t;
     t.kind = TOK_UNKOWN;
     t.location.file = ctx->file;
+    t.location.line = ctx->line;
     t.location.range_start = ctx->pos;
     t.location.range_end = ctx->pos;
     
@@ -67,6 +90,7 @@ Token next_token(Context *ctx) {
         goto finish;
     }
     
+    // Lex single character lexemes
     char ch = (char)*ctx->pos;
     switch (ch) {
         case ';':
@@ -84,12 +108,65 @@ Token next_token(Context *ctx) {
         case ')':
             t.kind = TOK_RPAREN;
             break;
+        case '=':
+            t.kind = TOK_EQUALS;
+            break;
+        case ' ': case '\t':
+            t.kind = TOK_WS;
+            break;
+        case '\n':
+            t.kind = TOK_WS;
+            ctx->line++;
+            break;
+            
         default:
             break;
     }
     
     ctx->pos++;
-
+    
+    if (t.kind != TOK_UNKOWN) {
+        // We got a valid token
+        goto finish;
+    }
+    
+    if (*(ctx->pos) == 0) {
+        t.kind = TOK_END;
+        goto finish;
+    }
+    
+    // Lex double character lexemes
+    char ch2 = (char)*ctx->pos;
+    if (ch == '/' && ch2 == '*') {
+        t.kind = TOK_COMMENT;
+        for (;;) {
+            // Gobble the comment to next '*/'
+            char c = (char)*(++ctx->pos);
+            if (c == '\n') {
+                // TODO(bloggins): We're doing this in too many places. Abstract to a macro
+                ctx->line++;
+            } else if (c == '*') {
+                if ((char)*(++ctx->pos) == '/') {
+                    break;
+                }
+            }
+        }
+    } else if (ch == '/' && ch2 == '/') {
+        t.kind = TOK_COMMENT;
+        for (;;) {
+            // Gobble the comment to EOL or EOI
+            char c = (char)*(++ctx->pos);
+            if (c == '\n' || c == 0) {
+                ctx->line++;
+                break;
+            }
+        }
+    } else {
+        t.kind = TOK_IDENT;
+    }
+    
+    ctx->pos++;
+    
 finish:
     t.location.range_end = ctx->pos;
     return t;
@@ -121,10 +198,15 @@ int main(int argc, const char * argv[]) {
     // Ensure null-termination
     g_ctx.buf[fsize] = 0;
     g_ctx.pos = g_ctx.buf;
+    g_ctx.line = 1;
     
     for (;;) {
         Token t = next_token(&g_ctx);
-        fprintf(stderr, "TOKEN: %s (%d)\n", g_token_names[t.kind], t.kind);
+        if (t.kind == TOK_WS) {
+            continue;
+        }
+        
+        fprint_token(stderr, t);
         
         if (t.kind == TOK_END) {
             break;

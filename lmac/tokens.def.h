@@ -28,6 +28,7 @@ TOKEN(TOK_LBRACE)
 TOKEN(TOK_RBRACE)
 TOKEN(TOK_LPAREN)
 TOKEN(TOK_RPAREN)
+TOKEN(TOK_EQUALS)
     
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code
