@@ -28,6 +28,7 @@
 		F84DD92C1A2D2C9C00ED052E /* lmac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lmac; sourceTree = BUILT_PRODUCTS_DIR; };
 		F84DD92F1A2D2C9C00ED052E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		F84DD93A1A2D316700ED052E /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
+		F84DD93C1A2D3FD600ED052E /* tokens.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tokens.def.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +63,7 @@
 			children = (
 				F84DD93A1A2D316700ED052E /* tests */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
+				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
 			);
 			path = lmac;
 			sourceTree = "<group>";

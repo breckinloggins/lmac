@@ -19,36 +19,14 @@
 #define global_variable static
 
 typedef enum {
-    TOK_UNKOWN = 0,
-    
-    /* Everything that isn't lexed as a specific token is
-     * characterized as an "identifier". This includes types, 
-     * variables, and functions but also things like numeric
-     * literals. This keeps the lexer or more sane and flexible
-     * and moves things like "can't assign a type to a variable"
-     * into the semantic analyzer
-     */
-    TOK_IDENT,
-    
-    /* Tokens for "structural symbols" like '{' and ';' */
-    TOK_SEMICOLON,
-    TOK_LBRACE,
-    TOK_RBRACE,
-    TOK_LPAREN,
-    TOK_RPAREN,
-    
-    /* Our tokenizer is whitespace and comment preserving 
-     * to better map input code to generated code
-     */
-    TOK_WS,
-    TOK_COMMENT,
-    
-    /* Annotation token for end of input */
-    TOK_END,
-    
-    /* Should ALWAYS be last */
-    TOK_LAST,
+#   define TOKEN(kind)  kind,
+#   include "tokens.def.h"
 } TokenKind;
+
+global_variable const char *g_token_names[] = {
+#   define TOKEN(kind) #kind,
+#   include "tokens.def.h"
+};
 
 typedef struct {
     const char *file;
@@ -86,10 +64,34 @@ Token next_token(Context *ctx) {
     
     if (*(ctx->pos) == 0) {
         t.kind = TOK_END;
-    } else {
-        ctx->pos++;
+        goto finish;
     }
     
+    char ch = (char)*ctx->pos;
+    switch (ch) {
+        case ';':
+            t.kind = TOK_SEMICOLON;
+            break;
+        case '{':
+            t.kind = TOK_LBRACE;
+            break;
+        case '}':
+            t.kind = TOK_RBRACE;
+            break;
+        case '(':
+            t.kind = TOK_LPAREN;
+            break;
+        case ')':
+            t.kind = TOK_RPAREN;
+            break;
+        default:
+            break;
+    }
+    
+    ctx->pos++;
+
+finish:
+    t.location.range_end = ctx->pos;
     return t;
 }
 
@@ -122,7 +124,7 @@ int main(int argc, const char * argv[]) {
     
     for (;;) {
         Token t = next_token(&g_ctx);
-        fprintf(stderr, "TOKEN: %d\n", t.kind);
+        fprintf(stderr, "TOKEN: %s (%d)\n", g_token_names[t.kind], t.kind);
         
         if (t.kind == TOK_END) {
             break;
