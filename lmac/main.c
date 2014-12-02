@@ -17,7 +17,6 @@
 // and they should stand out.
 global_variable Context g_ctx;
 
-
 int main(int argc, const char * argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: lmac <file>\n");
@@ -46,21 +45,7 @@ int main(int argc, const char * argv[]) {
     g_ctx.pos = g_ctx.buf;
     g_ctx.line = 1;
     
-    for (;;) {
-        Token t = lexer_next_token(&g_ctx);
-        if (t.kind == TOK_WS) {
-            continue;
-        }
-        
-        token_fprint(stderr, t);
-        
-        if (t.kind == TOK_END) {
-            break;
-        } else if (t.kind == TOK_UNKOWN) {
-            fprintf(stderr, "Unknown token\n");
-            return ERR_LEX;
-        }
-    }
+    parser_parse(&g_ctx);
     
     // NOTE(bloggins): Sanity check
     if (g_ctx.pos - g_ctx.buf < fsize) {

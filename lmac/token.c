@@ -17,6 +17,8 @@ const char *token_get_kind_name(TokenKind kind) {
     return g_token_names[kind];
 }
 
+const Token TOKEN_NONE = {TOK_NONE};
+
 void token_fprint(FILE *f, Token t) {
     fprintf(f, "{\n");
     fprintf(f, "\ttype: \"Token\",\n");

@@ -68,6 +68,14 @@ void lex_ident(Context *ctx) {
     }
 }
 
+Token lexer_peek_token(Context *ctx) {
+    uint8_t *saved_pos = ctx->pos;
+    Token t = lexer_next_token(ctx);
+    
+    ctx->pos = saved_pos;
+    return t;
+}
+
 Token lexer_next_token(Context *ctx) {
     Token t;
     t.kind = TOK_UNKOWN;
@@ -153,4 +161,9 @@ Token lexer_next_token(Context *ctx) {
 finish:
     t.location.range_end = ctx->pos;
     return t;
+}
+
+void lexer_put_back(Context *ctx, Token token) {
+    ctx->line = token.location.line;
+    ctx->pos = token.location.range_start;
 }

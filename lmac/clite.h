@@ -18,6 +18,7 @@
 #define ERR_USAGE               1
 #define ERR_FILE_NOT_FOUND      2
 #define ERR_LEX                 3
+#define ERR_PARSE               4
 
 typedef enum {
 #   define TOKEN(kind)  kind,
@@ -36,6 +37,8 @@ typedef struct {
     SourceLocation location;
 } Token;
 
+extern const Token TOKEN_NONE;
+
 typedef struct {
     const char *file;
     
@@ -51,5 +54,9 @@ const char *token_get_kind_name(TokenKind kind);
 void token_fprint(FILE *f, Token t);
 
 Token lexer_next_token(Context *ctx);
+Token lexer_peek_token(Context *ctx);
+void lexer_put_back(Context *ctx, Token token);
+
+void parser_parse(Context *ctx);
 
 #endif

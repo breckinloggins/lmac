@@ -6,10 +6,23 @@
  * a multiline comment
  */
 
+// TODO(bloggins): Test what happens when a multiline comment isn't closed
+//                  or a single line comment occurs at the end of a file
+//                  without a newline
+
+void foo() { }
+
 int a = 3;
 int b = 43;
 
-int main() {
+void bar() {
+    int c = 3;
+}
+
+int d = 513;
+
+void main() {
     int c = 5;
-    return a + b + c;
+
+    float d = c;
 }
