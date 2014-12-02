@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F84A7AE71A2D87D10051862A /* lexer.c in Sources */ = {isa = PBXBuildFile; fileRef = F84A7AE51A2D87D10051862A /* lexer.c */; };
+		F84A7AEB1A2D88DA0051862A /* token.c in Sources */ = {isa = PBXBuildFile; fileRef = F84A7AE91A2D88DA0051862A /* token.c */; };
 		F84DD9301A2D2C9C00ED052E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD92F1A2D2C9C00ED052E /* main.c */; };
 		F84DD93B1A2D318600ED052E /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = F84DD93A1A2D316700ED052E /* tests */; };
 /* End PBXBuildFile section */
@@ -25,6 +27,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F84A7AE51A2D87D10051862A /* lexer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lexer.c; sourceTree = "<group>"; };
+		F84A7AE81A2D88480051862A /* clite.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = clite.h; sourceTree = "<group>"; };
+		F84A7AE91A2D88DA0051862A /* token.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = token.c; sourceTree = "<group>"; };
 		F84DD92C1A2D2C9C00ED052E /* lmac */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = lmac; sourceTree = BUILT_PRODUCTS_DIR; };
 		F84DD92F1A2D2C9C00ED052E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		F84DD93A1A2D316700ED052E /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
@@ -62,8 +67,11 @@
 			isa = PBXGroup;
 			children = (
 				F84DD93A1A2D316700ED052E /* tests */,
-				F84DD92F1A2D2C9C00ED052E /* main.c */,
+				F84A7AE81A2D88480051862A /* clite.h */,
 				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
+				F84A7AE51A2D87D10051862A /* lexer.c */,
+				F84A7AE91A2D88DA0051862A /* token.c */,
+				F84DD92F1A2D2C9C00ED052E /* main.c */,
 			);
 			path = lmac;
 			sourceTree = "<group>";
@@ -124,6 +132,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F84A7AEB1A2D88DA0051862A /* token.c in Sources */,
+				F84A7AE71A2D87D10051862A /* lexer.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -208,6 +218,7 @@
 		F84DD9341A2D2C9C00ED052E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -215,6 +226,7 @@
 		F84DD9351A2D2C9C00ED052E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -238,6 +250,7 @@
 				F84DD9351A2D2C9C00ED052E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
