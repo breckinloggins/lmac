@@ -14,7 +14,11 @@
 AST(UNKNOWN, unknown, ASTBase)
 
 AST(TOPLEVEL, toplevel, ASTTopLevel)
-AST(DEFN, defn, ASTDefn)
+AST(BLOCK, block, ASTBlock)
+AST(DEFN_FUNC, defn_func, ASTDefnFunc)
+AST(DEFN_VAR, defn_var, ASTDefnVar)
+AST(EXPR_IDENT, expr_ident, ASTExprIdent)
+AST(EXPR_NUMBER, expr_number, ASTExprNumber)
 AST(IDENT, ident, ASTIdent)
 
 /* Should ALWAYS be last */

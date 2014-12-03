@@ -69,6 +69,12 @@ typedef struct ASTBase {
 
 typedef struct {
     ASTBase base;
+    
+    ASTList *definitions;
+} ASTBlock;
+
+typedef struct {
+    ASTBase base;
 } ASTIdent;
 
 typedef struct {
@@ -76,7 +82,32 @@ typedef struct {
     
     ASTIdent *type;
     ASTIdent *name;
-} ASTDefn;
+    ASTBlock *block;
+    
+} ASTDefnFunc;
+
+typedef struct {
+    ASTBase base;
+    
+    ASTIdent *name;
+} ASTExprIdent;
+
+typedef struct {
+    ASTBase base;
+    
+    int number;
+} ASTExprNumber;
+
+typedef struct {
+    ASTBase base;
+    
+    ASTIdent *type;
+    ASTIdent *name;
+    
+    // TODO(bloggins): Need ASTExpression union
+    ASTBase *expression;
+    
+} ASTDefnVar;
 
 typedef struct {
     ASTBase base;

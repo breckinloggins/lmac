@@ -72,44 +72,80 @@ Token expect_token(Context *ctx, TokenKind kind) {
     return t;
 }
 
-bool parse_expression(Context *ctx) {
+ASTIdent *parse_ident(Context *ctx) {
     Context s = snapshot(ctx);
     
     Token t = accept_token(ctx, TOK_IDENT);
-    if (IS_TOKEN_NONE(t)) {
+    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    
+    ASTIdent *ident = ast_create_ident();
+    ident->base.location = t.location;
+    return ident;
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
+
+// TODO(bloggins): We need an ASTExpression union
+ASTBase *parse_expression(Context *ctx) {
+    Context s = snapshot(ctx);
+    
+    ASTBase *expr = NULL;
+    Token t = accept_token(ctx, TOK_IDENT);
+    if (!IS_TOKEN_NONE(t)) {
+        ASTExprIdent *ident = ast_create_expr_ident();
+        ASTIdent *name = ast_create_ident();
+        name->base.location = t.location;
+        ident->name = name;
+        
+        expr = (ASTBase*)ident;
+    } else {
         t = accept_token(ctx, TOK_NUMBER);
-        if (IS_TOKEN_NONE(t)) {
+        if (!IS_TOKEN_NONE(t)) {
+            ASTExprNumber *number = ast_create_expr_number();
+            number->base.location = t.location;
+            number->number = (int)strtol((char*)t.location.range_start, NULL, 10);
+            
+            expr = (ASTBase*)number;
+        } else {
             goto fail_parse;
         }
     }
     
-    return true;
+    expr->location = parsed_source_location(ctx, s);
+    return expr;
     
 fail_parse:
     restore(ctx, s);
-    return false;
+    return NULL;
 }
 
-ASTDefn *parse_defn_var(Context *ctx) {
+ASTDefnVar *parse_defn_var(Context *ctx) {
     // TODO(bloggins): Snapshotting works but can be slow (because we might
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
     
-    Token t = accept_token(ctx, TOK_IDENT);
+    ASTIdent *type = parse_ident(ctx);
+    if (type == NULL) { goto fail_parse; }
+    
+    ASTIdent *name = parse_ident(ctx);
+    if (type == NULL) { goto fail_parse; }
+    
+    Token t = accept_token(ctx, TOK_EQUALS);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    t = accept_token(ctx, TOK_IDENT);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
-    t = accept_token(ctx, TOK_EQUALS);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
-    if (!parse_expression(ctx)) { goto fail_parse; }
+    ASTBase *expr = parse_expression(ctx);
+    if (expr == NULL) { goto fail_parse; }
     
     t = expect_token(ctx, TOK_SEMICOLON);
     
-    ASTDefn *defn = ast_create_defn();
+    ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = parsed_source_location(ctx, s);
+    defn->type = type;
+    defn->name = name;
+    defn->expression = expr;
+    
     return defn;
     
 fail_parse:
@@ -117,11 +153,36 @@ fail_parse:
     return NULL;
 }
 
-ASTDefn *parse_defn_fn(Context *ctx) {
+ASTBlock *parse_block(Context *ctx) {
+    Context s = snapshot(ctx);
+    ASTList *defns = NULL;
+    
+    Token t = accept_token(ctx, TOK_LBRACE);
+    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    
+    ASTBase *defn = NULL;
+    while ((defn = (ASTBase*)parse_defn_var(ctx)) != NULL) {
+        ast_list_add(&defns, defn);
+    }
+    
+    t = expect_token(ctx, TOK_RBRACE);
+    
+    ASTBlock *b = ast_create_block();
+    b->base.location = parsed_source_location(ctx, s);
+    b->definitions = defns;
+    
+    return b;
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
+
+ASTDefnFunc *parse_defn_fn(Context *ctx) {
     Context s = snapshot(ctx);
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
-    //                  "parse_begin_decl" and "parse_block"
+    //                  "parse_begin_decl"
     Token t = accept_token(ctx, TOK_IDENT);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
@@ -133,19 +194,13 @@ ASTDefn *parse_defn_fn(Context *ctx) {
     
     t = accept_token(ctx, TOK_RPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-
     
-    // Parse the block
-    t = expect_token(ctx, TOK_LBRACE);
+    ASTBlock *block = parse_block(ctx);
+    if (block == NULL) { goto fail_parse; }
     
-    while (parse_defn_var(ctx)) {
-        // Keep doing that
-    }
-    
-    t = expect_token(ctx, TOK_RBRACE);
-    
-    ASTDefn *defn = ast_create_defn();
+    ASTDefnFunc *defn = ast_create_defn_func();
     defn->base.location = parsed_source_location(ctx, s);
+    defn->block = block;
     return defn;
     
 fail_parse:

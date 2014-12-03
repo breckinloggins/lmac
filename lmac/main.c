@@ -34,7 +34,7 @@ int print_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     FILE *f = stderr;
     fprintf(f, "%s%d:%s", indent, node->location.line, ast_get_kind_name(node->kind));
-    if (node->kind == AST_DEFN) {
+    if (node->kind == AST_DEFN_VAR || node->kind == AST_IDENT) {
         size_t content_size = node->location.range_end - node->location.range_start;
         char content[content_size + 1];
         char *pc = (char *)node->location.range_start;
@@ -46,6 +46,8 @@ int print_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         content[content_size] = 0;
         
         fprintf(f, " <%s>\n", content);
+    } else if (node->kind == AST_EXPR_NUMBER) {
+        fprintf(f, " <%d>\n", ((ASTExprNumber*)node)->number);
     }
     fprintf(f, "\n");
     

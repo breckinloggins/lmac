@@ -6,6 +6,10 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
+// NOTE(bloggins): Take a look at
+//                  https://www.cs.utah.edu/flux/flick/current/doc/guts/gutsch6.html
+//                 for a relatively clean C/C++ AST
+
 #include <stdbool.h>
 
 #include "clite.h"
@@ -76,12 +80,51 @@ AST_ACCEPT_FN(AST_IDENT) {
     STANDARD_VISIT()
 }
 
-AST_ACCEPT_FN(AST_DEFN) {
+AST_ACCEPT_FN(AST_EXPR_IDENT) {
     STANDARD_VISIT_PRE()
-    ASTDefn *defn = (ASTDefn*)node;
+    
+    ASTExprIdent *ident = (ASTExprIdent*)node;
+    STANDARD_ACCEPT(ident->name)
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_EXPR_NUMBER) {
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_DEFN_FUNC) {
+    STANDARD_VISIT_PRE()
+    ASTDefnFunc *defn = (ASTDefnFunc*)node;
     
     STANDARD_ACCEPT(defn->type)
     STANDARD_ACCEPT(defn->name)
+    STANDARD_ACCEPT(defn->block)
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_DEFN_VAR) {
+    STANDARD_VISIT_PRE()
+    ASTDefnVar *defn = (ASTDefnVar*)node;
+    
+    STANDARD_ACCEPT(defn->type)
+    STANDARD_ACCEPT(defn->name)
+    STANDARD_ACCEPT(defn->expression)
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_BLOCK) {
+    STANDARD_VISIT_PRE()
+    
+    ASTBlock *b = (ASTBlock*)node;
+    
+    // TODO(bloggins): macro-fy
+    for (ASTList *defn_list = b->definitions; defn_list != NULL && defn_list->node != NULL; defn_list = defn_list->next) {
+        ASTBase *defn = defn_list->node;
+        STANDARD_ACCEPT(defn)
+    }
     
     STANDARD_VISIT_POST()
 }
