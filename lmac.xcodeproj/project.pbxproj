@@ -13,6 +13,8 @@
 		F84DD93B1A2D318600ED052E /* tests in CopyFiles */ = {isa = PBXBuildFile; fileRef = F84DD93A1A2D316700ED052E /* tests */; };
 		F84DD93E1A2E3D0800ED052E /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD93D1A2E3D0800ED052E /* parser.c */; };
 		F84DD9401A2E504D00ED052E /* ast.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD93F1A2E504D00ED052E /* ast.c */; };
+		F8597E281A2FAE4400383FCF /* analyzer.c in Sources */ = {isa = PBXBuildFile; fileRef = F8597E271A2FAE4400383FCF /* analyzer.c */; };
+		F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */ = {isa = PBXBuildFile; fileRef = F8597E291A2FBDD900383FCF /* spelling.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -39,6 +41,8 @@
 		F84DD93D1A2E3D0800ED052E /* parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
 		F84DD93F1A2E504D00ED052E /* ast.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ast.c; sourceTree = "<group>"; };
 		F84DD9411A2E50CB00ED052E /* ast.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.def.h; sourceTree = "<group>"; };
+		F8597E271A2FAE4400383FCF /* analyzer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = analyzer.c; sourceTree = "<group>"; };
+		F8597E291A2FBDD900383FCF /* spelling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = spelling.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +84,8 @@
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
 				F84DD93D1A2E3D0800ED052E /* parser.c */,
 				F84DD93F1A2E504D00ED052E /* ast.c */,
+				F8597E271A2FAE4400383FCF /* analyzer.c */,
+				F8597E291A2FBDD900383FCF /* spelling.c */,
 			);
 			path = lmac;
 			sourceTree = "<group>";
@@ -144,7 +150,9 @@
 				F84DD9401A2E504D00ED052E /* ast.c in Sources */,
 				F84A7AE71A2D87D10051862A /* lexer.c in Sources */,
 				F84DD93E1A2E3D0800ED052E /* parser.c in Sources */,
+				F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
+				F8597E281A2FAE4400383FCF /* analyzer.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

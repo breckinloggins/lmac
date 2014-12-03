@@ -128,11 +128,9 @@ AST_ACCEPT_FN(AST_BLOCK) {
     
     ASTBlock *b = (ASTBlock*)node;
     
-    // TODO(bloggins): macro-fy
-    for (ASTList *defn_list = b->definitions; defn_list != NULL && defn_list->node != NULL; defn_list = defn_list->next) {
-        ASTBase *defn = defn_list->node;
+    ASTLIST_FOREACH(ASTBase*, defn, b->statements, {
         STANDARD_ACCEPT(defn)
-    }
+    })
     
     STANDARD_VISIT_POST()
 }
@@ -150,11 +148,9 @@ AST_ACCEPT_FN(AST_TOPLEVEL) {
     
     ASTTopLevel *tl = (ASTTopLevel*)node;
 
-    // TODO(bloggins): macro-fy
-    for (ASTList *defn_list = tl->definitions; defn_list != NULL && defn_list->node != NULL; defn_list = defn_list->next) {
-        ASTBase *defn = defn_list->node;
+    ASTLIST_FOREACH(ASTBase*, defn, tl->definitions, {
         STANDARD_ACCEPT(defn)
-    }
+    })
     
     STANDARD_VISIT_POST()
 }
@@ -178,16 +174,49 @@ int ast_visit(ASTBase *node, VisitFn visitor, void *ctx) {
 }
 
 void ast_list_add(ASTList **list, ASTBase *node) {
+    assert(node && "Node is NULL");
+    
+    ASTList *l = NULL;
     if (*list == NULL) {
         *list = calloc(1, sizeof(ASTList));
-    }
-    
-    ASTList *l = *list;
-    
-    while (l->next != NULL) {
+        l = *list;
+    } else {
+        l = *list;
+        while (l->next != NULL) {
+            l = l->next;
+        }
+        
+        l->next = calloc(1, sizeof(ASTList));
         l = l->next;
     }
     
-    l->next = calloc(1, sizeof(ASTList));
     l->node = node;
+}
+
+void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
+    char indent[indent_level + 1];
+    for (int i = 0; i < indent_level; i++) {
+        indent[i] = '\t';
+    }
+    indent[indent_level] = 0;
+    
+    fprintf(f, "%s%d:%s", indent, node->location.line, ast_get_kind_name(node->kind));
+    if (node->kind == AST_DEFN_VAR || node->kind == AST_IDENT) {
+        size_t content_size = node->location.range_end - node->location.range_start;
+        char content[content_size + 1];
+        char *pc = (char *)node->location.range_start;
+        for (int i = 0; i < content_size; i++) {
+            content[i] = *pc++;
+            if (content[i] == '\n') content[i] = '$';
+            if (content[i] == '\t') content[i] = '$';
+        }
+        content[content_size] = 0;
+        
+        fprintf(f, " <%s>", content);
+    } else if (node->kind == AST_EXPR_NUMBER) {
+        fprintf(f, " <%d>", ((ASTExprNumber*)node)->number);
+    } else if (node->kind == AST_EXPR_BINARY) {
+        ASTExprBinary *binop = (ASTExprBinary*)node;
+        fprintf(f, " <%c>", binop->op);
+    }
 }

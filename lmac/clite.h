@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <assert.h>
 
 // Makes these easier to search for an minimize / eliminate later
 #define global_variable static
@@ -22,6 +24,7 @@
 #define ERR_LEX                 3
 #define ERR_PARSE               4
 #define ERR_VISIT               5
+#define ERR_ANALYZE             6
 
 typedef enum {
 #   define TOKEN(kind, ...)  kind,
@@ -34,10 +37,21 @@ typedef enum {
 } ASTKind;
 
 typedef struct {
+    uint8_t *start;
+    uint8_t *end;
+} Spelling;
+
+typedef struct {
     const char *file;
     uint32_t line;
-    uint8_t *range_start;
-    uint8_t *range_end;
+    
+    union {
+        struct {
+            uint8_t *range_start;
+            uint8_t *range_end;
+        };
+        Spelling spelling;
+    };
 } SourceLocation;
 
 typedef struct {
@@ -54,6 +68,17 @@ typedef struct ASTList {
     struct ASTList *next;
 } ASTList;
 
+#define ASTLIST_FOREACH(type, var_name, ast_list, block)                    \
+do {                                                                        \
+    ASTList *list_copy = ast_list;                                          \
+    while((list_copy) != NULL) {                                            \
+        type var_name = (type)(list_copy)->node;                            \
+        assert(var_name != NULL);                                           \
+        list_copy = list_copy->next;                                        \
+        block                                                               \
+    }                                                                       \
+} while(0);
+
 typedef enum {
     VISIT_PRE,
     VISIT_POST
@@ -65,13 +90,15 @@ typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 typedef struct ASTBase {
     ASTKind kind;
     SourceLocation location;
+    struct ASTBase *parent;
+    
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
 typedef struct {
     ASTBase base;
     
-    ASTList *definitions;
+    ASTList *statements;
 } ASTBlock;
 
 typedef struct {
@@ -145,6 +172,11 @@ typedef struct {
     ASTTopLevel *ast;
 } Context;
 
+size_t spelling_strlen(Spelling spelling);
+bool spelling_streq(Spelling spelling, const char *str);
+bool spelling_equal(Spelling spelling1, Spelling spelling2);
+void spelling_fprint(FILE *f, Spelling spelling);
+
 const char *token_get_name(TokenKind kind);
 size_t token_strlen(Token t);
 bool token_streq(Token t, const char *str);
@@ -164,5 +196,8 @@ type *ast_create_##name();
 const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 void ast_list_add(ASTList **list, ASTBase *node);
+void ast_fprint(FILE *f, ASTBase *node, int indent);
+
+void analyzer_analyze(ASTTopLevel *ast);
 
 #endif

@@ -105,6 +105,7 @@ ASTBase *parse_expression(Context *ctx) {
         ASTExprIdent *ident = ast_create_expr_ident();
         ASTIdent *name = ast_create_ident();
         name->base.location = t.location;
+        name->base.parent = (ASTBase*)ident;
         ident->name = name;
         
         expr = (ASTBase*)ident;
@@ -136,6 +137,8 @@ ASTBase *parse_expression(Context *ctx) {
         }
         
         ASTExprBinary *binop = ast_create_expr_binary();
+        left->parent = right->parent = (ASTBase*)binop;
+        
         binop->left = left;
         binop->right = right;
         binop->op = '+';
@@ -160,7 +163,7 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     if (type == NULL) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
-    if (type == NULL) { goto fail_parse; }
+    if (name == NULL) { goto fail_parse; }
     
     Token t = accept_token(ctx, TOK_EQUALS);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
@@ -172,6 +175,8 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     
     ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = parsed_source_location(ctx, s);
+    type->base.parent = name->base.parent = expr->parent = (ASTBase*)defn;
+    
     defn->type = type;
     defn->name = name;
     defn->expression = expr;
@@ -198,6 +203,8 @@ ASTStmtReturn *parse_stmt_return(Context *ctx) {
     
     ASTStmtReturn *stmt = ast_create_stmt_return();
     stmt->base.location = parsed_source_location(ctx, s);
+    expr->parent = (ASTBase *)stmt;
+    
     stmt->expression = expr;
     
     return stmt;
@@ -222,21 +229,22 @@ ASTBase *parse_block_stmt(Context *ctx) {
 
 ASTBlock *parse_block(Context *ctx) {
     Context s = snapshot(ctx);
-    ASTList *defns = NULL;
+    ASTList *stmts = NULL;
     
     Token t = accept_token(ctx, TOK_LBRACE);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTBase *defn = NULL;
-    while ((defn = (ASTBase*)parse_block_stmt(ctx)) != NULL) {
-        ast_list_add(&defns, defn);
+    ASTBlock *b = ast_create_block();
+    ASTBase *stmt = NULL;
+    while ((stmt = (ASTBase*)parse_block_stmt(ctx)) != NULL) {
+        stmt->parent = (ASTBase*)b;
+        ast_list_add(&stmts, stmt);
     }
     
     t = expect_token(ctx, TOK_RBRACE);
     
-    ASTBlock *b = ast_create_block();
     b->base.location = parsed_source_location(ctx, s);
-    b->definitions = defns;
+    b->statements = stmts;
     
     return b;
     
@@ -250,13 +258,13 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
-    Token t = accept_token(ctx, TOK_IDENT);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    ASTIdent *type = parse_ident(ctx);
+    if (type == NULL) { goto fail_parse; }
     
-    t = accept_token(ctx, TOK_IDENT);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    ASTIdent *name = parse_ident(ctx);
+    if (type == NULL) { goto fail_parse; }
     
-    t = accept_token(ctx, TOK_LPAREN);
+    Token t = accept_token(ctx, TOK_LPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
     t = accept_token(ctx, TOK_RPAREN);
@@ -267,6 +275,11 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
     
     ASTDefnFunc *defn = ast_create_defn_func();
     defn->base.location = parsed_source_location(ctx, s);
+    block->base.parent = (ASTBase*)defn;
+    type->base.parent = name->base.parent = (ASTBase*)defn;
+    
+    defn->type = type;
+    defn->name = name;
     defn->block = block;
     return defn;
     
@@ -283,14 +296,15 @@ ASTTopLevel *parse_toplevel(Context *ctx) {
     Context s = snapshot(ctx);
     ASTList *defns = NULL;
     
+    ASTTopLevel *tl = ast_create_toplevel();
     ASTBase *defn;
     while ((defn = (ASTBase*)parse_defn_var(ctx)) || (defn = (ASTBase*)parse_defn_fn(ctx))) {
+        defn->parent = (ASTBase*)tl;
         ast_list_add(&defns, defn);
     }
     
     parse_end(ctx);
     
-    ASTTopLevel *tl = ast_create_toplevel();
     tl->base.location = parsed_source_location(ctx, s);
     tl->definitions = defns;
     

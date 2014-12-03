@@ -26,32 +26,8 @@ int print_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         return VISIT_OK;
     }
     
-    char indent[pctx->indent_level + 1];
-    for (int i = 0; i < pctx->indent_level; i++) {
-        indent[i] = '\t';
-    }
-    indent[pctx->indent_level] = 0;
-    
     FILE *f = stderr;
-    fprintf(f, "%s%d:%s", indent, node->location.line, ast_get_kind_name(node->kind));
-    if (node->kind == AST_DEFN_VAR || node->kind == AST_IDENT) {
-        size_t content_size = node->location.range_end - node->location.range_start;
-        char content[content_size + 1];
-        char *pc = (char *)node->location.range_start;
-        for (int i = 0; i < content_size; i++) {
-            content[i] = *pc++;
-            if (content[i] == '\n') content[i] = '$';
-            if (content[i] == '\t') content[i] = '$';
-        }
-        content[content_size] = 0;
-        
-        fprintf(f, " <%s>\n", content);
-    } else if (node->kind == AST_EXPR_NUMBER) {
-        fprintf(f, " <%d>\n", ((ASTExprNumber*)node)->number);
-    } else if (node->kind == AST_EXPR_BINARY) {
-        ASTExprBinary *binop = (ASTExprBinary*)node;
-        fprintf(f, " <%c>\n", binop->op);
-    }
+    ast_fprint(f, node, pctx->indent_level);
     fprintf(f, "\n");
     
     ++pctx->indent_level;
@@ -97,6 +73,8 @@ int main(int argc, const char * argv[]) {
     
     PrintCtx pctx = {};
     ast_visit((ASTBase*)g_ctx.ast, print_visitor, &pctx);
+    
+    analyzer_analyze(g_ctx.ast);
     
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit

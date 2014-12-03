@@ -8,8 +8,6 @@
 
 #include "clite.h"
 
-#include <string.h>
-
 global_variable const char *g_token_names[] = {
 #   define TOKEN(_, name, ...) #name,
 #   include "tokens.def.h"
@@ -22,32 +20,11 @@ const char *token_get_name(TokenKind kind) {
 const Token TOKEN_NONE = {TOK_NONE};
 
 size_t token_strlen(Token t) {
-    return (t.location.range_end - t.location.range_start);
+    return spelling_strlen(t.location.spelling);
 }
 
 bool token_streq(Token t, const char *str) {
-    size_t tok_len = token_strlen(t);
-    if (tok_len != strlen(str)) {
-        return false;
-    }
-    
-    const char *c = str;
-    while (*c) {
-        size_t off = c - str;
-        if (t.location.range_start + off > t.location.range_end) {
-            // Ran off the end of the token, can't be equal
-            return false;
-        }
-        
-        char tc = (char)*(t.location.range_start + off);
-        if (*c != tc) {
-            return false;
-        }
-        
-        ++c;
-    }
-    
-    return true;
+    return spelling_streq(t.location.spelling, str);
 }
 
 void token_fprint(FILE *f, Token t) {
@@ -58,15 +35,7 @@ void token_fprint(FILE *f, Token t) {
     if (t.kind == TOK_COMMENT || t.kind == TOK_IDENT || t.kind == TOK_NUMBER ||
         t.kind == TOK_UNKOWN) {
         fprintf(f, "\tcontent: \"");
-        for (char *cp = (char*)t.location.range_start; cp < (char*)t.location.range_end; cp++) {
-            if (*cp == '\n') {
-                fprintf(f, "\\n");
-            } else if (*cp == '\t') {
-                fprintf(f, "\\t");
-            } else {
-                fprintf(f, "%c", *cp);
-            }
-        }
+        spelling_fprint(f, t.location.spelling);
         fprintf(f, "\",\n");
     }
     fprintf(f, "}\n");
