@@ -22,6 +22,16 @@ void restore(Context *ctx, Context snapshot) {
     *ctx = snapshot;
 }
 
+SourceLocation parsed_source_location(Context *ctx, Context snapshot) {
+    SourceLocation sl = {};
+    sl.file = ctx->file;
+    sl.line = snapshot.line;
+    sl.range_start = snapshot.pos;
+    sl.range_end = ctx->pos;
+    
+    return sl;
+}
+
 Token next_token(Context *ctx) {
     // TODO(bloggins): figure out how to incorporate comments and ws in generated
     // code
@@ -98,7 +108,9 @@ ASTDefn *parse_defn_var(Context *ctx) {
     
     t = expect_token(ctx, TOK_SEMICOLON);
     
-    return ast_create_defn();
+    ASTDefn *defn = ast_create_defn();
+    defn->base.location = parsed_source_location(ctx, s);
+    return defn;
     
 fail_parse:
     restore(ctx, s);
@@ -132,7 +144,9 @@ ASTDefn *parse_defn_fn(Context *ctx) {
     
     t = expect_token(ctx, TOK_RBRACE);
     
-    return ast_create_defn();
+    ASTDefn *defn = ast_create_defn();
+    defn->base.location = parsed_source_location(ctx, s);
+    return defn;
     
 fail_parse:
     restore(ctx, s);
@@ -144,6 +158,7 @@ void parse_end(Context *ctx) {
 }
 
 ASTTopLevel *parse_toplevel(Context *ctx) {
+    Context s = snapshot(ctx);
     ASTList *defns = NULL;
     
     ASTBase *defn;
@@ -154,6 +169,7 @@ ASTTopLevel *parse_toplevel(Context *ctx) {
     parse_end(ctx);
     
     ASTTopLevel *tl = ast_create_toplevel();
+    tl->base.location = parsed_source_location(ctx, s);
     tl->definitions = defns;
     
     return tl;

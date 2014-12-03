@@ -15,6 +15,7 @@ AST(UNKNOWN, unknown, ASTBase)
 
 AST(TOPLEVEL, toplevel, ASTTopLevel)
 AST(DEFN, defn, ASTDefn)
+AST(IDENT, ident, ASTIdent)
 
 /* Should ALWAYS be last */
 AST(LAST, last, ASTBase)

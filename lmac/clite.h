@@ -53,16 +53,29 @@ typedef struct ASTList {
     struct ASTList *next;
 } ASTList;
 
+typedef enum {
+    VISIT_PRE,
+    VISIT_POST
+} VisitPhase;
+
 #define VISIT_OK        0
-typedef int (*VisitFn)(struct ASTBase *node, void *ctx);
+typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 
 typedef struct ASTBase {
     ASTKind kind;
+    SourceLocation location;
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
 typedef struct {
     ASTBase base;
+} ASTIdent;
+
+typedef struct {
+    ASTBase base;
+    
+    ASTIdent *type;
+    ASTIdent *name;
 } ASTDefn;
 
 typedef struct {

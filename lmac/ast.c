@@ -38,35 +38,66 @@ ASTBase *ast_create(ASTKind kind, size_t size) {
 #define AST_ACCEPT_FN_NAME(kind) accept_##kind
 #define AST_ACCEPT_FN(kind) int AST_ACCEPT_FN_NAME(kind)(ASTBase *node, VisitFn visit, void *ctx)
 
+#define STANDARD_VISIT_PRE()                                    \
+    int result = visit(node, VISIT_PRE, ctx);                   \
+    if (result != VISIT_OK) {                                   \
+        return result;                                          \
+    }
+
+#define STANDARD_VISIT_POST()                                   \
+    return visit(node, VISIT_POST, ctx);
+
+
+#define STANDARD_VISIT()                                        \
+    STANDARD_VISIT_PRE()                                        \
+    STANDARD_VISIT_POST()
+
+#define STANDARD_ACCEPT(node)                                               \
+    if ((node) != NULL) {                                                   \
+        result = ((ASTBase*)(node))->accept(((ASTBase*)(node)), visit, ctx);\
+        if (result != VISIT_OK) {                                           \
+            return result;                                                  \
+        }                                                                   \
+    }
+
 AST_ACCEPT_FN(AST_UNKNOWN) {
-    return visit(node, ctx);
+    STANDARD_VISIT()
 }
 
 AST_ACCEPT_FN(AST_BASE) {
-    return visit(node, ctx);
+    STANDARD_VISIT()
 }
 
 AST_ACCEPT_FN(AST_LAST) {
-    return visit(node, ctx);
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_IDENT) {
+    STANDARD_VISIT()
 }
 
 AST_ACCEPT_FN(AST_DEFN) {
-    return visit(node, ctx);
+    STANDARD_VISIT_PRE()
+    ASTDefn *defn = (ASTDefn*)node;
+    
+    STANDARD_ACCEPT(defn->type)
+    STANDARD_ACCEPT(defn->name)
+    
+    STANDARD_VISIT_POST()
 }
 
 AST_ACCEPT_FN(AST_TOPLEVEL) {
+    STANDARD_VISIT_PRE()
+    
     ASTTopLevel *tl = (ASTTopLevel*)node;
 
     // TODO(bloggins): macro-fy
     for (ASTList *defn_list = tl->definitions; defn_list != NULL && defn_list->node != NULL; defn_list = defn_list->next) {
         ASTBase *defn = defn_list->node;
-        int result = defn->accept(defn, visit, ctx);
-        if (result != VISIT_OK) {
-            return result;
-        }
+        STANDARD_ACCEPT(defn)
     }
     
-    return visit(node, ctx);
+    STANDARD_VISIT_POST()
 }
 
 //
