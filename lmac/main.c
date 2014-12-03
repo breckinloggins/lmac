@@ -44,7 +44,7 @@ int main(int argc, const char * argv[]) {
     // Make sure the file exists
     const char *file = argv[1];
     if (access(file, R_OK) == -1) {
-        fprintf(stderr, "error: input file not found (%s)\n", file);
+        diag_printf(DIAG_ERROR, NULL, "input file not found (%s)", file);
         return ERR_FILE_NOT_FOUND;
     }
     
@@ -67,7 +67,7 @@ int main(int argc, const char * argv[]) {
     
     // NOTE(bloggins): Sanity check
     if (g_ctx.pos - g_ctx.buf < fsize) {
-        fprintf(stderr, "Unexpected end of input\n");
+        diag_printf(DIAG_FATAL, NULL, "unexpected end of input", file);
         return ERR_LEX;
     }
     

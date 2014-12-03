@@ -27,6 +27,11 @@
 #define ERR_ANALYZE             6
 
 typedef enum {
+#   define DIAG_KIND(kind, ...)  DIAG_##kind,
+#   include "diag.def.h"
+} DiagKind;
+
+typedef enum {
 #   define TOKEN(kind, ...)  kind,
 #   include "tokens.def.h"
 } TokenKind;
@@ -172,10 +177,19 @@ typedef struct {
     ASTTopLevel *ast;
 } Context;
 
+const char *diag_get_name(DiagKind kind);
+void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...);
+
 size_t spelling_strlen(Spelling spelling);
 bool spelling_streq(Spelling spelling, const char *str);
 bool spelling_equal(Spelling spelling1, Spelling spelling2);
 void spelling_fprint(FILE *f, Spelling spelling);
+
+/* spelling_cstring returns a shared pointer to a string that will be
+ * overwritten the next time spelling_cstring is called. Be sure to duplicate
+ * the string if you need to keep it.
+ */
+const char *spelling_cstring(Spelling spelling);
 
 const char *token_get_name(TokenKind kind);
 size_t token_strlen(Token t);

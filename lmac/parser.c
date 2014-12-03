@@ -40,7 +40,7 @@ Token next_token(Context *ctx) {
         }
         
         if (t.kind == TOK_UNKOWN) {
-            fprintf(stderr, "Unknown token\n");
+            diag_printf(DIAG_FATAL, NULL, "unknown token '%s'", spelling_cstring(t.location.spelling));
             exit(ERR_LEX);
         }
         
@@ -73,7 +73,8 @@ Token expect_token(Context *ctx, TokenKind kind) {
     Token t = accept_token(ctx, kind);
     
     if (IS_TOKEN_NONE(t)) {
-        fprintf(stderr, "error (line %d): expected %s\n", ctx->line, token_get_name(kind));
+        SourceLocation sl = parsed_source_location(ctx, *ctx);
+        diag_printf(DIAG_ERROR, &sl, "expected %s", token_get_name(kind));
         exit(ERR_PARSE);
     }
     
@@ -132,7 +133,8 @@ ASTBase *parse_expression(Context *ctx) {
         ASTBase *left = expr;
         ASTBase *right = parse_expression(ctx);
         if (right == NULL) {
-            fprintf(stderr, "error (line %d): expected expression after '+'\n", ctx->line);
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "expected expression after '+'");
             exit(ERR_PARSE);
         }
         
@@ -195,7 +197,8 @@ ASTStmtReturn *parse_stmt_return(Context *ctx) {
     
     ASTBase *expr = parse_expression(ctx);
     if (expr == NULL) {
-        fprintf(stderr, "error (line %d): expected expression\n", ctx->line);
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected expression");
         exit(ERR_PARSE);
     }
     

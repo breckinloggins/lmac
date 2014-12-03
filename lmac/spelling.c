@@ -74,3 +74,29 @@ void spelling_fprint(FILE *f, Spelling spelling) {
         }
     }
 }
+
+const char *spelling_cstring(Spelling spelling) {
+    // TODO(bloggins): This is not thread safe!
+    static char *cstr = NULL;
+    static size_t cstr_len = 0;
+    
+    size_t sp_len = spelling_strlen(spelling);
+    if (sp_len == 0) {
+        return "";
+    }
+    
+    if (cstr == NULL || cstr_len == 0) {
+        cstr = (char *)malloc(sp_len + 1);
+    } else if (cstr_len < sp_len) {
+        // Need to make more space for this one
+        free(cstr);
+        cstr = (char *)malloc(sp_len + 1);
+    }
+   
+    cstr_len = sp_len;
+    for (int i = 0; i < cstr_len; i++) {
+        cstr[i] = (char)spelling.start[i];
+    }
+    cstr[cstr_len] = 0;
+    return cstr;
+}

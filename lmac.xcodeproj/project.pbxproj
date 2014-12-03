@@ -15,6 +15,7 @@
 		F84DD9401A2E504D00ED052E /* ast.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD93F1A2E504D00ED052E /* ast.c */; };
 		F8597E281A2FAE4400383FCF /* analyzer.c in Sources */ = {isa = PBXBuildFile; fileRef = F8597E271A2FAE4400383FCF /* analyzer.c */; };
 		F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */ = {isa = PBXBuildFile; fileRef = F8597E291A2FBDD900383FCF /* spelling.c */; };
+		F8597E2C1A2FC82900383FCF /* diag.c in Sources */ = {isa = PBXBuildFile; fileRef = F8597E2B1A2FC82900383FCF /* diag.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,6 +44,8 @@
 		F84DD9411A2E50CB00ED052E /* ast.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.def.h; sourceTree = "<group>"; };
 		F8597E271A2FAE4400383FCF /* analyzer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = analyzer.c; sourceTree = "<group>"; };
 		F8597E291A2FBDD900383FCF /* spelling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = spelling.c; sourceTree = "<group>"; };
+		F8597E2B1A2FC82900383FCF /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = diag.c; sourceTree = "<group>"; };
+		F8597E2D1A2FC8A600383FCF /* diag.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = diag.def.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +82,7 @@
 				F84A7AE81A2D88480051862A /* clite.h */,
 				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
 				F84DD9411A2E50CB00ED052E /* ast.def.h */,
+				F8597E2D1A2FC8A600383FCF /* diag.def.h */,
 				F84A7AE51A2D87D10051862A /* lexer.c */,
 				F84A7AE91A2D88DA0051862A /* token.c */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
@@ -86,6 +90,7 @@
 				F84DD93F1A2E504D00ED052E /* ast.c */,
 				F8597E271A2FAE4400383FCF /* analyzer.c */,
 				F8597E291A2FBDD900383FCF /* spelling.c */,
+				F8597E2B1A2FC82900383FCF /* diag.c */,
 			);
 			path = lmac;
 			sourceTree = "<group>";
@@ -150,6 +155,7 @@
 				F84DD9401A2E504D00ED052E /* ast.c in Sources */,
 				F84A7AE71A2D87D10051862A /* lexer.c in Sources */,
 				F84DD93E1A2E3D0800ED052E /* parser.c in Sources */,
+				F8597E2C1A2FC82900383FCF /* diag.c in Sources */,
 				F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
 				F8597E281A2FAE4400383FCF /* analyzer.c in Sources */,

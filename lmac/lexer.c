@@ -10,6 +10,16 @@
 
 #include "clite.h"
 
+SourceLocation lexed_source_location(Context *ctx) {
+    SourceLocation sl = {};
+    sl.file = ctx->file;
+    sl.line = ctx->line;
+    sl.range_start = ctx->pos;
+    sl.range_end = ctx->pos + 1;
+    
+    return sl;
+}
+
 void lex_singleline_comment(Context *ctx) {
     for (;;) {
         // Gobble the comment to EOL or EOI
@@ -45,7 +55,8 @@ void lex_number(Context *ctx) {
         
         if (isalpha(ch)) {
             // TODO(bloggins): Extract error reporting system
-            fprintf(stderr, "error (line %d): invalid digit '%c' in number\n", ctx->line, ch);
+            SourceLocation sl = lexed_source_location(ctx);
+            diag_printf(DIAG_ERROR, &sl, "invalid digit '%c' in number", ch);
             exit(ERR_LEX);
         }
         
