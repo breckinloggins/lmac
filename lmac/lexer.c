@@ -159,6 +159,16 @@ Token lexer_next_token(Context *ctx) {
     
 finish:
     t.location.range_end = ctx->pos;
+    
+    // TODO(bloggins): Do this in a more generic way when
+    //                  we have more metadata in the token db
+    if (t.kind == TOK_IDENT) {
+        // Determine if this identifier is actually a language keyword
+        if (token_streq(t, "return")) {
+            t.kind = TOK_KW_RETURN;
+        }
+    }
+    
     return t;
 }
 

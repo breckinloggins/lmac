@@ -10,8 +10,6 @@
 //                  https://www.cs.utah.edu/flux/flick/current/doc/guts/gutsch6.html
 //                 for a relatively clean C/C++ AST
 
-#include <stdbool.h>
-
 #include "clite.h"
 
 // NOTE(bloggins): We're doing lots of small allocations here. It might
@@ -135,6 +133,14 @@ AST_ACCEPT_FN(AST_BLOCK) {
         ASTBase *defn = defn_list->node;
         STANDARD_ACCEPT(defn)
     }
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_RETURN) {
+    STANDARD_VISIT_PRE()
+    
+    STANDARD_ACCEPT(((ASTStmtReturn*)node)->expression);
     
     STANDARD_VISIT_POST()
 }

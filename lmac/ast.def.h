@@ -14,6 +14,7 @@
 AST(UNKNOWN, unknown, ASTBase)
 
 AST(TOPLEVEL, toplevel, ASTTopLevel)
+AST(STMT_RETURN, stmt_return, ASTStmtReturn)
 AST(BLOCK, block, ASTBlock)
 AST(DEFN_FUNC, defn_func, ASTDefnFunc)
 AST(DEFN_VAR, defn_var, ASTDefnVar)

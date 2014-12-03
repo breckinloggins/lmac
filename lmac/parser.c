@@ -6,8 +6,6 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-#include <stdbool.h>
-
 #include "clite.h"
 
 #define IS_TOKEN_NONE(t) ((t).kind == TOK_NONE)
@@ -75,7 +73,7 @@ Token expect_token(Context *ctx, TokenKind kind) {
     Token t = accept_token(ctx, kind);
     
     if (IS_TOKEN_NONE(t)) {
-        fprintf(stderr, "error (line %d): expected %s\n", ctx->line, token_get_kind_name(kind));
+        fprintf(stderr, "error (line %d): expected %s\n", ctx->line, token_get_name(kind));
         exit(ERR_PARSE);
     }
     
@@ -185,6 +183,43 @@ fail_parse:
     return NULL;
 }
 
+ASTStmtReturn *parse_stmt_return(Context *ctx) {
+    Context s = snapshot(ctx);
+    
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_RETURN))) { goto fail_parse; }
+    
+    ASTBase *expr = parse_expression(ctx);
+    if (expr == NULL) {
+        fprintf(stderr, "error (line %d): expected expression\n", ctx->line);
+        exit(ERR_PARSE);
+    }
+    
+    expect_token(ctx, TOK_SEMICOLON);
+    
+    ASTStmtReturn *stmt = ast_create_stmt_return();
+    stmt->base.location = parsed_source_location(ctx, s);
+    stmt->expression = expr;
+    
+    return stmt;
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
+
+ASTBase *parse_block_stmt(Context *ctx) {
+    // NOTE(bloggins): When a parse function just switches
+    //                  on other parse functions, there's no
+    //                  need to save the context ourselves
+    
+    ASTBase *stmt = (ASTBase *)parse_defn_var(ctx);
+    if (stmt == NULL) {
+        stmt = (ASTBase*)parse_stmt_return(ctx);
+    }
+    
+    return stmt;
+}
+
 ASTBlock *parse_block(Context *ctx) {
     Context s = snapshot(ctx);
     ASTList *defns = NULL;
@@ -193,7 +228,7 @@ ASTBlock *parse_block(Context *ctx) {
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
     ASTBase *defn = NULL;
-    while ((defn = (ASTBase*)parse_defn_var(ctx)) != NULL) {
+    while ((defn = (ASTBase*)parse_block_stmt(ctx)) != NULL) {
         ast_list_add(&defns, defn);
     }
     

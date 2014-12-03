@@ -7,14 +7,20 @@
 //
 
 #ifndef TOKEN
-#define TOKEN(kind)
+#define TOKEN(kind, name)
 #endif
 
+/*
+ * Token database definitions:
+ * kind: the enumeration kind of the token
+ * name: the name of the token as a human-readable string
+ */
+
 /* Should ALWAYS be first */
-TOKEN(TOK_UNKOWN)
+TOKEN(TOK_UNKOWN, unknown)
 
 /* Meta token kind that signifies "no matched token" */
-TOKEN(TOK_NONE)
+TOKEN(TOK_NONE, none)
 
 /* Everything that isn't lexed as a specific token is
  * characterized as an "identifier". This includes types,
@@ -22,33 +28,37 @@ TOKEN(TOK_NONE)
  * and moves things like "can't assign a type to a variable"
  * into the semantic analyzer
  */
-TOKEN(TOK_IDENT)
+TOKEN(TOK_IDENT, identifier)
 
 /* Only integer literal for now */
-TOKEN(TOK_NUMBER)
-    
+TOKEN(TOK_NUMBER, number)
+
+/* Language keywords */
+/* TODO(bloggins): Set a "bit" on these to indicate that they are keywords */
+TOKEN(TOK_KW_RETURN, return)
+
 /* Tokens for "structural symbols" like '{' and ';' */
-TOKEN(TOK_SEMICOLON)
-TOKEN(TOK_LBRACE)
-TOKEN(TOK_RBRACE)
-TOKEN(TOK_LPAREN)
-TOKEN(TOK_RPAREN)
-TOKEN(TOK_EQUALS)
+TOKEN(TOK_SEMICOLON, semicolon)
+TOKEN(TOK_LBRACE, leftbrace)
+TOKEN(TOK_RBRACE, rightbrace)
+TOKEN(TOK_LPAREN, leftparen)
+TOKEN(TOK_RPAREN, rightparen)
+TOKEN(TOK_EQUALS, equals)
 
 /* Math and logic symbols */
-TOKEN(TOK_PLUS)
+TOKEN(TOK_PLUS, plus)
     
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code
  */
-TOKEN(TOK_WS)
-TOKEN(TOK_COMMENT)
+TOKEN(TOK_WS, whitespace)
+TOKEN(TOK_COMMENT, comment)
     
 /* Annotation token for end of input */
-TOKEN(TOK_END)
+TOKEN(TOK_END, end)
     
 /* Should ALWAYS be last */
-TOKEN(TOK_LAST)
+TOKEN(TOK_LAST, last)
 
 #ifdef TOKEN
 #undef TOKEN

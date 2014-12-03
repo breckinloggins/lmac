@@ -25,4 +25,6 @@ void main() {
     int c = 5;
 
     float d = a + b + c + d;
+
+    return d;
 }

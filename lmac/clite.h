@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 // Makes these easier to search for an minimize / eliminate later
 #define global_variable static
@@ -23,7 +24,7 @@
 #define ERR_VISIT               5
 
 typedef enum {
-#   define TOKEN(kind)  kind,
+#   define TOKEN(kind, ...)  kind,
 #   include "tokens.def.h"
 } TokenKind;
 
@@ -120,6 +121,13 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
+    // TODO(bloggins): Need ASTExpression union
+    ASTBase *expression;
+} ASTStmtReturn;
+
+typedef struct {
+    ASTBase base;
+    
     ASTList *definitions;
 } ASTTopLevel;
 
@@ -137,7 +145,9 @@ typedef struct {
     ASTTopLevel *ast;
 } Context;
 
-const char *token_get_kind_name(TokenKind kind);
+const char *token_get_name(TokenKind kind);
+size_t token_strlen(Token t);
+bool token_streq(Token t, const char *str);
 void token_fprint(FILE *f, Token t);
 
 Token lexer_next_token(Context *ctx);
