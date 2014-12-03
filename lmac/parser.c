@@ -50,6 +50,16 @@ Token next_token(Context *ctx) {
     }
 }
 
+Token peek_token(Context *ctx) {
+    // TODO(bloggins): This is probably expensive
+    Context s = snapshot(ctx);
+    
+    Token t = next_token(ctx);
+    
+    restore(ctx, s);
+    return t;
+}
+
 Token accept_token(Context *ctx, TokenKind kind) {
     Token t = next_token(ctx);
     if (t.kind == kind) {
@@ -111,6 +121,28 @@ ASTBase *parse_expression(Context *ctx) {
         } else {
             goto fail_parse;
         }
+    }
+    
+    // TODO(bloggins): This is a bit of a hack until we get a true left-factored
+    //                 grammar parse
+    t = peek_token(ctx);
+    if (t.kind == TOK_PLUS) {
+        // Assume we have a binary expression
+        next_token(ctx);  // gobble gobble
+        
+        ASTBase *left = expr;
+        ASTBase *right = parse_expression(ctx);
+        if (right == NULL) {
+            fprintf(stderr, "error (line %d): expected expression after '+'\n", ctx->line);
+            exit(ERR_PARSE);
+        }
+        
+        ASTExprBinary *binop = ast_create_expr_binary();
+        binop->left = left;
+        binop->right = right;
+        binop->op = '+';
+        
+        expr = (ASTBase*)binop;
     }
     
     expr->location = parsed_source_location(ctx, s);

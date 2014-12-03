@@ -93,6 +93,16 @@ AST_ACCEPT_FN(AST_EXPR_NUMBER) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_EXPR_BINARY) {
+    STANDARD_VISIT_PRE()
+    ASTExprBinary *binop = (ASTExprBinary*)node;
+    
+    STANDARD_ACCEPT(binop->left);
+    STANDARD_ACCEPT(binop->right);
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_DEFN_FUNC) {
     STANDARD_VISIT_PRE()
     ASTDefnFunc *defn = (ASTDefnFunc*)node;

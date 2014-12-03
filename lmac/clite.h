@@ -101,6 +101,14 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
+    ASTBase *left;
+    char op;
+    ASTBase *right;
+} ASTExprBinary;
+
+typedef struct {
+    ASTBase base;
+    
     ASTIdent *type;
     ASTIdent *name;
     

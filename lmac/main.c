@@ -48,6 +48,9 @@ int print_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         fprintf(f, " <%s>\n", content);
     } else if (node->kind == AST_EXPR_NUMBER) {
         fprintf(f, " <%d>\n", ((ASTExprNumber*)node)->number);
+    } else if (node->kind == AST_EXPR_BINARY) {
+        ASTExprBinary *binop = (ASTExprBinary*)node;
+        fprintf(f, " <%c>\n", binop->op);
     }
     fprintf(f, "\n");
     

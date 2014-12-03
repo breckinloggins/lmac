@@ -24,5 +24,5 @@ int d = 513;
 void main() {
     int c = 5;
 
-    float d = c;
+    float d = a + b + c + d;
 }

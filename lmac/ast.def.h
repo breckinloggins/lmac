@@ -19,6 +19,7 @@ AST(DEFN_FUNC, defn_func, ASTDefnFunc)
 AST(DEFN_VAR, defn_var, ASTDefnVar)
 AST(EXPR_IDENT, expr_ident, ASTExprIdent)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)
+AST(EXPR_BINARY, expr_binary, ASTExprBinary)
 AST(IDENT, ident, ASTIdent)
 
 /* Should ALWAYS be last */
