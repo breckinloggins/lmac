@@ -12,6 +12,23 @@ typedef struct {
     ASTList *identifiers;
 } AnalyzeCtx;
 
+#define ANALYZE_ERROR(sl, ...)                                              \
+    diag_printf(DIAG_ERROR, sl, __VA_ARGS__);                               \
+    exit(ERR_ANALYZE);
+
+void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
+    bool is_void_type = spelling_streq(sp_type, "void");
+    
+    if (is_void_type && loc_node->kind == AST_DEFN_VAR) {
+        ANALYZE_ERROR(&(loc_node->location),
+                      "variables cannot be defined as type 'void'");
+    } else if (!spelling_streq(sp_type, "int") && !is_void_type) {
+        ANALYZE_ERROR(&(loc_node->location),
+                    "'%s' is not a supported type (only int and void are supported currently)",
+                    spelling_cstring(sp_type));
+    }
+}
+
 int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     if (phase == VISIT_PRE) {
         return VISIT_OK;
@@ -21,6 +38,14 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     if (node->kind == AST_EXPR_IDENT) {
         ast_list_add(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
+    } else if (node->kind == AST_DEFN_FUNC) {
+        ASTDefnFunc *func = (ASTDefnFunc*)node;
+        Spelling sp_type = func->type->base.location.spelling;
+        check_supported_type(node, sp_type);
+    } else if (node->kind == AST_DEFN_VAR) {
+        ASTDefnVar *var = (ASTDefnVar*)node;
+        Spelling sp_type = var->type->base.location.spelling;
+        check_supported_type(node, sp_type);
     }
     
     return VISIT_OK;
@@ -74,11 +99,7 @@ void analyzer_analyze(ASTTopLevel *ast) {
     
     ASTLIST_FOREACH(ASTIdent*, ident, ctx.identifiers, {
         if (!spelling_defined_in_scope(ident->base.location.spelling, (ASTBase*)ident)) {
-            fprintf(stderr, "error (line %d): undeclared identifier '", ident->base.location.line);
-            spelling_fprint(stderr, ident->base.location.spelling);
-            fprintf(stderr, "'\n");
-            
-            exit(ERR_ANALYZE);
+            ANALYZE_ERROR(&ident->base.location, "undeclared identifier '%s'", spelling_cstring(ident->base.location.spelling));
         }
     })
 }
