@@ -240,7 +240,37 @@ ASTExpression *parse_shift_expression(Context *ctx) {
 	| additive_expression '-' multiplicative_expression
  */
 ASTExpression *parse_additive_expression(Context *ctx) {
-    return parse_multiplicative_expression(ctx);
+    ASTExpression *expr = parse_multiplicative_expression(ctx);
+    
+    // TODO(bloggins): REMOVEME!! This is a hack until we get a true left-factored
+    //                 grammar parse
+    Token t = peek_token(ctx);
+    if (t.kind == TOK_PLUS || t.kind == TOK_MINUS) {
+        // Assume we have a binary expression
+        next_token(ctx);  // gobble gobble
+        
+        ASTExpression *left = expr;
+        ASTExpression *right = parse_additive_expression(ctx);
+        if (right == NULL) {
+            SourceLocation sl = parsed_source_location(ctx, *ctx);
+            diag_printf(DIAG_ERROR, &sl, "expected expression after '+'");
+            exit(ERR_PARSE);
+        }
+        
+        ASTExprBinary *binop = ast_create_expr_binary();
+        AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
+        
+        binop->left = left;
+        binop->right = right;
+        binop->op = ast_create_operator();
+        binop->op->base.parent = (ASTBase*)binop;
+        binop->op->base.location = t.location;
+        binop->op->op = (char)*t.location.range_start;
+        
+        expr = (ASTExpression*)binop;
+    }
+    
+    return expr;
 }
 
 /*
@@ -339,34 +369,6 @@ ASTExpression *parse_primary_expression(Context *ctx) {
                 goto fail_parse;
             }
         }
-    }
-    
-    // TODO(bloggins): REMOVEME!! This is a hack until we get a true left-factored
-    //                 grammar parse
-    t = peek_token(ctx);
-    if (t.kind == TOK_PLUS) {
-        // Assume we have a binary expression
-        next_token(ctx);  // gobble gobble
-        
-        ASTExpression *left = expr;
-        ASTExpression *right = parse_expression(ctx);
-        if (right == NULL) {
-            SourceLocation sl = parsed_source_location(ctx, s);
-            diag_printf(DIAG_ERROR, &sl, "expected expression after '+'");
-            exit(ERR_PARSE);
-        }
-        
-        ASTExprBinary *binop = ast_create_expr_binary();
-        AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
-        
-        binop->left = left;
-        binop->right = right;
-        binop->op = ast_create_operator();
-        binop->op->base.parent = (ASTBase*)binop;
-        binop->op->base.location = t.location;
-        binop->op->op = (char)*t.location.range_start;
-        
-        expr = (ASTExpression*)binop;
     }
     
     AST_BASE(expr)->location = parsed_source_location(ctx, s);

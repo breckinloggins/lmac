@@ -47,6 +47,7 @@ TOKEN(TOK_EQUALS, equals)
 
 /* Math and logic symbols */
 TOKEN(TOK_PLUS, plus)
+TOKEN(TOK_MINUS, minus)
     
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code

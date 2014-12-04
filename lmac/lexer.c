@@ -123,6 +123,9 @@ Token lexer_next_token(Context *ctx) {
         case '+':
             t.kind = TOK_PLUS;
             break;
+        case '-':
+            t.kind = TOK_MINUS;
+            break;
         case ' ': case '\t':
             t.kind = TOK_WS;
             break;

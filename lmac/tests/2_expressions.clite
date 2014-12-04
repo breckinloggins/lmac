@@ -8,6 +8,12 @@ int main() {
 int add2 = a + b;
 int add3 = a + b + c;
 
+int sub2 = a - b;
+int sub3 = a - b - c;
+
+int addsub3 = a + b - c;
+int addsub4 = a - b + c - c;
+
 int parens1 = (a);
 int parens2 = (a + b);
 int parens3 = (a + b + c);
