@@ -21,7 +21,7 @@ void bar() {
 
 int d = 513;
 
-void main() {
+int main() {
     int c = 5;
 
     int d = a + b + c + d;

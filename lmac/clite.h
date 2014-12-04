@@ -26,6 +26,7 @@
 #define ERR_VISIT               5
 #define ERR_ANALYZE             6
 #define ERR_CODEGEN             7
+#define ERR_CC                  8
 
 typedef enum {
 #   define DIAG_KIND(kind, ...)  DIAG_##kind,

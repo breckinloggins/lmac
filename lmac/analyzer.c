@@ -42,6 +42,12 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         ASTDefnFunc *func = (ASTDefnFunc*)node;
         Spelling sp_type = func->type->base.location.spelling;
         check_supported_type(node, sp_type);
+        
+        if (spelling_streq(func->name->base.location.spelling, "main") &&
+            !spelling_streq(sp_type, "int")) {
+            ANALYZE_ERROR(&(func->base.location), "function main() must have return type 'int'");
+        }
+        
     } else if (node->kind == AST_DEFN_VAR) {
         ASTDefnVar *var = (ASTDefnVar*)node;
         Spelling sp_type = var->type->base.location.spelling;

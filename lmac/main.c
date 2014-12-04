@@ -6,9 +6,11 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-#include <unistd.h>
-
 #include "clite.h"
+
+#include <unistd.h>
+#include <sys/syslimits.h>
+#include <stdarg.h>
 
 // INFO(bloggins): I normally don't use any kind of "hungarian" prefixes
 // on variables, but I make an exception for globals. They should be rare
@@ -35,6 +37,57 @@ int print_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     return VISIT_OK;
 }
 
+int run_cmd(const char *fmt, ...) {
+    int ret = 0;
+    va_list ap;
+    
+    va_start(ap, fmt);
+    
+    char *cmd = NULL;
+    vasprintf(&cmd, fmt, ap);
+    assert(cmd && "cmd must not be null");
+    va_end(ap);
+    
+    fprintf(stderr, "[c-compile] %s\n", cmd);
+    ret = system(cmd);
+    free(cmd);
+    
+    return ret;
+}
+
+const char *lookup_cmd(const char *cmd) {
+    // TODO(bloggins): WARNING - not thread safe
+    static char path[PATH_MAX];
+    
+    FILE *fp;
+    char *which_cmd = NULL;
+    asprintf(&which_cmd, "%s %s", "/usr/bin/which", cmd);
+    fp = popen(which_cmd, "r");
+    free(which_cmd);
+    
+    bzero(path, PATH_MAX);
+    fgets(path, PATH_MAX-1, fp);
+    
+    fclose(fp);
+    
+    if (path[0] == 0) {
+        return NULL;
+    }
+    
+    // No newlines
+    for (int i = 0; i < PATH_MAX; i++) {
+        if (path[i] == 0) {
+            break;
+        }
+        
+        if (path[i] == '\n') {
+            path[i] = ' ';
+        }
+    }
+    
+    return path;
+}
+
 int main(int argc, const char * argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: lmac <file>\n");
@@ -46,6 +99,13 @@ int main(int argc, const char * argv[]) {
     if (access(file, R_OK) == -1) {
         diag_printf(DIAG_ERROR, NULL, "input file not found (%s)", file);
         return ERR_FILE_NOT_FOUND;
+    }
+    
+    // TODO(bloggins): Extract to a driver struct
+    const char *cc_path = lookup_cmd("cc");
+    if (cc_path == NULL) {
+        diag_printf(DIAG_ERROR, NULL, "can't find c compiler (cc)");
+        return ERR_CC;
     }
     
     // TODO(bloggins): this is probably not the most memory efficient thing we could do
@@ -76,13 +136,13 @@ int main(int argc, const char * argv[]) {
     
     analyzer_analyze(g_ctx.ast);
     
-    // TODO(bloggins): Temporary. Removeme
-    fprintf(stderr, "\n\n---COMPILATION SUCCEEDED. GENERATING CODE---\n\n");
-    
-    codegen_generate(stdout, g_ctx.ast);
-    
+    FILE *fout = fopen("tmp_out.c", "w");
+    codegen_generate(fout, g_ctx.ast);
+    fflush(fout);
+    fclose(fout);
+
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.
-    return ERR_NONE;
+    return run_cmd("%s -o tmp_out tmp_out.c", cc_path);
 }
