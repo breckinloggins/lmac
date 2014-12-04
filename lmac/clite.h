@@ -96,6 +96,8 @@ typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 
 #define AST_BASE(node) ((ASTBase*)(node))
 
+struct ASTTypeExpression;
+
 typedef struct ASTBase {
     ASTKind kind;
     SourceLocation location;
@@ -122,7 +124,7 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
-    ASTIdent *type;
+    struct ASTTypeExpression *type;
     ASTIdent *name;
     ASTBlock *block;
     
@@ -163,7 +165,7 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
-    ASTIdent *type;
+    struct ASTTypeExpression *type;
     ASTIdent *name;
     
     ASTExpression *expression;
@@ -197,6 +199,41 @@ typedef struct {
     ASTIdent *arg;
 } ASTPPPragma;
 
+/*
+ * Type Expression AST
+ */
+
+#define TYPE_FLAG_UNIT          0
+#define TYPE_FLAG_SINGLETON     0x40000000
+#define TYPE_FLAG_KIND          0x80000000
+
+typedef struct ASTTypeExpression {
+    ASTExpression base;
+    
+    uint32_t type_id;
+} ASTTypeExpression;
+
+#define BIT_FLAG_NONE           0
+#define BIT_FLAG_FP             0x01
+#define BIT_FLAG_SIGNED         0x80
+
+typedef struct {
+    ASTTypeExpression base;
+    
+    /* Signed, float, etc. */
+    uint8_t bit_flags;
+    
+    // BLOGGINS(TODO): Needs to be machine word size instead of explicitly
+    // 64-bits. Why might you ever want a type that's as big as one bit per
+    // byte of available memory? It can then model the entire memory space
+    // of a system as a bitfield. Granted it would have to be sparse, but still.
+    uint64_t bit_size;
+    
+} ASTTypeConstant;
+
+/*
+ * Compiler Context
+ */
 typedef struct {
     const char *file;
     
@@ -210,6 +247,10 @@ typedef struct {
     /* Parsed AST */
     ASTTopLevel *ast;
 } Context;
+
+/*
+ * Public Interface
+ */
 
 const char *diag_get_name(DiagKind kind);
 void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...);

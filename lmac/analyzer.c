@@ -22,10 +22,6 @@ void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
     if (is_void_type && loc_node->kind == AST_DEFN_VAR) {
         ANALYZE_ERROR(&(loc_node->location),
                       "variables cannot be defined as type 'void'");
-    } else if (!spelling_streq(sp_type, "int") && !is_void_type) {
-        ANALYZE_ERROR(&(loc_node->location),
-                    "'%s' is not a supported type (only int and void are supported currently)",
-                    spelling_cstring(sp_type));
     }
 }
 
@@ -40,7 +36,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         ast_list_add(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
     } else if (node->kind == AST_DEFN_FUNC) {
         ASTDefnFunc *func = (ASTDefnFunc*)node;
-        Spelling sp_type = func->type->base.location.spelling;
+        Spelling sp_type = AST_BASE(func->type)->location.spelling;
         check_supported_type(node, sp_type);
         
         if (spelling_streq(func->name->base.location.spelling, "main") &&
@@ -50,7 +46,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         
     } else if (node->kind == AST_DEFN_VAR) {
         ASTDefnVar *var = (ASTDefnVar*)node;
-        Spelling sp_type = var->type->base.location.spelling;
+        Spelling sp_type = AST_BASE(var->type)->location.spelling;
         check_supported_type(node, sp_type);
     }
     

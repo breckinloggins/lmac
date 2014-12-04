@@ -169,6 +169,10 @@ AST_ACCEPT_FN(AST_TOPLEVEL) {
     STANDARD_VISIT_POST()
 }
 
+//
+// Preprocessor Visitor
+//
+
 AST_ACCEPT_FN(AST_PP_PRAGMA) {
     STANDARD_VISIT_PRE()
     
@@ -176,6 +180,22 @@ AST_ACCEPT_FN(AST_PP_PRAGMA) {
     // pragma-visitor must decide how to interpret it
     
     STANDARD_VISIT_POST()
+}
+
+//
+// Type Expression Visitor
+//
+
+AST_ACCEPT_FN(AST_TYPE_BEGIN) {
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_TYPE_END) {
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_TYPE_CONSTANT) {
+    STANDARD_VISIT()
 }
 
 //

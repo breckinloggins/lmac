@@ -25,7 +25,13 @@ AST(EXPR_BINARY, expr_binary, ASTExprBinary)
 AST(IDENT, ident, ASTIdent)
 AST(OPERATOR, operator, ASTOperator)
 
+/* Preprocessor */
 AST(PP_PRAGMA, pp_pragma, ASTPPPragma)
+
+/* Type Expressions */
+AST(TYPE_BEGIN, type_begin, ASTBase)    /* Type Class Start Guard */
+AST(TYPE_CONSTANT, type_constant, ASTTypeConstant)
+AST(TYPE_END, type_end, ASTBase)        /* Type Class End Guard */
 
 /* Should ALWAYS be last */
 AST(LAST, last, ASTBase)

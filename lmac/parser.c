@@ -14,6 +14,8 @@
 
 #include "clite.h"
 
+#include <limits.h>
+
 ASTExpression *parse_expression(Context *ctx);
 ASTExpression *parse_primary_expression(Context *ctx);
 ASTExpression *parse_postfix_expression(Context *ctx);
@@ -32,6 +34,9 @@ ASTExpression *parse_logical_or_expression(Context *ctx);
 ASTExpression *parse_conditional_expression(Context *ctx);
 ASTExpression *parse_assignment_expression(Context *ctx);
 ASTPPDirective *parse_pp_directive(Context *ctx);
+ASTTypeExpression *parse_type_expression(Context *ctx);
+ASTTypeConstant *parse_type_constant(Context *ctx);
+
 
 #pragma mark Parse Utility Functions
 
@@ -335,9 +340,9 @@ ASTExpression *parse_cast_expression(Context *ctx) {
      | TOK_INC unary_expression
      | TOK_DEC unary_expression
      | unary_operator cast_expression
-     | TOK_SIZEOF unary_expression
-     | TOK_SIZEOF '(' type_name ')'
-     | TOK_ALIGNOF '(' type_name ')'
+     | TOK_KW_SIZEOF unary_expression
+     | TOK_KW_SIZEOF '(' type_name ')'
+     | TOK_KW_ALIGNOF '(' type_name ')'
  */
 ASTExpression *parse_unary_expression(Context *ctx) {
     return parse_postfix_expression(ctx);
@@ -402,13 +407,67 @@ ASTExpression *parse_primary_expression(Context *ctx) {
                 expr = (ASTExpression*)paren;
                 
             } else {
-                goto fail_parse;
+                // This is last because it's unlikely
+                expr = (ASTExpression*)parse_type_expression(ctx);
+                if (expr == NULL) {
+                    goto fail_parse;
+                }
             }
         }
     }
     
     AST_BASE(expr)->location = parsed_source_location(ctx, s);
     return expr;
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
+
+
+/* ====== Type Expressions ====== */
+#pragma mark Type Expressions
+
+ASTTypeExpression *parse_type_expression(Context *ctx) {
+    return (ASTTypeExpression*)parse_type_constant(ctx);
+}
+
+ASTTypeConstant *parse_type_constant(Context *ctx) {
+    Context s = snapshot(ctx);
+    
+    // TODO(bloggins): This is just bootstrapping code
+    
+    Token t = accept_token(ctx, TOK_IDENT);
+    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    
+    Spelling sp_t = t.location.spelling;
+    uint8_t bit_flags = BIT_FLAG_NONE;
+    uint32_t type_id = 0;
+    uint64_t bit_size = 0;
+    if (spelling_streq(sp_t, "void")) {
+        type_id = TYPE_FLAG_UNIT;
+    } else if (spelling_streq(sp_t, "int")) {
+        bit_flags |= BIT_FLAG_SIGNED;
+        type_id = 1;
+        bit_size = 32;
+    } else {
+        diag_printf(DIAG_ERROR, &t.location, "invalid type '%s'", spelling_cstring(sp_t));
+        exit(ERR_PARSE);
+    }
+    
+    if (bit_size > WORD_BIT) {
+        diag_printf(DIAG_ERROR, &t.location, "invalid type size. %d is greater "
+                    "than the machine word size of %d bits", bit_size, WORD_BIT);
+        exit(ERR_PARSE);
+    }
+    
+    ASTTypeConstant *type = ast_create_type_constant();
+    AST_BASE(type)->location = t.location;
+    type->base.type_id = type_id;
+    type->bit_flags = bit_flags;
+    type->bit_size = bit_size;
+    
+    return type;
     
 fail_parse:
     restore(ctx, s);
@@ -424,7 +483,7 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
     
-    ASTIdent *type = parse_ident(ctx);
+    ASTTypeExpression *type = parse_type_expression(ctx);
     if (type == NULL) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
@@ -440,7 +499,7 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     
     ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = parsed_source_location(ctx, s);
-    type->base.parent = name->base.parent = AST_BASE(expr)->parent = (ASTBase*)defn;
+    AST_BASE(type)->parent = name->base.parent = AST_BASE(expr)->parent = (ASTBase*)defn;
     
     defn->type = type;
     defn->name = name;
@@ -524,7 +583,7 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
-    ASTIdent *type = parse_ident(ctx);
+    ASTTypeExpression *type = parse_type_expression(ctx);
     if (type == NULL) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
@@ -542,7 +601,7 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
     ASTDefnFunc *defn = ast_create_defn_func();
     defn->base.location = parsed_source_location(ctx, s);
     block->base.parent = (ASTBase*)defn;
-    type->base.parent = name->base.parent = (ASTBase*)defn;
+    AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
     
     defn->type = type;
     defn->name = name;
