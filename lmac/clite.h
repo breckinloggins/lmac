@@ -94,6 +94,8 @@ typedef enum {
 #define VISIT_OK        0
 typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 
+#define AST_BASE(node) ((ASTBase*)(node))
+
 typedef struct ASTBase {
     ASTKind kind;
     SourceLocation location;
@@ -129,28 +131,33 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
+    // TODO(bloggins): store inferred type
+} ASTExpression;
+
+typedef struct {
+    ASTExpression base;
+    
     ASTIdent *name;
 } ASTExprIdent;
 
 typedef struct {
-    ASTBase base;
+    ASTExpression base;
     
     int number;
 } ASTExprNumber;
 
 typedef struct {
-    ASTBase base;
+    ASTExpression base;
     
-    // TODO(bloggins): Need ASTExpression union
-    ASTBase *inner;
+    ASTExpression *inner;
 } ASTExprParen;
 
 typedef struct {
-    ASTBase base;
+    ASTExpression base;
     
-    ASTBase *left;
+    ASTExpression *left;
     ASTOperator *op;
-    ASTBase *right;
+    ASTExpression *right;
 } ASTExprBinary;
 
 typedef struct {
@@ -159,16 +166,14 @@ typedef struct {
     ASTIdent *type;
     ASTIdent *name;
     
-    // TODO(bloggins): Need ASTExpression union
-    ASTBase *expression;
+    ASTExpression *expression;
     
 } ASTDefnVar;
 
 typedef struct {
     ASTBase base;
     
-    // TODO(bloggins): Need ASTExpression union
-    ASTBase *expression;
+    ASTExpression *expression;
 } ASTStmtReturn;
 
 typedef struct {

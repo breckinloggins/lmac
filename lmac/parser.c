@@ -6,6 +6,8 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
+// NOTE(bloggins): See http://www.quut.com/c/ANSI-C-grammar-y.html
+
 #include "clite.h"
 
 #define IS_TOKEN_NONE(t) ((t).kind == TOK_NONE)
@@ -96,12 +98,11 @@ fail_parse:
     return NULL;
 }
 
-// TODO(bloggins): We need an ASTExpression union
-ASTBase *parse_expression(Context *ctx) {
+ASTExpression *parse_expression(Context *ctx) {
     Context s = snapshot(ctx);
     
     // TODO(bloggins): Break these out
-    ASTBase *expr = NULL;
+    ASTExpression *expr = NULL;
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
         ASTExprIdent *ident = ast_create_expr_ident();
@@ -110,19 +111,20 @@ ASTBase *parse_expression(Context *ctx) {
         name->base.parent = (ASTBase*)ident;
         ident->name = name;
         
-        expr = (ASTBase*)ident;
+        expr = (ASTExpression*)ident;
     } else {
         t = accept_token(ctx, TOK_NUMBER);
         if (!IS_TOKEN_NONE(t)) {
             ASTExprNumber *number = ast_create_expr_number();
-            number->base.location = t.location;
+
+            AST_BASE(number)->location = t.location;
             number->number = (int)strtol((char*)t.location.range_start, NULL, 10);
             
-            expr = (ASTBase*)number;
+            expr = (ASTExpression*)number;
         } else {
             t = accept_token(ctx, TOK_LPAREN);
             if (!IS_TOKEN_NONE(t)) {
-                ASTBase *inner = parse_expression(ctx);
+                ASTExpression *inner = parse_expression(ctx);
                 t = expect_token(ctx, TOK_RPAREN);
                 if (inner == NULL) {
                     diag_printf(DIAG_ERROR, &t.location, "expected expression");
@@ -130,11 +132,11 @@ ASTBase *parse_expression(Context *ctx) {
                 }
                 
                 ASTExprParen *paren = ast_create_expr_paren();
-                paren->base.location = t.location;
-                inner->parent = (ASTBase*)paren;
+                AST_BASE(paren)->location = t.location;
+                AST_BASE(inner)->parent = (ASTBase*)paren;
                 
                 paren->inner = inner;
-                expr = (ASTBase*)paren;
+                expr = (ASTExpression*)paren;
                 
             } else {
                 goto fail_parse;
@@ -149,8 +151,8 @@ ASTBase *parse_expression(Context *ctx) {
         // Assume we have a binary expression
         next_token(ctx);  // gobble gobble
         
-        ASTBase *left = expr;
-        ASTBase *right = parse_expression(ctx);
+        ASTExpression *left = expr;
+        ASTExpression *right = parse_expression(ctx);
         if (right == NULL) {
             SourceLocation sl = parsed_source_location(ctx, s);
             diag_printf(DIAG_ERROR, &sl, "expected expression after '+'");
@@ -158,7 +160,7 @@ ASTBase *parse_expression(Context *ctx) {
         }
         
         ASTExprBinary *binop = ast_create_expr_binary();
-        left->parent = right->parent = (ASTBase*)binop;
+        AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
         
         binop->left = left;
         binop->right = right;
@@ -167,10 +169,10 @@ ASTBase *parse_expression(Context *ctx) {
         binop->op->base.location = t.location;
         binop->op->op = (char)*t.location.range_start;
         
-        expr = (ASTBase*)binop;
+        expr = (ASTExpression*)binop;
     }
     
-    expr->location = parsed_source_location(ctx, s);
+    AST_BASE(expr)->location = parsed_source_location(ctx, s);
     return expr;
     
 fail_parse:
@@ -192,14 +194,14 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     Token t = accept_token(ctx, TOK_EQUALS);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTBase *expr = parse_expression(ctx);
+    ASTExpression *expr = parse_expression(ctx);
     if (expr == NULL) { goto fail_parse; }
     
     t = expect_token(ctx, TOK_SEMICOLON);
     
     ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = parsed_source_location(ctx, s);
-    type->base.parent = name->base.parent = expr->parent = (ASTBase*)defn;
+    type->base.parent = name->base.parent = AST_BASE(expr)->parent = (ASTBase*)defn;
     
     defn->type = type;
     defn->name = name;
@@ -217,7 +219,7 @@ ASTStmtReturn *parse_stmt_return(Context *ctx) {
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_RETURN))) { goto fail_parse; }
     
-    ASTBase *expr = parse_expression(ctx);
+    ASTExpression *expr = parse_expression(ctx);
     if (expr == NULL) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "expected expression");
@@ -228,7 +230,7 @@ ASTStmtReturn *parse_stmt_return(Context *ctx) {
     
     ASTStmtReturn *stmt = ast_create_stmt_return();
     stmt->base.location = parsed_source_location(ctx, s);
-    expr->parent = (ASTBase *)stmt;
+    AST_BASE(expr)->parent = (ASTBase *)stmt;
     
     stmt->expression = expr;
     
