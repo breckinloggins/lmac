@@ -100,6 +100,7 @@ fail_parse:
 ASTBase *parse_expression(Context *ctx) {
     Context s = snapshot(ctx);
     
+    // TODO(bloggins): Break these out
     ASTBase *expr = NULL;
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
@@ -119,7 +120,25 @@ ASTBase *parse_expression(Context *ctx) {
             
             expr = (ASTBase*)number;
         } else {
-            goto fail_parse;
+            t = accept_token(ctx, TOK_LPAREN);
+            if (!IS_TOKEN_NONE(t)) {
+                ASTBase *inner = parse_expression(ctx);
+                t = expect_token(ctx, TOK_RPAREN);
+                if (inner == NULL) {
+                    diag_printf(DIAG_ERROR, &t.location, "expected expression");
+                    exit(ERR_PARSE);
+                }
+                
+                ASTExprParen *paren = ast_create_expr_paren();
+                paren->base.location = t.location;
+                inner->parent = (ASTBase*)paren;
+                
+                paren->inner = inner;
+                expr = (ASTBase*)paren;
+                
+            } else {
+                goto fail_parse;
+            }
         }
     }
     

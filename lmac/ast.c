@@ -95,6 +95,15 @@ AST_ACCEPT_FN(AST_EXPR_NUMBER) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_EXPR_PAREN) {
+    STANDARD_VISIT_PRE()
+    
+    ASTExprParen *paren = (ASTExprParen*)node;
+    STANDARD_ACCEPT(paren->inner);
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_EXPR_BINARY) {
     STANDARD_VISIT_PRE()
     ASTExprBinary *binop = (ASTExprBinary*)node;

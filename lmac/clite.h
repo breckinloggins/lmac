@@ -141,6 +141,13 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
+    // TODO(bloggins): Need ASTExpression union
+    ASTBase *inner;
+} ASTExprParen;
+
+typedef struct {
+    ASTBase base;
+    
     ASTBase *left;
     ASTOperator *op;
     ASTBase *right;

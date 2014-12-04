@@ -1,0 +1,18 @@
+// Test of expression types
+int a = 1;
+int b = 2;
+int c = 4;
+
+int main() {
+
+int add2 = a + b;
+int add3 = a + b + c;
+
+int parens1 = (a);
+int parens2 = (a + b);
+int parens3 = (a + b + c);
+int parens4 = a + (b + c);
+int parens5 = (a + (b + c) + c) + c;
+
+return 0;
+}
