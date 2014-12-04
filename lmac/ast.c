@@ -234,3 +234,16 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
         fprintf(f, " <%c>", binop->op->op);
     }
 }
+
+#pragma mark Convenience Initializers
+
+void ast_init_expr_binary(ASTExprBinary *binop, ASTExpression *left,
+                          ASTExpression *right, ASTOperator *op) {
+    
+    AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
+    
+    binop->left = left;
+    binop->right = right;
+    binop->op = op;
+    binop->op->base.parent = (ASTBase*)binop;
+}

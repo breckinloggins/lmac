@@ -10,6 +10,8 @@
 
 #include "clite.h"
 
+// TODO(bloggins): http://en.wikipedia.org/wiki/Punycode for UTF-8 identifiers?
+
 SourceLocation lexed_source_location(Context *ctx) {
     SourceLocation sl = {};
     sl.file = ctx->file;
@@ -78,6 +80,14 @@ void lex_ident(Context *ctx) {
     }
 }
 
+void maybe_lex_keyword(Context *ctx, Token *t) {
+    // TODO(bloggins): Do this in a more generic way when
+    //                  we have more metadata in the token db
+    if (token_streq(*t, "return")) {
+        t->kind = TOK_KW_RETURN;
+    }
+}
+
 Token lexer_peek_token(Context *ctx) {
     uint8_t *saved_pos = ctx->pos;
     Token t = lexer_next_token(ctx);
@@ -126,6 +136,26 @@ Token lexer_next_token(Context *ctx) {
         case '-':
             t.kind = TOK_MINUS;
             break;
+        case '*':
+            t.kind = TOK_STAR;
+            break;
+        case '/': {
+            t.kind = TOK_FORWARDSLASH;
+            
+            // Comment?
+            char ch2 = (char)*(ctx->pos+1);
+            if (ch2 == '*') {
+                t.kind = TOK_COMMENT;
+                lex_multiline_comment(ctx);
+            } else if (ch2 == '/') {
+                t.kind = TOK_COMMENT;
+                lex_singleline_comment(ctx);
+            }
+
+        } break;
+        case '%':
+            t.kind = TOK_PERCENT;
+            break;
         case ' ': case '\t':
             t.kind = TOK_WS;
             break;
@@ -147,40 +177,13 @@ Token lexer_next_token(Context *ctx) {
     
     ctx->pos++;
     
-    if (t.kind != TOK_UNKOWN) {
-        // We got a valid token
-        goto finish;
-    }
-    
-    if (*(ctx->pos) == 0) {
-        t.kind = TOK_END;
-        goto finish;
-    }
-    
-    // Lex double character lexemes
-    char ch2 = (char)*ctx->pos;
-    if (ch == '/' && ch2 == '*') {
-        t.kind = TOK_COMMENT;
-        lex_multiline_comment(ctx);
-    } else if (ch == '/' && ch2 == '/') {
-        t.kind = TOK_COMMENT;
-        lex_singleline_comment(ctx);
-    } else {
-        t.kind = TOK_UNKOWN;
-    }
-    
-    ctx->pos++;
-    
 finish:
     t.location.range_end = ctx->pos;
     
-    // TODO(bloggins): Do this in a more generic way when
-    //                  we have more metadata in the token db
+    // NOTE(bloggins): We do this here because we need the token to have
+    // a complete SourceLocation for proper spelling
     if (t.kind == TOK_IDENT) {
-        // Determine if this identifier is actually a language keyword
-        if (token_streq(t, "return")) {
-            t.kind = TOK_KW_RETURN;
-        }
+        maybe_lex_keyword(ctx, &t);
     }
     
     return t;

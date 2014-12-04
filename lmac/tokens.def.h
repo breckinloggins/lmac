@@ -46,8 +46,15 @@ TOKEN(TOK_RPAREN, rightparen)
 TOKEN(TOK_EQUALS, equals)
 
 /* Math and logic symbols */
+/* NOTE(bloggins): These should be named by their lexical form and NOT their
+ * logical function! It encodes less implicit semantic information into the
+ * front-end
+ */
 TOKEN(TOK_PLUS, plus)
 TOKEN(TOK_MINUS, minus)
+TOKEN(TOK_STAR, star)
+TOKEN(TOK_FORWARDSLASH, forwardslash)
+TOKEN(TOK_PERCENT, percent)
     
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code

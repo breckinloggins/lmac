@@ -230,6 +230,8 @@ const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 void ast_list_add(ASTList **list, ASTBase *node);
 void ast_fprint(FILE *f, ASTBase *node, int indent);
+void ast_init_expr_binary(ASTExprBinary *binop, ASTExpression *left,
+                          ASTExpression *right, ASTOperator *op);
 
 void analyzer_analyze(ASTTopLevel *ast);
 

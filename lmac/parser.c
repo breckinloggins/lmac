@@ -259,14 +259,10 @@ ASTExpression *parse_additive_expression(Context *ctx) {
         
         // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
         ASTExprBinary *binop = ast_create_expr_binary();
-        AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
-        
-        binop->left = left;
-        binop->right = right;
-        binop->op = ast_create_operator();
-        binop->op->base.parent = (ASTBase*)binop;
-        binop->op->base.location = t.location;
-        binop->op->op = op;
+        ASTOperator *op_node = ast_create_operator();
+        op_node->base.location = t.location;
+        op_node->op = op;
+        ast_init_expr_binary(binop, left, right, op_node);
         
         expr = (ASTExpression*)binop;
     }
@@ -282,7 +278,34 @@ ASTExpression *parse_additive_expression(Context *ctx) {
 	| multiplicative_expression '%' cast_expression
  */
 ASTExpression *parse_multiplicative_expression(Context *ctx) {
-    return parse_cast_expression(ctx);
+    ASTExpression *expr = parse_cast_expression(ctx);
+
+    Token t = peek_token(ctx);
+    if (t.kind == TOK_STAR || t.kind == TOK_FORWARDSLASH || t.kind == TOK_PERCENT) {
+        char op = (char)*t.location.range_start;
+        
+        // Assume we have a binary expression
+        next_token(ctx);  // gobble gobble
+        
+        ASTExpression *left = expr;
+        ASTExpression *right = parse_multiplicative_expression(ctx);
+        if (right == NULL) {
+            SourceLocation sl = parsed_source_location(ctx, *ctx);
+            diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
+            exit(ERR_PARSE);
+        }
+        
+        // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
+        ASTExprBinary *binop = ast_create_expr_binary();
+        ASTOperator *op_node = ast_create_operator();
+        op_node->base.location = t.location;
+        op_node->op = op;
+        ast_init_expr_binary(binop, left, right, op_node);
+        
+        expr = (ASTExpression*)binop;
+    }
+    
+    return expr;
 }
 
 /*
