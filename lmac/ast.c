@@ -169,6 +169,15 @@ AST_ACCEPT_FN(AST_TOPLEVEL) {
     STANDARD_VISIT_POST()
 }
 
+AST_ACCEPT_FN(AST_PP_PRAGMA) {
+    STANDARD_VISIT_PRE()
+    
+    // NOTE(bloggins): We don't visit the arg here because the
+    // pragma-visitor must decide how to interpret it
+    
+    STANDARD_VISIT_POST()
+}
+
 //
 // Creation and general
 //

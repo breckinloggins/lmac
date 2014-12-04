@@ -112,6 +112,9 @@ Token lexer_next_token(Context *ctx) {
     // Lex single character lexemes
     char ch = (char)*ctx->pos;
     switch (ch) {
+        case '#':
+            t.kind = TOK_HASH;
+            break;
         case ';':
             t.kind = TOK_SEMICOLON;
             break;

@@ -14,6 +14,27 @@
 
 #include "clite.h"
 
+ASTExpression *parse_expression(Context *ctx);
+ASTExpression *parse_primary_expression(Context *ctx);
+ASTExpression *parse_postfix_expression(Context *ctx);
+ASTExpression *parse_unary_expression(Context *ctx);
+ASTExpression *parse_cast_expression(Context *ctx);
+ASTExpression *parse_multiplicative_expression(Context *ctx);
+ASTExpression *parse_additive_expression(Context *ctx);
+ASTExpression *parse_shift_expression(Context *ctx);
+ASTExpression *parse_relational_expression(Context *ctx);
+ASTExpression *parse_equality_expression(Context *ctx);
+ASTExpression *parse_and_expression(Context *ctx);
+ASTExpression *parse_exclusive_or_expression(Context *ctx);
+ASTExpression *parse_inclusve_or_expression(Context *ctx);
+ASTExpression *parse_logical_and_expression(Context *ctx);
+ASTExpression *parse_logical_or_expression(Context *ctx);
+ASTExpression *parse_conditional_expression(Context *ctx);
+ASTExpression *parse_assignment_expression(Context *ctx);
+ASTPPDirective *parse_pp_directive(Context *ctx);
+
+#pragma mark Parse Utility Functions
+
 #define IS_TOKEN_NONE(t) ((t).kind == TOK_NONE)
 
 Context snapshot(Context *ctx) {
@@ -90,25 +111,8 @@ Token expect_token(Context *ctx, TokenKind kind) {
 //
 // Parse routines
 //
-
-ASTExpression *parse_expression(Context *ctx);
-ASTExpression *parse_primary_expression(Context *ctx);
-ASTExpression *parse_postfix_expression(Context *ctx);
-ASTExpression *parse_unary_expression(Context *ctx);
-ASTExpression *parse_cast_expression(Context *ctx);
-ASTExpression *parse_multiplicative_expression(Context *ctx);
-ASTExpression *parse_additive_expression(Context *ctx);
-ASTExpression *parse_shift_expression(Context *ctx);
-ASTExpression *parse_relational_expression(Context *ctx);
-ASTExpression *parse_equality_expression(Context *ctx);
-ASTExpression *parse_and_expression(Context *ctx);
-ASTExpression *parse_exclusive_or_expression(Context *ctx);
-ASTExpression *parse_inclusve_or_expression(Context *ctx);
-ASTExpression *parse_logical_and_expression(Context *ctx);
-ASTExpression *parse_logical_or_expression(Context *ctx);
-ASTExpression *parse_conditional_expression(Context *ctx);
-ASTExpression *parse_assignment_expression(Context *ctx);
-
+/* ====== Identifiers ====== */
+#pragma mark Identifiers
 
 ASTIdent *parse_ident(Context *ctx) {
     Context s = snapshot(ctx);
@@ -548,23 +552,90 @@ void parse_end(Context *ctx) {
 
 ASTTopLevel *parse_toplevel(Context *ctx) {
     Context s = snapshot(ctx);
-    ASTList *defns = NULL;
+    ASTList *stmts = NULL;
     
     ASTTopLevel *tl = ast_create_toplevel();
-    ASTBase *defn;
-    while ((defn = (ASTBase*)parse_defn_var(ctx)) || (defn = (ASTBase*)parse_defn_fn(ctx))) {
-        defn->parent = (ASTBase*)tl;
-        ast_list_add(&defns, defn);
+    ASTBase *stmt;
+    while ((stmt = (ASTBase*)parse_defn_var(ctx)) ||
+           (stmt = (ASTBase*)parse_defn_fn(ctx)) ||
+           (stmt = (ASTBase*)parse_pp_directive(ctx))) {
+        stmt->parent = (ASTBase*)tl;
+        ast_list_add(&stmts, stmt);
     }
     
     parse_end(ctx);
     
     tl->base.location = parsed_source_location(ctx, s);
-    tl->definitions = defns;
+    tl->definitions = stmts;
     
     return tl;
 }
 
+
+/* ====== Preprocessor ====== */
+#pragma mark Preprocessor
+
+ASTPPDirective *parse_pp_directive(Context *ctx) {
+    // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
+    // for right now preprocessor tokens will just be inserted into the AST
+    Context s = snapshot(ctx);
+    
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
+    
+    ASTIdent *directive = parse_ident(ctx);
+    if (directive == NULL) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
+        exit(ERR_PARSE);
+    }
+    
+    if (!spelling_streq(directive->base.location.spelling, "pragma")) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "unrecognized preprocessor directive '%s'",
+                    spelling_cstring(directive->base.location.spelling));
+        exit(ERR_PARSE);
+    }
+    
+    // This is a hack to make sure we only parse pragma directives on the line
+    // the pragma was defined on.
+    uint32_t lineof_directive = directive->base.location.line;
+    
+    // TODO(bloggins): This is not valid C syntax for pragma. We do this for
+    // now until we have a more complete pre-processor.
+    ASTIdent *arg1 = parse_ident(ctx);
+    if (arg1 == NULL || arg1->base.location.line != lineof_directive) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "argument expected after pragma");
+        exit(ERR_PARSE);
+    }
+    
+    if (!spelling_streq(arg1->base.location.spelling, "CLITE")) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "unsupported argument '%s' after pragma. Only 'CLITE' is supported",
+                    spelling_cstring(arg1->base.location.spelling));
+        exit(ERR_PARSE);
+        
+        
+    }
+
+    // This is the actual argument to be used for directives
+    ASTIdent *arg2 = parse_ident(ctx);
+    if (arg2 == NULL || arg2->base.location.line != lineof_directive) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "second argument expected after pragma");
+        exit(ERR_PARSE);
+    }
+    
+    ASTPPPragma *pragma = ast_create_pp_pragma();
+    AST_BASE(pragma)->location = parsed_source_location(ctx, s);
+    AST_BASE(arg2)->parent = (ASTBase*)pragma;
+    pragma->arg = arg2;
+    return (ASTPPDirective*)pragma;
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
 
 /* ====== Public API ====== */
 #pragma mark Public API

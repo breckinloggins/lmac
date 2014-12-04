@@ -183,6 +183,21 @@ typedef struct {
 } ASTTopLevel;
 
 typedef struct {
+    ASTBase base;
+    
+} ASTPPDirective;
+
+typedef struct {
+    ASTPPDirective base;
+    
+    /* Only very simple pragmas of the form 
+     * #pragma CLITE arg
+     * are supported right now
+     */
+    ASTIdent *arg;
+} ASTPPPragma;
+
+typedef struct {
     const char *file;
     
     /* The entire contents of the current translation unit */

@@ -22,6 +22,9 @@ TOKEN(TOK_UNKOWN, unknown)
 /* Meta token kind that signifies "no matched token" */
 TOKEN(TOK_NONE, none)
 
+/* Preprocessor symbol */
+TOKEN(TOK_HASH, hash)
+
 /* Everything that isn't lexed as a specific token is
  * characterized as an "identifier". This includes types,
  * variables, and functions. This keeps the lexer or more sane and flexible
