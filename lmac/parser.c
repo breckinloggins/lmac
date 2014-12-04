@@ -6,7 +6,11 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-// NOTE(bloggins): See http://www.quut.com/c/ANSI-C-grammar-y.html
+// NOTE(bloggins): See http://www.quut.com/c/ANSI-C-grammar-y.html (but this
+//                  grammar is left-recursive
+//
+//                 http://www.ssw.uni-linz.ac.at/Coco/C/C.atg doesn't look
+//                 as accurate but appears to be LL
 
 #include "clite.h"
 
@@ -83,6 +87,29 @@ Token expect_token(Context *ctx, TokenKind kind) {
     return t;
 }
 
+//
+// Parse routines
+//
+
+ASTExpression *parse_expression(Context *ctx);
+ASTExpression *parse_primary_expression(Context *ctx);
+ASTExpression *parse_postfix_expression(Context *ctx);
+ASTExpression *parse_unary_expression(Context *ctx);
+ASTExpression *parse_cast_expression(Context *ctx);
+ASTExpression *parse_multiplicative_expression(Context *ctx);
+ASTExpression *parse_additive_expression(Context *ctx);
+ASTExpression *parse_shift_expression(Context *ctx);
+ASTExpression *parse_relational_expression(Context *ctx);
+ASTExpression *parse_equality_expression(Context *ctx);
+ASTExpression *parse_and_expression(Context *ctx);
+ASTExpression *parse_exclusive_or_expression(Context *ctx);
+ASTExpression *parse_inclusve_or_expression(Context *ctx);
+ASTExpression *parse_logical_and_expression(Context *ctx);
+ASTExpression *parse_logical_or_expression(Context *ctx);
+ASTExpression *parse_conditional_expression(Context *ctx);
+ASTExpression *parse_assignment_expression(Context *ctx);
+
+
 ASTIdent *parse_ident(Context *ctx) {
     Context s = snapshot(ctx);
     
@@ -98,7 +125,177 @@ fail_parse:
     return NULL;
 }
 
+
+/* ====== Expressions ====== */
+#pragma mark Expressions
+
+/*
+ expression
+	: assignment_expression
+	| expression ',' assignment_expression
+ */
 ASTExpression *parse_expression(Context *ctx) {
+    return parse_assignment_expression(ctx);
+}
+
+/*
+ assignment_expression
+	: conditional_expression
+	| unary_expression assignment_operator assignment_expression
+ */
+ASTExpression *parse_assignment_expression(Context *ctx) {
+    return parse_conditional_expression(ctx);
+}
+
+/*
+ conditional_expression
+	: logical_or_expression
+	| logical_or_expression '?' expression ':' conditional_expression
+ */
+ASTExpression *parse_conditional_expression(Context *ctx) {
+    return parse_logical_or_expression(ctx);
+}
+
+/*
+ logical_or_expression
+	: logical_and_expression
+	| logical_or_expression TOK_OROR logical_and_expression
+ */
+ASTExpression *parse_logical_or_expression(Context *ctx) {
+    return parse_logical_and_expression(ctx);
+}
+
+/*
+ logical_and_expression
+	: inclusive_or_expression
+	| logical_and_expression TOK_ANDAND inclusive_or_expression
+ */
+ASTExpression *parse_logical_and_expression(Context *ctx) {
+    return parse_inclusve_or_expression(ctx);
+}
+
+/*
+ inclusive_or_expression
+	: exclusive_or_expression
+	| inclusive_or_expression '|' exclusive_or_expression
+ */
+ASTExpression *parse_inclusve_or_expression(Context *ctx) {
+    return parse_exclusive_or_expression(ctx);
+}
+
+/*
+ exclusive_or_expression
+	: and_expression
+	| exclusive_or_expression '^' and_expression
+ */
+ASTExpression *parse_exclusive_or_expression(Context *ctx) {
+    return parse_and_expression(ctx);
+}
+
+/*
+ and_expression
+	: equality_expression
+	| and_expression '&' equality_expression
+ */
+ASTExpression *parse_and_expression(Context *ctx) {
+    return parse_equality_expression(ctx);
+}
+
+/*
+ equality_expression
+	: relational_expression
+	| equality_expression EQ_OP relational_expression
+	| equality_expression NE_OP relational_expression
+ */
+ASTExpression *parse_equality_expression(Context *ctx) {
+    return parse_relational_expression(ctx);
+}
+
+/*
+ relational_expression
+	: shift_expression
+	| relational_expression '<' shift_expression
+	| relational_expression '>' shift_expression
+	| relational_expression TOK_LTE shift_expression
+	| relational_expression TOK_GTE shift_expression
+ */
+ASTExpression *parse_relational_expression(Context *ctx) {
+    return parse_shift_expression(ctx);
+}
+
+/*
+ shift_expression
+	: additive_expression
+	| shift_expression TOK_LEFT additive_expression
+	| shift_expression TOK_RIGHT additive_expression
+ */
+ASTExpression *parse_shift_expression(Context *ctx) {
+    return parse_additive_expression(ctx);
+}
+
+/*
+ additive_expression
+	: multiplicative_expression
+	| additive_expression '+' multiplicative_expression
+	| additive_expression '-' multiplicative_expression
+ */
+ASTExpression *parse_additive_expression(Context *ctx) {
+    return parse_multiplicative_expression(ctx);
+}
+
+/*
+ multiplicative_expression
+	: cast_expression
+	| multiplicative_expression '*' cast_expression
+	| multiplicative_expression '/' cast_expression
+	| multiplicative_expression '%' cast_expression
+ */
+ASTExpression *parse_multiplicative_expression(Context *ctx) {
+    return parse_cast_expression(ctx);
+}
+
+/*
+ cast_expression
+	: unary_expression
+	| '(' type_name ')' cast_expression
+ */
+ASTExpression *parse_cast_expression(Context *ctx) {
+    return parse_unary_expression(ctx);
+}
+
+/*
+ unary_expression
+     : postfix_expression
+     | TOK_INC unary_expression
+     | TOK_DEC unary_expression
+     | unary_operator cast_expression
+     | TOK_SIZEOF unary_expression
+     | TOK_SIZEOF '(' type_name ')'
+     | TOK_ALIGNOF '(' type_name ')'
+ */
+ASTExpression *parse_unary_expression(Context *ctx) {
+    return parse_postfix_expression(ctx);
+}
+
+/*
+ postfix_expression
+     :primary_expression
+     | postfix_expression '[' expression ']'
+     | postfix_expression '(' ')'
+     | postfix_expression '(' argument_expression_list ')'
+     | postfix_expression '.' TOK_IDENT
+     | postfix_expression TOK_PTR TOK_IDENT
+     | postfix_expression TOK_INC
+     | postfix_expression TOK_DEC
+     | '(' type_name ')' '{' initializer_list '}'
+     | '(' type_name ')' '{' initializer_list ',' '}'
+ */
+ASTExpression *parse_postfix_expression(Context *ctx) {
+    return parse_primary_expression(ctx);
+}
+
+/* primary_expression: TOK_IDENT | constant | string | '(' expression ')' | generic_selection */
+ASTExpression *parse_primary_expression(Context *ctx) {
     Context s = snapshot(ctx);
     
     // TODO(bloggins): Break these out
@@ -144,7 +341,7 @@ ASTExpression *parse_expression(Context *ctx) {
         }
     }
     
-    // TODO(bloggins): This is a bit of a hack until we get a true left-factored
+    // TODO(bloggins): REMOVEME!! This is a hack until we get a true left-factored
     //                 grammar parse
     t = peek_token(ctx);
     if (t.kind == TOK_PLUS) {
@@ -179,6 +376,10 @@ fail_parse:
     restore(ctx, s);
     return NULL;
 }
+
+
+/* ====== Misc (Needs categorization) ====== */
+#pragma mark Misc
 
 ASTDefnVar *parse_defn_var(Context *ctx) {
     // TODO(bloggins): Snapshotting works but can be slow (because we might
@@ -337,6 +538,10 @@ ASTTopLevel *parse_toplevel(Context *ctx) {
     
     return tl;
 }
+
+
+/* ====== Public API ====== */
+#pragma mark Public API
 
 void parser_parse(Context *ctx) {
     ASTTopLevel *tl = parse_toplevel(ctx);
