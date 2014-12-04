@@ -22,6 +22,7 @@ AST(EXPR_IDENT, expr_ident, ASTExprIdent)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)
 AST(EXPR_BINARY, expr_binary, ASTExprBinary)
 AST(IDENT, ident, ASTIdent)
+AST(OPERATOR, operator, ASTOperator)
 
 /* Should ALWAYS be last */
 AST(LAST, last, ASTBase)

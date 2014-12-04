@@ -76,6 +76,11 @@ int main(int argc, const char * argv[]) {
     
     analyzer_analyze(g_ctx.ast);
     
+    // TODO(bloggins): Temporary. Removeme
+    fprintf(stderr, "\n\n---COMPILATION SUCCEEDED. GENERATING CODE---\n\n");
+    
+    codegen_generate(stdout, g_ctx.ast);
+    
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.

@@ -25,6 +25,7 @@
 #define ERR_PARSE               4
 #define ERR_VISIT               5
 #define ERR_ANALYZE             6
+#define ERR_CODEGEN             7
 
 typedef enum {
 #   define DIAG_KIND(kind, ...)  DIAG_##kind,
@@ -112,6 +113,11 @@ typedef struct {
 
 typedef struct {
     ASTBase base;
+    char op;
+} ASTOperator;
+
+typedef struct {
+    ASTBase base;
     
     ASTIdent *type;
     ASTIdent *name;
@@ -135,7 +141,7 @@ typedef struct {
     ASTBase base;
     
     ASTBase *left;
-    char op;
+    ASTOperator *op;
     ASTBase *right;
 } ASTExprBinary;
 
@@ -213,5 +219,7 @@ void ast_list_add(ASTList **list, ASTBase *node);
 void ast_fprint(FILE *f, ASTBase *node, int indent);
 
 void analyzer_analyze(ASTTopLevel *ast);
+
+void codegen_generate(FILE *f, ASTTopLevel *ast);
 
 #endif

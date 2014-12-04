@@ -143,7 +143,10 @@ ASTBase *parse_expression(Context *ctx) {
         
         binop->left = left;
         binop->right = right;
-        binop->op = '+';
+        binop->op = ast_create_operator();
+        binop->op->base.parent = (ASTBase*)binop;
+        binop->op->base.location = t.location;
+        binop->op->op = (char)*t.location.range_start;
         
         expr = (ASTBase*)binop;
     }

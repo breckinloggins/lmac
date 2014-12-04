@@ -78,6 +78,10 @@ AST_ACCEPT_FN(AST_IDENT) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_OPERATOR) {
+    STANDARD_VISIT()
+}
+
 AST_ACCEPT_FN(AST_EXPR_IDENT) {
     STANDARD_VISIT_PRE()
     
@@ -96,6 +100,7 @@ AST_ACCEPT_FN(AST_EXPR_BINARY) {
     ASTExprBinary *binop = (ASTExprBinary*)node;
     
     STANDARD_ACCEPT(binop->left);
+    STANDARD_ACCEPT(binop->op);
     STANDARD_ACCEPT(binop->right);
     
     STANDARD_VISIT_POST()
@@ -217,6 +222,6 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
         fprintf(f, " <%d>", ((ASTExprNumber*)node)->number);
     } else if (node->kind == AST_EXPR_BINARY) {
         ASTExprBinary *binop = (ASTExprBinary*)node;
-        fprintf(f, " <%c>", binop->op);
+        fprintf(f, " <%c>", binop->op->op);
     }
 }
