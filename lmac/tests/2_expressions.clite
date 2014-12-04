@@ -13,8 +13,7 @@ int add3 = a + b + c;
 int sub2 = a - b;
 int sub3 = a - b - c;
 
-// TODO(bloggins): These look wrong in codegen
-int addsub3 = a + b - c;        // GEN: (a + (b - c))
+int addsub3 = a + b - c;
 int addsub4 = a - b + c - c;
 
 int mul2 = a * b;

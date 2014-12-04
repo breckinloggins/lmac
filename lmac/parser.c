@@ -246,29 +246,33 @@ ASTExpression *parse_shift_expression(Context *ctx) {
 ASTExpression *parse_additive_expression(Context *ctx) {
     ASTExpression *expr = parse_multiplicative_expression(ctx);
     
-    Token t = peek_token(ctx);
-    if (t.kind == TOK_PLUS || t.kind == TOK_MINUS) {
-        char op = (char)*t.location.range_start;
-        
-        // Assume we have a binary expression
-        next_token(ctx);  // gobble gobble
-        
-        ASTExpression *left = expr;
-        ASTExpression *right = parse_additive_expression(ctx);
-        if (right == NULL) {
-            SourceLocation sl = parsed_source_location(ctx, *ctx);
-            diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
-            exit(ERR_PARSE);
+    for (;;) {
+        Token t = peek_token(ctx);
+        if (t.kind == TOK_PLUS || t.kind == TOK_MINUS) {
+            char op = (char)*t.location.range_start;
+            
+            // Assume we have a binary expression
+            next_token(ctx);  // gobble gobble
+            
+            ASTExpression *left = expr;
+            ASTExpression *right = parse_multiplicative_expression(ctx);
+            if (right == NULL) {
+                SourceLocation sl = parsed_source_location(ctx, *ctx);
+                diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
+                exit(ERR_PARSE);
+            }
+            
+            // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
+            ASTExprBinary *binop = ast_create_expr_binary();
+            ASTOperator *op_node = ast_create_operator();
+            op_node->base.location = t.location;
+            op_node->op = op;
+            ast_init_expr_binary(binop, left, right, op_node);
+            
+            expr = (ASTExpression*)binop;
+        } else {
+            break;
         }
-        
-        // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
-        ASTExprBinary *binop = ast_create_expr_binary();
-        ASTOperator *op_node = ast_create_operator();
-        op_node->base.location = t.location;
-        op_node->op = op;
-        ast_init_expr_binary(binop, left, right, op_node);
-        
-        expr = (ASTExpression*)binop;
     }
     
     return expr;
@@ -284,29 +288,33 @@ ASTExpression *parse_additive_expression(Context *ctx) {
 ASTExpression *parse_multiplicative_expression(Context *ctx) {
     ASTExpression *expr = parse_cast_expression(ctx);
 
-    Token t = peek_token(ctx);
-    if (t.kind == TOK_STAR || t.kind == TOK_FORWARDSLASH || t.kind == TOK_PERCENT) {
-        char op = (char)*t.location.range_start;
-        
-        // Assume we have a binary expression
-        next_token(ctx);  // gobble gobble
-        
-        ASTExpression *left = expr;
-        ASTExpression *right = parse_multiplicative_expression(ctx);
-        if (right == NULL) {
-            SourceLocation sl = parsed_source_location(ctx, *ctx);
-            diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
-            exit(ERR_PARSE);
+    for (;;) {
+        Token t = peek_token(ctx);
+        if (t.kind == TOK_STAR || t.kind == TOK_FORWARDSLASH || t.kind == TOK_PERCENT) {
+            char op = (char)*t.location.range_start;
+            
+            // Assume we have a binary expression
+            next_token(ctx);  // gobble gobble
+            
+            ASTExpression *left = expr;
+            ASTExpression *right = parse_cast_expression(ctx);
+            if (right == NULL) {
+                SourceLocation sl = parsed_source_location(ctx, *ctx);
+                diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
+                exit(ERR_PARSE);
+            }
+            
+            // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
+            ASTExprBinary *binop = ast_create_expr_binary();
+            ASTOperator *op_node = ast_create_operator();
+            op_node->base.location = t.location;
+            op_node->op = op;
+            ast_init_expr_binary(binop, left, right, op_node);
+            
+            expr = (ASTExpression*)binop;
+        } else {
+            break;
         }
-        
-        // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
-        ASTExprBinary *binop = ast_create_expr_binary();
-        ASTOperator *op_node = ast_create_operator();
-        op_node->base.location = t.location;
-        op_node->op = op;
-        ast_init_expr_binary(binop, left, right, op_node);
-        
-        expr = (ASTExpression*)binop;
     }
     
     return expr;
