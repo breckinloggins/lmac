@@ -242,10 +242,10 @@ ASTExpression *parse_shift_expression(Context *ctx) {
 ASTExpression *parse_additive_expression(Context *ctx) {
     ASTExpression *expr = parse_multiplicative_expression(ctx);
     
-    // TODO(bloggins): REMOVEME!! This is a hack until we get a true left-factored
-    //                 grammar parse
     Token t = peek_token(ctx);
     if (t.kind == TOK_PLUS || t.kind == TOK_MINUS) {
+        char op = (char)*t.location.range_start;
+        
         // Assume we have a binary expression
         next_token(ctx);  // gobble gobble
         
@@ -253,10 +253,11 @@ ASTExpression *parse_additive_expression(Context *ctx) {
         ASTExpression *right = parse_additive_expression(ctx);
         if (right == NULL) {
             SourceLocation sl = parsed_source_location(ctx, *ctx);
-            diag_printf(DIAG_ERROR, &sl, "expected expression after '+'");
+            diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
             exit(ERR_PARSE);
         }
         
+        // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
         ASTExprBinary *binop = ast_create_expr_binary();
         AST_BASE(left)->parent = AST_BASE(right)->parent = (ASTBase*)binop;
         
@@ -265,7 +266,7 @@ ASTExpression *parse_additive_expression(Context *ctx) {
         binop->op = ast_create_operator();
         binop->op->base.parent = (ASTBase*)binop;
         binop->op->base.location = t.location;
-        binop->op->op = (char)*t.location.range_start;
+        binop->op->op = op;
         
         expr = (ASTExpression*)binop;
     }
