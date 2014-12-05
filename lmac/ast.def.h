@@ -21,6 +21,7 @@ AST(DEFN_VAR, defn_var, ASTDefnVar)
 AST(EXPR_IDENT, expr_ident, ASTExprIdent)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)
 AST(EXPR_PAREN, expr_paren, ASTExprParen)
+AST(EXPR_CAST, expr_cast, ASTExprCast)
 AST(EXPR_BINARY, expr_binary, ASTExprBinary)
 AST(IDENT, ident, ASTIdent)
 AST(OPERATOR, operator, ASTOperator)
@@ -31,6 +32,7 @@ AST(PP_PRAGMA, pp_pragma, ASTPPPragma)
 /* Type Expressions */
 AST(TYPE_BEGIN, type_begin, ASTBase)    /* Type Class Start Guard */
 AST(TYPE_CONSTANT, type_constant, ASTTypeConstant)
+AST(TYPE_PLACEHOLDER, type_placeholder, ASTTypePlaceholder)
 AST(TYPE_END, type_end, ASTBase)        /* Type Class End Guard */
 
 /* Should ALWAYS be last */

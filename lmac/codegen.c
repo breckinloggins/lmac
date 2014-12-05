@@ -115,6 +115,18 @@ CG_VISIT_FN(AST_EXPR_PAREN, ASTExprParen) {
     return VISIT_OK;
 }
 
+CG_VISIT_FN(AST_EXPR_CAST, ASTExprCast) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    
+    if (phase == VISIT_PRE) {
+        // TODO(bloggins): HACK. We can't do this when we have a full-fledged
+        // expression system
+        CG("("); CGNODE(node->type); CG(")");
+    }
+    
+    return VISIT_OK;
+}
+
 CG_VISIT_FN(AST_EXPR_BINARY, ASTExprBinary) {
     // type *node, VisitPhase phase, CGContext *ctx
     if (!ctx->explicit_parens) {
@@ -183,6 +195,7 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         CG_DISPATCH(AST_EXPR_BINARY, ASTExprBinary);
         CG_DISPATCH(AST_EXPR_IDENT, ASTExprIdent);
         CG_DISPATCH(AST_EXPR_NUMBER, ASTExprNumber);
+        CG_DISPATCH(AST_EXPR_CAST, ASTExprCast);
         CG_DISPATCH(AST_EXPR_PAREN, ASTExprParen);
         CG_DISPATCH(AST_STMT_RETURN, ASTStmtReturn);
     

@@ -95,6 +95,16 @@ AST_ACCEPT_FN(AST_EXPR_NUMBER) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_EXPR_CAST) {
+    STANDARD_VISIT_PRE()
+    
+    ASTExprCast *cst = (ASTExprCast *)node;
+    STANDARD_ACCEPT(cst->type)
+    STANDARD_ACCEPT(cst->expr)
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_EXPR_PAREN) {
     STANDARD_VISIT_PRE()
     
@@ -190,13 +200,18 @@ AST_ACCEPT_FN(AST_TYPE_BEGIN) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_TYPE_CONSTANT) {
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_TYPE_PLACEHOLDER) {
+    STANDARD_VISIT()
+}
+
 AST_ACCEPT_FN(AST_TYPE_END) {
     STANDARD_VISIT()
 }
 
-AST_ACCEPT_FN(AST_TYPE_CONSTANT) {
-    STANDARD_VISIT()
-}
 
 //
 // Creation and general
@@ -262,6 +277,10 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
         ASTExprBinary *binop = (ASTExprBinary*)node;
         fprintf(f, " <%c>", binop->op->op);
     }
+}
+
+bool ast_node_is_type_expression(ASTBase *node) {
+    return node != NULL && node->kind > AST_TYPE_BEGIN && node->kind < AST_TYPE_END;
 }
 
 #pragma mark Convenience Initializers

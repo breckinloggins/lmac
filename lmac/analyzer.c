@@ -48,6 +48,12 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         ASTDefnVar *var = (ASTDefnVar*)node;
         Spelling sp_type = AST_BASE(var->type)->location.spelling;
         check_supported_type(node, sp_type);
+    } else if (ast_node_is_type_expression(node)) {
+        Spelling sp_t = node->location.spelling;
+        if (!spelling_streq(sp_t, "int") && !spelling_streq(sp_t, "void")) {
+            ANALYZE_ERROR(&node->location, "invalid type '%s'", spelling_cstring(sp_t));
+        }
+
     }
     
     return VISIT_OK;

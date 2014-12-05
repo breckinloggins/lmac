@@ -157,6 +157,13 @@ typedef struct {
 typedef struct {
     ASTExpression base;
     
+    struct ASTTypeExpression *type;
+    ASTExpression *expr;
+} ASTExprCast;
+
+typedef struct {
+    ASTExpression base;
+    
     ASTExpression *left;
     ASTOperator *op;
     ASTExpression *right;
@@ -231,6 +238,14 @@ typedef struct {
     
 } ASTTypeConstant;
 
+typedef struct {
+    ASTTypeExpression base;
+    
+    /* The identifier that might or might not be a type... possible... one fine day */
+    ASTIdent *type_name;
+    
+} ASTTypePlaceholder;
+
 /*
  * Compiler Context
  */
@@ -286,6 +301,7 @@ const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 void ast_list_add(ASTList **list, ASTBase *node);
 void ast_fprint(FILE *f, ASTBase *node, int indent);
+bool ast_node_is_type_expression(ASTBase *node);
 void ast_init_expr_binary(ASTExprBinary *binop, ASTExpression *left,
                           ASTExpression *right, ASTOperator *op);
 

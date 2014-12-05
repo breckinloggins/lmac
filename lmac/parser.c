@@ -36,6 +36,7 @@ ASTExpression *parse_assignment_expression(Context *ctx);
 ASTPPDirective *parse_pp_directive(Context *ctx);
 ASTTypeExpression *parse_type_expression(Context *ctx);
 ASTTypeConstant *parse_type_constant(Context *ctx);
+ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx);
 
 
 #pragma mark Parse Utility Functions
@@ -328,10 +329,46 @@ ASTExpression *parse_multiplicative_expression(Context *ctx) {
 /*
  cast_expression
 	: unary_expression
-	| '(' type_name ')' cast_expression
+	| '(' type_expression ')' cast_expression
+ *
+ * NOTE(bloggins): We have to do a little more work because type expressions
+ * look like ordinary expressions structurally.
  */
 ASTExpression *parse_cast_expression(Context *ctx) {
-    return parse_unary_expression(ctx);
+    ASTExpression *expr = parse_unary_expression(ctx);
+    if (expr == NULL) {
+        return NULL;
+    }
+
+    if (AST_BASE(expr)->kind != AST_EXPR_PAREN) {
+        return expr;
+    }
+    
+    ASTExprParen *paren = (ASTExprParen*)expr;
+    if (!ast_node_is_type_expression(AST_BASE(paren->inner))) {
+        // This is an ordinary non-type-expression
+        return expr;
+    }
+    
+    // If we got here we have what looks like a cast. So we should figure out
+    // if we have an expression after it. That will tell us for sure
+    Context s = snapshot(ctx);
+    
+    ASTTypeExpression *type_expr = (ASTTypeExpression*)((ASTExprParen*)expr)->inner;
+    ASTExpression *next_expr = parse_cast_expression(ctx);
+    if (next_expr == NULL) {
+        // Looks like it was just a regular parens expression
+        return expr;
+    }
+    
+    ASTExprCast *cast_expr = ast_create_expr_cast();
+    AST_BASE(type_expr)->parent = (ASTBase*)cast_expr;
+    AST_BASE(next_expr)->parent = (ASTBase*)cast_expr;
+    AST_BASE(cast_expr)->location = parsed_source_location(ctx, s);
+    cast_expr->type = type_expr;
+    cast_expr->expr = next_expr;
+    
+    return (ASTExpression*)cast_expr;
 }
 
 /*
@@ -365,12 +402,23 @@ ASTExpression *parse_postfix_expression(Context *ctx) {
     return parse_primary_expression(ctx);
 }
 
-/* primary_expression: TOK_IDENT | constant | string | '(' expression ')' | generic_selection */
+/* primary_expression: 
+ type_expression
+ | TOK_IDENT
+ | constant 
+ | string
+ | '(' type_expression ')' | '(' expression ')' 
+ | generic_selection 
+ */
 ASTExpression *parse_primary_expression(Context *ctx) {
     Context s = snapshot(ctx);
     
     // TODO(bloggins): Break these out
-    ASTExpression *expr = NULL;
+    ASTExpression *expr = (ASTExpression*)parse_type_expression(ctx);
+    if (expr != NULL) {
+        return expr;
+    }
+    
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
         ASTExprIdent *ident = ast_create_expr_ident();
@@ -428,6 +476,27 @@ fail_parse:
 /* ====== Type Expressions ====== */
 #pragma mark Type Expressions
 
+ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx) {
+    ASTTypeExpression *expr = parse_type_expression(ctx);
+    if (expr != NULL) {
+        return expr;
+    }
+    
+    // Well, do we have an ident? Because if so it could be a type name
+    // we don't know yet
+    ASTIdent *ident = parse_ident(ctx);
+    if (ident == NULL) {
+        return NULL;
+    }
+    
+    ASTTypePlaceholder *type_ph = ast_create_type_placeholder();
+    AST_BASE(type_ph)->location = AST_BASE(ident)->location;
+    AST_BASE(ident)->parent = (ASTBase*)type_ph;
+    
+    type_ph->type_name = ident;
+    return (ASTTypeExpression*)type_ph;
+}
+
 ASTTypeExpression *parse_type_expression(Context *ctx) {
     return (ASTTypeExpression*)parse_type_constant(ctx);
 }
@@ -451,8 +520,7 @@ ASTTypeConstant *parse_type_constant(Context *ctx) {
         type_id = 1;
         bit_size = 32;
     } else {
-        diag_printf(DIAG_ERROR, &t.location, "invalid type '%s'", spelling_cstring(sp_t));
-        exit(ERR_PARSE);
+        goto fail_parse;
     }
     
     if (bit_size > WORD_BIT) {
@@ -483,7 +551,7 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
     
-    ASTTypeExpression *type = parse_type_expression(ctx);
+    ASTTypeExpression *type = parse_type_expression_or_placeholder(ctx);
     if (type == NULL) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
@@ -583,7 +651,7 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
-    ASTTypeExpression *type = parse_type_expression(ctx);
+    ASTTypeExpression *type = parse_type_expression_or_placeholder(ctx);
     if (type == NULL) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
