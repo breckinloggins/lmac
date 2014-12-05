@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/syslimits.h>
 #include <stdarg.h>
+#include <libgen.h>
 
 // INFO(bloggins): I normally don't use any kind of "hungarian" prefixes
 // on variables, but I make an exception for globals. They should be rare
@@ -88,6 +89,13 @@ const char *lookup_cmd(const char *cmd) {
     return path;
 }
 
+void exit_handler() {
+#if 0
+    PrintCtx pctx = {};
+    ast_visit((ASTBase*)g_ctx.ast, print_visitor, &pctx);
+#endif
+}
+
 int main(int argc, const char * argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: lmac <file>\n");
@@ -107,6 +115,8 @@ int main(int argc, const char * argv[]) {
         diag_printf(DIAG_ERROR, NULL, "can't find c compiler (cc)");
         return ERR_CC;
     }
+    
+    atexit(exit_handler);
     
     // TODO(bloggins): this is probably not the most memory efficient thing we could do
     FILE *fp = fopen(file, "rb");
@@ -132,18 +142,28 @@ int main(int argc, const char * argv[]) {
         return ERR_LEX;
     }
     
-    PrintCtx pctx = {};
-    ast_visit((ASTBase*)g_ctx.ast, print_visitor, &pctx);
-    
     analyzer_analyze(g_ctx.ast);
     
-    FILE *fout = fopen("tmp_out.c", "w");
+    char *base_filename = strdup(basename((char*)file));
+    char *out_file = NULL;
+    asprintf(&out_file, "%s.c", base_filename);
+    
+    FILE *fout = fopen(out_file, "w");
     codegen_generate(fout, g_ctx.ast);
     fflush(fout);
     fclose(fout);
 
+    // Remove the extension to make the obj file name
+    for (size_t i = strlen(base_filename); i > 0; i--) {
+        if (base_filename[i-1] == '.') {
+            base_filename[i-1] = 0;
+            break;
+        }
+    }
+    char *obj_file = base_filename;
+    
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.
-    return run_cmd("%s -o tmp_out tmp_out.c", cc_path);
+    return run_cmd("%s -o %s %s", cc_path, obj_file, out_file);
 }
