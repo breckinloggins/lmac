@@ -196,6 +196,7 @@ typedef struct {
     ASTList *definitions;
 } ASTTopLevel;
 
+// see http://jhnet.co.uk/articles/cpp_magic for fun
 typedef struct {
     ASTBase base;
     
