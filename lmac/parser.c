@@ -34,7 +34,7 @@ ASTExpression *parse_logical_and_expression(Context *ctx);
 ASTExpression *parse_logical_or_expression(Context *ctx);
 ASTExpression *parse_conditional_expression(Context *ctx);
 ASTExpression *parse_assignment_expression(Context *ctx);
-ASTPPDirective *parse_pp_directive(Context *ctx);
+bool parse_pp_directive(Context *ctx, ASTPPDirective **result);
 ASTTypeExpression *parse_type_expression(Context *ctx);
 ASTTypeConstant *parse_type_constant(Context *ctx);
 ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx);
@@ -653,7 +653,7 @@ fail_parse:
 /* ====== Misc (Needs categorization) ====== */
 #pragma mark Misc
 
-ASTDefnVar *parse_defn_var(Context *ctx) {
+bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     // TODO(bloggins): Snapshotting works but can be slow (because we might
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
@@ -670,21 +670,14 @@ ASTDefnVar *parse_defn_var(Context *ctx) {
     ASTExpression *expr = parse_expression(ctx);
     if (expr == NULL) { goto fail_parse; }
     
-    t = expect_token(ctx, TOK_SEMICOLON);
-    
-    ASTDefnVar *defn = ast_create_defn_var();
-    defn->base.location = parsed_source_location(ctx, s);
-    AST_BASE(type)->parent = name->base.parent = AST_BASE(expr)->parent = (ASTBase*)defn;
-    
-    defn->type = type;
-    defn->name = name;
-    defn->expression = expr;
-    
-    return defn;
+    expect_token(ctx, TOK_SEMICOLON);
+
+    act_on_defn_var(parsed_source_location(ctx, s), type, name, expr, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 ASTStmtReturn *parse_stmt_return(Context *ctx) {
@@ -747,8 +740,8 @@ ASTBase *parse_block_stmt(Context *ctx) {
     //                  on other parse functions, there's no
     //                  need to save the context ourselves
     
-    ASTBase *stmt = (ASTBase *)parse_defn_var(ctx);
-    if (stmt == NULL) {
+    ASTBase *stmt = NULL;
+    if (!parse_defn_var(ctx, (ASTDefnVar**)&stmt)) {
         stmt = (ASTBase*)parse_stmt_expression(ctx);
     }
     if (stmt == NULL) {
@@ -784,7 +777,7 @@ fail_parse:
     return NULL;
 }
 
-ASTDefnFunc *parse_defn_fn(Context *ctx) {
+bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     Context s = snapshot(ctx);
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
@@ -804,19 +797,12 @@ ASTDefnFunc *parse_defn_fn(Context *ctx) {
     ASTBlock *block = parse_block(ctx);
     if (block == NULL) { goto fail_parse; }
     
-    ASTDefnFunc *defn = ast_create_defn_func();
-    defn->base.location = parsed_source_location(ctx, s);
-    block->base.parent = (ASTBase*)defn;
-    AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
-    
-    defn->type = type;
-    defn->name = name;
-    defn->block = block;
-    return defn;
+    act_on_defn_fn(parsed_source_location(ctx, s), type, name, block, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 bool parse_end(Context *ctx) {
@@ -828,10 +814,10 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     Context s = snapshot(ctx);
     ASTList *stmts = NULL;
     
-    ASTBase *stmt;
-    while ((stmt = (ASTBase*)parse_defn_var(ctx)) ||
-           (stmt = (ASTBase*)parse_defn_fn(ctx)) ||
-           (stmt = (ASTBase*)parse_pp_directive(ctx))) {
+    ASTBase *stmt = NULL;
+    while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
+           parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
+           parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
         ast_list_add(&stmts, stmt);
     }
     
@@ -839,9 +825,7 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
         return false;
     }
     
-    if (result != NULL) {
-        act_on_toplevel(parsed_source_location(ctx, s), stmts, result);
-    }
+    act_on_toplevel(parsed_source_location(ctx, s), stmts, result);
     
     return true;
 }
@@ -850,7 +834,7 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
 /* ====== Preprocessor ====== */
 #pragma mark Preprocessor
 
-ASTPPDirective *parse_pp_directive(Context *ctx) {
+bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
     // for right now preprocessor tokens will just be inserted into the AST
     Context s = snapshot(ctx);
@@ -901,15 +885,13 @@ ASTPPDirective *parse_pp_directive(Context *ctx) {
         exit(ERR_PARSE);
     }
     
-    ASTPPPragma *pragma = ast_create_pp_pragma();
-    AST_BASE(pragma)->location = parsed_source_location(ctx, s);
-    AST_BASE(arg2)->parent = (ASTBase*)pragma;
-    pragma->arg = arg2;
-    return (ASTPPDirective*)pragma;
+    act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
+                     (ASTPPPragma**)result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 /* ====== Public API ====== */
