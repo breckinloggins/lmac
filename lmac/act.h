@@ -34,4 +34,8 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
 
 void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result);
 
+void act_on_type_constant(SourceLocation sl,
+                          uint32_t type_id, uint8_t bit_flags, uint64_t bit_size,
+                          ASTTypeConstant **result);
+
 #endif

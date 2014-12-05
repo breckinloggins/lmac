@@ -109,3 +109,17 @@ void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result) {
     
     *result = b;
 }
+
+void act_on_type_constant(SourceLocation sl,
+                          uint32_t type_id, uint8_t bit_flags, uint64_t bit_size,
+                          ASTTypeConstant **result) {
+    if (result == NULL) return;
+    
+    ASTTypeConstant *type = ast_create_type_constant();
+    AST_BASE(type)->location = sl;
+    type->base.type_id = type_id;
+    type->bit_flags = bit_flags;
+    type->bit_size = bit_size;
+    
+    *result = type;
+}

@@ -36,7 +36,7 @@ ASTExpression *parse_conditional_expression(Context *ctx);
 ASTExpression *parse_assignment_expression(Context *ctx);
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result);
 ASTTypeExpression *parse_type_expression(Context *ctx);
-ASTTypeConstant *parse_type_constant(Context *ctx);
+bool parse_type_constant(Context *ctx, ASTTypeConstant **result);
 ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx);
 
 
@@ -541,10 +541,13 @@ ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx) {
 }
 
 ASTTypeExpression *parse_type_expression(Context *ctx) {
-    return (ASTTypeExpression*)parse_type_constant(ctx);
+    ASTTypeExpression *expr = NULL;
+    parse_type_constant(ctx, (ASTTypeConstant**)&expr);
+    
+    return expr;
 }
 
-ASTTypeConstant *parse_type_constant(Context *ctx) {
+bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
     Context s = snapshot(ctx);
     
     Token tdollar = accept_token(ctx, TOK_DOLLAR);
@@ -631,22 +634,17 @@ ASTTypeConstant *parse_type_constant(Context *ctx) {
             exit(ERR_PARSE);
         }
     }
-    ASTTypeConstant *type = ast_create_type_constant();
     
     SourceLocation sl = parsed_source_location(ctx, s);
     // Clean up the source location a bit so it starts right at the dollar sign
     sl.range_start = tdollar.location.range_start;
 
-    AST_BASE(type)->location = sl;
-    type->base.type_id = type_id;
-    type->bit_flags = bit_flags;
-    type->bit_size = bit_size;
-    
-    return type;
+    act_on_type_constant(sl, type_id, bit_flags, bit_size, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 
