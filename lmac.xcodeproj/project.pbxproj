@@ -48,6 +48,9 @@
 		F8597E2B1A2FC82900383FCF /* diag.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = diag.c; sourceTree = "<group>"; };
 		F8597E2D1A2FC8A600383FCF /* diag.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = diag.def.h; sourceTree = "<group>"; };
 		F8597E2E1A2FD60500383FCF /* codegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = codegen.c; sourceTree = "<group>"; };
+		F8E3D3271A32506C0044FBBA /* ast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.h; sourceTree = "<group>"; };
+		F8E3D32A1A32514E0044FBBA /* token.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = token.h; sourceTree = "<group>"; };
+		F8E3D32B1A32524C0044FBBA /* act.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = act.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,10 +84,8 @@
 			isa = PBXGroup;
 			children = (
 				F84DD93A1A2D316700ED052E /* tests */,
-				F84A7AE81A2D88480051862A /* clite.h */,
-				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
-				F84DD9411A2E50CB00ED052E /* ast.def.h */,
-				F8597E2D1A2FC8A600383FCF /* diag.def.h */,
+				F8E3D3291A3250840044FBBA /* defs */,
+				F8E3D3281A3250750044FBBA /* headers */,
 				F84A7AE51A2D87D10051862A /* lexer.c */,
 				F84A7AE91A2D88DA0051862A /* token.c */,
 				F84DD93D1A2E3D0800ED052E /* parser.c */,
@@ -96,6 +97,27 @@
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
 			);
 			path = lmac;
+			sourceTree = "<group>";
+		};
+		F8E3D3281A3250750044FBBA /* headers */ = {
+			isa = PBXGroup;
+			children = (
+				F84A7AE81A2D88480051862A /* clite.h */,
+				F8E3D32B1A32524C0044FBBA /* act.h */,
+				F8E3D3271A32506C0044FBBA /* ast.h */,
+				F8E3D32A1A32514E0044FBBA /* token.h */,
+			);
+			name = headers;
+			sourceTree = "<group>";
+		};
+		F8E3D3291A3250840044FBBA /* defs */ = {
+			isa = PBXGroup;
+			children = (
+				F84DD93C1A2D3FD600ED052E /* tokens.def.h */,
+				F84DD9411A2E50CB00ED052E /* ast.def.h */,
+				F8597E2D1A2FC8A600383FCF /* diag.def.h */,
+			);
+			name = defs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
