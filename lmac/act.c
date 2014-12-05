@@ -8,7 +8,9 @@
 
 #include "clite.h"
 
-void act_on_toplevel(Context *ctx, SourceLocation sl, ASTList *stmts) {
+void act_on_toplevel(SourceLocation sl, ASTList *stmts, ASTTopLevel **result) {
+    if (result == NULL) return;
+    
     ASTTopLevel *tl = ast_create_toplevel();
     
     tl->base.location = sl;
@@ -18,5 +20,5 @@ void act_on_toplevel(Context *ctx, SourceLocation sl, ASTList *stmts) {
         stmt->parent = (ASTBase*)tl;
     });
     
-    ctx->ast = tl;
+    *result = tl;
 }

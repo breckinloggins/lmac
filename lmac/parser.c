@@ -824,7 +824,7 @@ bool parse_end(Context *ctx) {
     return true;
 }
 
-bool parse_toplevel(Context *ctx) {
+bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     Context s = snapshot(ctx);
     ASTList *stmts = NULL;
     
@@ -835,9 +835,15 @@ bool parse_toplevel(Context *ctx) {
         ast_list_add(&stmts, stmt);
     }
     
-    act_on_toplevel(ctx, parsed_source_location(ctx, s), stmts);
+    if (!parse_end(ctx)) {
+        return false;
+    }
     
-    return parse_end(ctx);
+    if (result != NULL) {
+        act_on_toplevel(parsed_source_location(ctx, s), stmts, result);
+    }
+    
+    return true;
 }
 
 
@@ -910,7 +916,7 @@ fail_parse:
 #pragma mark Public API
 
 void parser_parse(Context *ctx) {
-    if (!parse_toplevel(ctx)) {
+    if (!parse_toplevel(ctx, &ctx->ast)) {
         exit(ERR_PARSE);
     }
 }

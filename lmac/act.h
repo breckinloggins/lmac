@@ -15,6 +15,7 @@
 #include "ast.h"
 #include "context.h"
 
-void act_on_toplevel(Context *ctx, SourceLocation sl, ASTList *stmts);
+void act_on_toplevel(SourceLocation sl, ASTList *stmts, ASTTopLevel **result);
+void act_on_defn_var(SourceLocation sl, ASTDefnVar **result);
 
 #endif
