@@ -578,30 +578,39 @@ ASTTypeConstant *parse_type_constant(Context *ctx) {
             Spelling desc_sp = ttype_desc.location.spelling;
             const char *desc = spelling_cstring(desc_sp);
             
-            // TODO(bloggins): finish this mess
-            diag_printf(DIAG_FATAL, &ttype_desc.location, "type constant specifiers are not currently supported");
-            exit(ERR_PARSE);
-            
-    #if 0
-            if (desc[0] == 'f') {
-                if (desc[1] == 0) {
+            switch (desc[0]) {
+                case 'f': {
+                    bit_flags |= BIT_FLAG_FP;
+                    bit_flags |= BIT_FLAG_SIGNED; /* just to be sure */
+                } break;
+                case 's': {
+                    bit_flags |= BIT_FLAG_SIGNED;
+                } break;
+                case 'u': {
+                    bit_flags &= ~(BIT_FLAG_SIGNED);
+                } break;
+                default: {
                     diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
-                                "description '%s' is invalid; it has no size", desc);
+                                "description '%s' is invalid. Unrecognized "
+                                " option '%c'", desc, desc[0]);
                     exit(ERR_PARSE);
-                }
-                
-                if (!isdigit(desc[1])) {
-                    diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
-                                "description '%s' is invalid; bit size expected after flags", desc);
-                    exit(ERR_PARSE);
-                }
+                } break;
             }
-    #endif
+            
+            if (!isdigit(desc[1])) {
+                diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
+                            "description '%s' is invalid. Expected bit size"
+                            , desc);
+                exit(ERR_PARSE);
+            }
+            
+            bit_size = strtoul(desc+1, NULL, 10);
         } else {
-            type_id |= ast_type_next_type_id();
             bit_flags |= BIT_FLAG_SIGNED;
             bit_size = strtoul(spelling_cstring(tbit_size.location.spelling), NULL, 10);
         }
+        
+        type_id |= ast_type_next_type_id();
         
         SourceLocation sl = parsed_source_location(ctx, s);
         // Clean up the source location a bit so it starts right at the dollar sign

@@ -65,19 +65,36 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
     if (node->base.type_id == 0) {
         CG("void");
     } else {
-        switch (node->bit_size) {
-            // TODO(bloggins): Round to nearest power of two for odd sizes
-            case 8: CG("int8_t"); break;
-            case 16: CG("int16_t"); break;
-            case 32: CG("int32_t"); break;
-            case 64: CG("int64_t"); break;
-            default:
-                diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
-                            "Cannot generate storage for a type of size %d bit",
-                            node->bit_size);
-                exit(ERR_CODEGEN);
-                break;
-        }        
+        if (node->bit_flags & BIT_FLAG_FP) {
+            switch (node->bit_size) {
+                case 32: CG("float"); break;
+                case 64: CG("double"); break;
+                default:
+                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                                "Cannot generate storage for a floating point "
+                                "type of size %d bit",
+                                node->bit_size);
+                    exit(ERR_CODEGEN);
+                    break;
+ 
+            }
+        } else {
+            if (!(node->bit_flags & BIT_FLAG_SIGNED)) CG("u");
+            
+            switch (node->bit_size) {
+                // TODO(bloggins): Round to nearest power of two for odd sizes
+                case 8: CG("int8_t"); break;
+                case 16: CG("int16_t"); break;
+                case 32: CG("int32_t"); break;
+                case 64: CG("int64_t"); break;
+                default:
+                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                                "Cannot generate storage for a type of size %d bit",
+                                node->bit_size);
+                    exit(ERR_CODEGEN);
+                    break;
+            }
+        }
     }
     
     return VISIT_OK;
