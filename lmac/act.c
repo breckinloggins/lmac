@@ -44,7 +44,8 @@ void act_on_defn_var(SourceLocation sl, ASTTypeExpression*type,
     
     ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = sl;
-    AST_BASE(type)->parent = name->base.parent = AST_BASE(expr)->parent = (ASTBase*)defn;
+    AST_BASE(type)->parent = name->base.parent =
+        AST_BASE(expr)->parent = (ASTBase*)defn;
     
     defn->type = type;
     defn->name = name;
@@ -92,4 +93,19 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
     stmt->expression = expr;
     
     *result = stmt;
+}
+
+void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result) {
+    if (result == NULL) return;
+    
+    ASTBlock *b = ast_create_block();
+    b->base.location = sl;
+    
+    ASTLIST_FOREACH(ASTBase*, stmt, stmts, {
+        stmt->parent = (ASTBase*)b;
+    });
+    
+    b->statements = stmts;
+    
+    *result = b;
 }

@@ -32,4 +32,6 @@ void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
 void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
                             ASTStmtReturn **result);
 
+void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result);
+
 #endif

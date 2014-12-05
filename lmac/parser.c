@@ -736,30 +736,26 @@ bool parse_block_stmt(Context *ctx, ASTBase **result) {
         parse_stmt_return(ctx, (ASTStmtReturn**)result);
 }
 
-ASTBlock *parse_block(Context *ctx) {
+bool parse_block(Context *ctx, ASTBlock **result) {
     Context s = snapshot(ctx);
     ASTList *stmts = NULL;
     
     Token t = accept_token(ctx, TOK_LBRACE);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTBlock *b = ast_create_block();
     ASTBase *stmt = NULL;
     while (parse_block_stmt(ctx, &stmt)) {
-        stmt->parent = (ASTBase*)b;
         ast_list_add(&stmts, stmt);
     }
     
-    t = expect_token(ctx, TOK_RBRACE);
+    expect_token(ctx, TOK_RBRACE);
     
-    b->base.location = parsed_source_location(ctx, s);
-    b->statements = stmts;
-    
-    return b;
+    act_on_block(parsed_source_location(ctx, s), stmts, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
@@ -779,8 +775,8 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     t = accept_token(ctx, TOK_RPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTBlock *block = parse_block(ctx);
-    if (block == NULL) { goto fail_parse; }
+    ASTBlock *block = NULL;
+    if (!parse_block(ctx, &block)) { goto fail_parse; }
     
     act_on_defn_fn(parsed_source_location(ctx, s), type, name, block, result);
     return true;
