@@ -22,7 +22,7 @@ int main() {
     int addsub3 = a + b - c;
     int addsub4 = a - b + c - c;
     
-    //foo();
+    foo();
     
     int mul2 = a * b;
     int mul3 = a * b * c;

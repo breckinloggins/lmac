@@ -14,18 +14,22 @@
 AST(UNKNOWN, unknown, ASTBase)
 
 AST(TOPLEVEL, toplevel, ASTTopLevel)
-AST(STMT_RETURN, stmt_return, ASTStmtReturn)
 AST(BLOCK, block, ASTBlock)
 AST(DEFN_FUNC, defn_func, ASTDefnFunc)
 AST(DEFN_VAR, defn_var, ASTDefnVar)
+AST(IDENT, ident, ASTIdent)
+AST(OPERATOR, operator, ASTOperator)
+
+AST(STMT_RETURN, stmt_return, ASTStmtReturn)
+AST(STMT_EXPR, stmt_expr, ASTStmtExpr)
+
 AST(EXPR_EMPTY, expr_empty, ASTExprEmpty)
 AST(EXPR_IDENT, expr_ident, ASTExprIdent)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)
 AST(EXPR_PAREN, expr_paren, ASTExprParen)
 AST(EXPR_CAST, expr_cast, ASTExprCast)
 AST(EXPR_BINARY, expr_binary, ASTExprBinary)
-AST(IDENT, ident, ASTIdent)
-AST(OPERATOR, operator, ASTOperator)
+AST(EXPR_CALL, expr_call, ASTExprCall)
 
 /* Preprocessor */
 AST(PP_PRAGMA, pp_pragma, ASTPPPragma)

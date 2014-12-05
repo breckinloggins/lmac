@@ -131,6 +131,8 @@ typedef struct {
     
 } ASTDefnFunc;
 
+#pragma mark Expressions AST
+
 typedef struct {
     ASTBase base;
     
@@ -175,6 +177,29 @@ typedef struct {
 } ASTExprBinary;
 
 typedef struct {
+    ASTExpression base;
+    
+    ASTExpression *callable;
+    
+} ASTExprCall;
+
+#pragma mark Statements AST
+
+typedef struct {
+    ASTBase base;
+    
+    ASTExpression *expression;
+} ASTStmtReturn;
+
+typedef struct {
+    ASTBase base;
+    
+    ASTExpression *expression;
+} ASTStmtExpr;
+
+#pragma mark Mist AST
+
+typedef struct {
     ASTBase base;
     
     struct ASTTypeExpression *type;
@@ -183,12 +208,6 @@ typedef struct {
     ASTExpression *expression;
     
 } ASTDefnVar;
-
-typedef struct {
-    ASTBase base;
-    
-    ASTExpression *expression;
-} ASTStmtReturn;
 
 typedef struct {
     ASTBase base;

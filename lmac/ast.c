@@ -129,6 +129,15 @@ AST_ACCEPT_FN(AST_EXPR_BINARY) {
     STANDARD_VISIT_POST()
 }
 
+AST_ACCEPT_FN(AST_EXPR_CALL) {
+    STANDARD_VISIT_PRE()
+    
+    ASTExprCall *call = (ASTExprCall*)node;
+    STANDARD_ACCEPT(call->callable);
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_DEFN_FUNC) {
     STANDARD_VISIT_PRE()
     ASTDefnFunc *defn = (ASTDefnFunc*)node;
@@ -167,6 +176,14 @@ AST_ACCEPT_FN(AST_STMT_RETURN) {
     STANDARD_VISIT_PRE()
     
     STANDARD_ACCEPT(((ASTStmtReturn*)node)->expression);
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_EXPR) {
+    STANDARD_VISIT_PRE()
+    
+    STANDARD_ACCEPT(((ASTStmtExpr*)node)->expression);
     
     STANDARD_VISIT_POST()
 }

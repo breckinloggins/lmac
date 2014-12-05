@@ -428,6 +428,15 @@ ASTExpression *parse_postfix_expression(Context *ctx) {
             // TODO: ARGS
             
             expect_token(ctx, TOK_RPAREN);
+            
+            ASTExprCall *call = ast_create_expr_call();
+            AST_BASE(expr)->parent = (ASTBase*)call;
+            
+            AST_BASE(call)->location = t.location;
+            call->callable = expr;
+            
+            expr = (ASTExpression*)call;
+            
         } else {
             break;
         }
@@ -705,18 +714,28 @@ fail_parse:
     return NULL;
 }
 
-ASTBase *parse_stmt_expression(Context *ctx) {
-    ASTBase *expr = (ASTBase*)parse_expression(ctx);
+ASTStmtExpr *parse_stmt_expression(Context *ctx) {
+    ASTExpression *expr = parse_expression(ctx);
+    Context s = {};
+    
     if (expr != NULL) {
         expect_token(ctx, TOK_SEMICOLON);
-        return expr;
+    } else {
+    
+        // We could also have an empty expression and just a semi-colon
+        s = snapshot(ctx);
+        if (IS_TOKEN_NONE(accept_token(ctx, TOK_SEMICOLON))) { goto fail_parse; }
+        
+        expr = (ASTExpression*)ast_create_expr_empty();
     }
     
-    // We could also have an empty expression and just a semi-colon
-    Context s = snapshot(ctx);
-    if (IS_TOKEN_NONE(accept_token(ctx, TOK_SEMICOLON))) { goto fail_parse; }
+    ASTStmtExpr *stmt = ast_create_stmt_expr();
+    AST_BASE(expr)->parent = (ASTBase*)stmt;
     
-    return (ASTBase*)ast_create_expr_empty();
+    AST_BASE(stmt)->location = parsed_source_location(ctx, s);
+    stmt->expression = expr;
+    
+    return stmt;
     
 fail_parse:
     restore(ctx, s);
