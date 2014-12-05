@@ -40,4 +40,11 @@ void act_on_type_constant(SourceLocation sl,
 
 void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result);
 
+void act_on_expr_ident(SourceLocation sl, ASTIdent *name, ASTExprIdent **result);
+
+void act_on_expr_number(SourceLocation sl, int number, ASTExprNumber **result);
+
+void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
+                       ASTExprParen **result);
+
 #endif

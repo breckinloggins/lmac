@@ -135,3 +135,38 @@ void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result) {
     
     *result = type_name;
 }
+
+void act_on_expr_ident(SourceLocation sl, ASTIdent *name, ASTExprIdent **result) {
+    if (result == NULL) return;
+    
+    ASTExprIdent *ident = ast_create_expr_ident();
+    name->base.location = sl;
+    name->base.parent = (ASTBase*)ident;
+    ident->name = name;
+    
+    *result = ident;
+}
+
+void act_on_expr_number(SourceLocation sl, int n, ASTExprNumber **result) {
+    if (result == NULL) return;
+    
+    ASTExprNumber *number = ast_create_expr_number();
+    
+    AST_BASE(number)->location = sl;
+    number->number = n;
+    
+    *result = number;
+}
+
+void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
+                       ASTExprParen **result) {
+    if (result == NULL) return;
+    
+    ASTExprParen *paren = ast_create_expr_paren();
+    AST_BASE(paren)->location = sl;
+    AST_BASE(inner)->parent = (ASTBase*)paren;
+    
+    paren->inner = inner;
+    
+    *result = paren;
+}

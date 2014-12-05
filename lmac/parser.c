@@ -18,7 +18,7 @@
 #include <ctype.h>
 
 ASTExpression *parse_expression(Context *ctx);
-ASTExpression *parse_primary_expression(Context *ctx);
+bool parse_expr_primary(Context *ctx, ASTExpression **result);
 ASTExpression *parse_postfix_expression(Context *ctx);
 ASTExpression *parse_unary_expression(Context *ctx);
 ASTExpression *parse_cast_expression(Context *ctx);
@@ -400,8 +400,8 @@ ASTExpression *parse_unary_expression(Context *ctx) {
      | '(' type_name ')' '{' initializer_list ',' '}'
  */
 ASTExpression *parse_postfix_expression(Context *ctx) {
-    ASTExpression *expr = parse_primary_expression(ctx);
-    if (expr == NULL) {
+    ASTExpression *expr = NULL;
+    if (!parse_expr_primary(ctx, &expr)) {
         return NULL;
     }
     
@@ -453,33 +453,23 @@ ASTExpression *parse_postfix_expression(Context *ctx) {
  | '(' type_expression ')' | '(' expression ')' 
  | generic_selection 
  */
-ASTExpression *parse_primary_expression(Context *ctx) {
+bool parse_expr_primary(Context *ctx, ASTExpression **result) {
     Context s = snapshot(ctx);
     
     // TODO(bloggins): Break these out
-    ASTExpression *expr = NULL;
-    if(parse_type_expression(ctx, (ASTTypeExpression**)&expr)) {
-        return expr;
-    }
+    if(parse_type_expression(ctx, (ASTTypeExpression**)result)) { return true; }
     
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
-        ASTExprIdent *ident = ast_create_expr_ident();
         ASTIdent *name = ast_create_ident();
-        name->base.location = t.location;
-        name->base.parent = (ASTBase*)ident;
-        ident->name = name;
+        AST_BASE(name)->location = t.location;
         
-        expr = (ASTExpression*)ident;
+        act_on_expr_ident(t.location, name, (ASTExprIdent**)result);
     } else {
         t = accept_token(ctx, TOK_NUMBER);
         if (!IS_TOKEN_NONE(t)) {
-            ASTExprNumber *number = ast_create_expr_number();
-
-            AST_BASE(number)->location = t.location;
-            number->number = (int)strtol((char*)t.location.range_start, NULL, 10);
-            
-            expr = (ASTExpression*)number;
+            int n = (int)strtol((char*)t.location.range_start, NULL, 10);
+            act_on_expr_number(t.location, n, (ASTExprNumber**)result);
         } else {
             t = accept_token(ctx, TOK_LPAREN);
             if (!IS_TOKEN_NONE(t)) {
@@ -490,28 +480,26 @@ ASTExpression *parse_primary_expression(Context *ctx) {
                     exit(ERR_PARSE);
                 }
                 
-                ASTExprParen *paren = ast_create_expr_paren();
-                AST_BASE(paren)->location = t.location;
-                AST_BASE(inner)->parent = (ASTBase*)paren;
-                
-                paren->inner = inner;
-                expr = (ASTExpression*)paren;
-                
+                act_on_expr_paren(t.location, inner, (ASTExprParen**)result);
             } else {
                 // This is last because it's unlikely
-                if (!parse_type_expression(ctx, (ASTTypeExpression**)&expr)) {
+                if (!parse_type_expression(ctx, (ASTTypeExpression**)result)) {
                     goto fail_parse;
                 }
             }
         }
     }
     
-    AST_BASE(expr)->location = parsed_source_location(ctx, s);
-    return expr;
+    if (result) {
+        // TODO(bloggins): Do we still need this?
+        AST_BASE(*result)->location = parsed_source_location(ctx, s);
+    }
+    
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 
