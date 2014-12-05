@@ -20,8 +20,8 @@
 ASTExpression *parse_expression(Context *ctx);
 bool parse_expr_primary(Context *ctx, ASTExpression **result);
 bool parse_expr_postfix(Context *ctx, ASTExpression **result);
-ASTExpression *parse_unary_expression(Context *ctx);
-ASTExpression *parse_cast_expression(Context *ctx);
+bool parse_expr_unary(Context *ctx, ASTExpression **result);
+bool parse_expr_cast(Context *ctx, ASTExpression **result);
 ASTExpression *parse_multiplicative_expression(Context *ctx);
 ASTExpression *parse_additive_expression(Context *ctx);
 ASTExpression *parse_shift_expression(Context *ctx);
@@ -293,8 +293,11 @@ ASTExpression *parse_additive_expression(Context *ctx) {
 	| multiplicative_expression '%' cast_expression
  */
 ASTExpression *parse_multiplicative_expression(Context *ctx) {
-    ASTExpression *expr = parse_cast_expression(ctx);
-
+    ASTExpression *expr = NULL;
+    if (!parse_expr_cast(ctx, &expr)) {
+        return NULL;
+    }
+    
     for (;;) {
         Token t = peek_token(ctx);
         if (t.kind == TOK_STAR || t.kind == TOK_FORWARDSLASH || t.kind == TOK_PERCENT) {
@@ -304,8 +307,8 @@ ASTExpression *parse_multiplicative_expression(Context *ctx) {
             next_token(ctx);  // gobble gobble
             
             ASTExpression *left = expr;
-            ASTExpression *right = parse_cast_expression(ctx);
-            if (right == NULL) {
+            ASTExpression *right = NULL;
+            if (!parse_expr_cast(ctx, &right)) {
                 SourceLocation sl = parsed_source_location(ctx, *ctx);
                 diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
                 exit(ERR_PARSE);
@@ -335,41 +338,46 @@ ASTExpression *parse_multiplicative_expression(Context *ctx) {
  * NOTE(bloggins): We have to do a little more work because type expressions
  * look like ordinary expressions structurally.
  */
-ASTExpression *parse_cast_expression(Context *ctx) {
-    ASTExpression *expr = parse_unary_expression(ctx);
-    if (expr == NULL) {
+bool parse_expr_cast(Context *ctx, ASTExpression **result) {
+    if (!parse_expr_unary(ctx, result)) {
         return NULL;
     }
 
-    if (AST_BASE(expr)->kind != AST_EXPR_PAREN) {
-        return expr;
+    // We can't make any parse decisions without the actual result.
+    // (note that this shows a dependency on parse context that we probably
+    // want to fix if we can)
+    if (result == NULL) {
+        SourceLocation sl = parsed_source_location(ctx, *ctx);
+        diag_printf(DIAG_FATAL, &sl,
+                    "parse_expr_cast currently cannot parse correctly "
+                    "without AST construction");
+        exit(ERR_PARSE);
     }
     
-    ASTExprParen *paren = (ASTExprParen*)expr;
+    if (AST_BASE(*result)->kind != AST_EXPR_PAREN) {
+        return true;
+    }
+    
+    ASTExprParen *paren = (ASTExprParen*)*result;
     if (!ast_node_is_type_expression(AST_BASE(paren->inner))) {
         // This is an ordinary non-type-expression
-        return expr;
+        return true;
     }
     
     // If we got here we have what looks like a cast. So we should figure out
     // if we have an expression after it. That will tell us for sure
     Context s = snapshot(ctx);
     
-    ASTTypeExpression *type_expr = (ASTTypeExpression*)((ASTExprParen*)expr)->inner;
-    ASTExpression *next_expr = parse_cast_expression(ctx);
-    if (next_expr == NULL) {
+    ASTTypeExpression *type_expr = (ASTTypeExpression*)((ASTExprParen*)*result)->inner;
+    ASTExpression *next_expr = NULL;
+    if (!parse_expr_cast(ctx, &next_expr)) {
         // Looks like it was just a regular parens expression
-        return expr;
+        return true;
     }
     
-    ASTExprCast *cast_expr = ast_create_expr_cast();
-    AST_BASE(type_expr)->parent = (ASTBase*)cast_expr;
-    AST_BASE(next_expr)->parent = (ASTBase*)cast_expr;
-    AST_BASE(cast_expr)->location = parsed_source_location(ctx, s);
-    cast_expr->type = type_expr;
-    cast_expr->expr = next_expr;
-    
-    return (ASTExpression*)cast_expr;
+    act_on_expr_cast(parsed_source_location(ctx, s), type_expr, next_expr,
+                     (ASTExprCast**)result);
+    return true;
 }
 
 /*
@@ -382,10 +390,8 @@ ASTExpression *parse_cast_expression(Context *ctx) {
      | TOK_KW_SIZEOF '(' type_name ')'
      | TOK_KW_ALIGNOF '(' type_name ')'
  */
-ASTExpression *parse_unary_expression(Context *ctx) {
-    ASTExpression *expr = NULL;
-    parse_expr_postfix(ctx, &expr);
-    return expr;
+bool parse_expr_unary(Context *ctx, ASTExpression **result) {
+    return parse_expr_postfix(ctx, result);
 }
 
 /*

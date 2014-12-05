@@ -50,4 +50,7 @@ void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
 void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
                       ASTExprCall **result);
 
+void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
+                      ASTExpression *expr, ASTExprCast **result);
+
 #endif

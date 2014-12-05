@@ -185,3 +185,17 @@ void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
     
     *result = call;
 }
+
+void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
+                      ASTExpression *expr, ASTExprCast **result) {
+    if (result == NULL) return;
+    
+    ASTExprCast *cast_expr = ast_create_expr_cast();
+    AST_BASE(type)->parent = (ASTBase*)cast_expr;
+    AST_BASE(expr)->parent = (ASTBase*)cast_expr;
+    AST_BASE(cast_expr)->location = sl;
+    cast_expr->type = type;
+    cast_expr->expr = expr;
+    
+    *result = cast_expr;
+}
