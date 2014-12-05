@@ -680,7 +680,7 @@ fail_parse:
     return false;
 }
 
-ASTStmtReturn *parse_stmt_return(Context *ctx) {
+bool parse_stmt_return(Context *ctx, ASTStmtReturn **result) {
     Context s = snapshot(ctx);
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_RETURN))) { goto fail_parse; }
@@ -694,20 +694,15 @@ ASTStmtReturn *parse_stmt_return(Context *ctx) {
     
     expect_token(ctx, TOK_SEMICOLON);
     
-    ASTStmtReturn *stmt = ast_create_stmt_return();
-    stmt->base.location = parsed_source_location(ctx, s);
-    AST_BASE(expr)->parent = (ASTBase *)stmt;
-    
-    stmt->expression = expr;
-    
-    return stmt;
+    act_on_stmt_return(parsed_source_location(ctx, s), expr, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
-ASTStmtExpr *parse_stmt_expression(Context *ctx) {
+bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
     ASTExpression *expr = parse_expression(ctx);
     Context s = {};
     
@@ -722,33 +717,23 @@ ASTStmtExpr *parse_stmt_expression(Context *ctx) {
         expr = (ASTExpression*)ast_create_expr_empty();
     }
     
-    ASTStmtExpr *stmt = ast_create_stmt_expr();
-    AST_BASE(expr)->parent = (ASTBase*)stmt;
-    
-    AST_BASE(stmt)->location = parsed_source_location(ctx, s);
-    stmt->expression = expr;
-    
-    return stmt;
+    act_on_stmt_expression(parsed_source_location(ctx, s), expr, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
-ASTBase *parse_block_stmt(Context *ctx) {
+bool parse_block_stmt(Context *ctx, ASTBase **result) {
     // NOTE(bloggins): When a parse function just switches
     //                  on other parse functions, there's no
     //                  need to save the context ourselves
     
-    ASTBase *stmt = NULL;
-    if (!parse_defn_var(ctx, (ASTDefnVar**)&stmt)) {
-        stmt = (ASTBase*)parse_stmt_expression(ctx);
-    }
-    if (stmt == NULL) {
-        stmt = (ASTBase*)parse_stmt_return(ctx);
-    }
-    
-    return stmt;
+    return
+        parse_defn_var(ctx, (ASTDefnVar**)result) ||
+        parse_stmt_expression(ctx, (ASTStmtExpr**)result) ||
+        parse_stmt_return(ctx, (ASTStmtReturn**)result);
 }
 
 ASTBlock *parse_block(Context *ctx) {
@@ -760,7 +745,7 @@ ASTBlock *parse_block(Context *ctx) {
     
     ASTBlock *b = ast_create_block();
     ASTBase *stmt = NULL;
-    while ((stmt = (ASTBase*)parse_block_stmt(ctx)) != NULL) {
+    while (parse_block_stmt(ctx, &stmt)) {
         stmt->parent = (ASTBase*)b;
         ast_list_add(&stmts, stmt);
     }

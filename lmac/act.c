@@ -68,3 +68,28 @@ void act_on_defn_fn(SourceLocation sl, ASTTypeExpression *type,
     
     *result = defn;
 }
+
+void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
+                            ASTStmtExpr **result) {
+    if (result == NULL) return;
+    
+    ASTStmtExpr *stmt = ast_create_stmt_expr();
+    AST_BASE(expr)->parent = (ASTBase*)stmt;
+    
+    AST_BASE(stmt)->location = sl;
+    stmt->expression = expr;
+    
+    *result = stmt;
+}
+
+void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
+                        ASTStmtReturn **result) {
+    if (result == NULL) return;
+    
+    ASTStmtReturn *stmt = ast_create_stmt_return();
+    stmt->base.location = sl;
+    AST_BASE(expr)->parent = (ASTBase *)stmt;
+    stmt->expression = expr;
+    
+    *result = stmt;
+}

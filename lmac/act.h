@@ -26,4 +26,10 @@ void act_on_defn_var(SourceLocation sl, ASTTypeExpression *type,
 void act_on_defn_fn(SourceLocation sl, ASTTypeExpression *type,
                      ASTIdent *name, ASTBlock *block, ASTDefnFunc **result);
 
+void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
+                            ASTStmtExpr **result);
+
+void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
+                            ASTStmtReturn **result);
+
 #endif
