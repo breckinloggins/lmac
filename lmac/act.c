@@ -170,3 +170,18 @@ void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
     
     *result = paren;
 }
+
+void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
+                      ASTExprCall **result) {
+    if (result == NULL) return;
+    
+    ASTExprCall *call = ast_create_expr_call();
+    if (callable != NULL) {
+        AST_BASE(callable)->parent = (ASTBase*)call;
+    }
+    
+    AST_BASE(call)->location = sl;
+    call->callable = callable;
+    
+    *result = call;
+}

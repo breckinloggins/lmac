@@ -19,7 +19,7 @@
 
 ASTExpression *parse_expression(Context *ctx);
 bool parse_expr_primary(Context *ctx, ASTExpression **result);
-ASTExpression *parse_postfix_expression(Context *ctx);
+bool parse_expr_postfix(Context *ctx, ASTExpression **result);
 ASTExpression *parse_unary_expression(Context *ctx);
 ASTExpression *parse_cast_expression(Context *ctx);
 ASTExpression *parse_multiplicative_expression(Context *ctx);
@@ -383,7 +383,9 @@ ASTExpression *parse_cast_expression(Context *ctx) {
      | TOK_KW_ALIGNOF '(' type_name ')'
  */
 ASTExpression *parse_unary_expression(Context *ctx) {
-    return parse_postfix_expression(ctx);
+    ASTExpression *expr = NULL;
+    parse_expr_postfix(ctx, &expr);
+    return expr;
 }
 
 /*
@@ -399,10 +401,9 @@ ASTExpression *parse_unary_expression(Context *ctx) {
      | '(' type_name ')' '{' initializer_list '}'
      | '(' type_name ')' '{' initializer_list ',' '}'
  */
-ASTExpression *parse_postfix_expression(Context *ctx) {
-    ASTExpression *expr = NULL;
-    if (!parse_expr_primary(ctx, &expr)) {
-        return NULL;
+bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
+    if (!parse_expr_primary(ctx, result)) {
+        return false;
     }
     
     // TODO(bloggins): This is a hack to prevent casts from looking
@@ -412,10 +413,10 @@ ASTExpression *parse_postfix_expression(Context *ctx) {
     // In the future, I'd like to do the opposite. I want to treat the TYPE
     // as callable, indexible, etc. and implement casts that way. That also
     // allows for overloadable casting in a cool way.
-    if (AST_BASE(expr)->kind == AST_EXPR_PAREN) {
-        ASTExprParen *paren = (ASTExprParen*)expr;
+    if (*result && AST_BASE(*result)->kind == AST_EXPR_PAREN) {
+        ASTExprParen *paren = (ASTExprParen*)*result;
         if (ast_node_is_type_expression((ASTBase*)paren->inner)) {
-            return expr;
+            return true;
         }
     }
     
@@ -429,20 +430,16 @@ ASTExpression *parse_postfix_expression(Context *ctx) {
             
             expect_token(ctx, TOK_RPAREN);
             
-            ASTExprCall *call = ast_create_expr_call();
-            AST_BASE(expr)->parent = (ASTBase*)call;
-            
-            AST_BASE(call)->location = t.location;
-            call->callable = expr;
-            
-            expr = (ASTExpression*)call;
-            
+            if (result != NULL) {
+                ASTExpression *callable = *result;
+                act_on_expr_call(t.location, callable, (ASTExprCall**)result);
+            }
         } else {
             break;
         }
     }
     
-    return expr;
+    return true;
 }
 
 /* primary_expression: 

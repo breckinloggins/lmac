@@ -47,4 +47,7 @@ void act_on_expr_number(SourceLocation sl, int number, ASTExprNumber **result);
 void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
                        ASTExprParen **result);
 
+void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
+                      ASTExprCall **result);
+
 #endif
