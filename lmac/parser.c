@@ -35,9 +35,9 @@ ASTExpression *parse_logical_or_expression(Context *ctx);
 ASTExpression *parse_conditional_expression(Context *ctx);
 ASTExpression *parse_assignment_expression(Context *ctx);
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result);
-ASTTypeExpression *parse_type_expression(Context *ctx);
+bool parse_type_expression(Context *ctx, ASTTypeExpression **result);
 bool parse_type_constant(Context *ctx, ASTTypeConstant **result);
-ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx);
+bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result);
 
 
 #pragma mark Parse Utility Functions
@@ -457,8 +457,8 @@ ASTExpression *parse_primary_expression(Context *ctx) {
     Context s = snapshot(ctx);
     
     // TODO(bloggins): Break these out
-    ASTExpression *expr = (ASTExpression*)parse_type_expression(ctx);
-    if (expr != NULL) {
+    ASTExpression *expr = NULL;
+    if(parse_type_expression(ctx, (ASTTypeExpression**)&expr)) {
         return expr;
     }
     
@@ -499,8 +499,7 @@ ASTExpression *parse_primary_expression(Context *ctx) {
                 
             } else {
                 // This is last because it's unlikely
-                expr = (ASTExpression*)parse_type_expression(ctx);
-                if (expr == NULL) {
+                if (!parse_type_expression(ctx, (ASTTypeExpression**)&expr)) {
                     goto fail_parse;
                 }
             }
@@ -519,10 +518,9 @@ fail_parse:
 /* ====== Type Expressions ====== */
 #pragma mark Type Expressions
 
-ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx) {
-    ASTTypeExpression *expr = parse_type_expression(ctx);
-    if (expr != NULL) {
-        return expr;
+bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result) {
+    if (parse_type_expression(ctx, result)) {
+        return true;
     }
     
     // Well, do we have an ident? Because if so it could be a type name
@@ -532,19 +530,12 @@ ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx) {
         return NULL;
     }
     
-    ASTTypeName *type_ph = ast_create_type_name();
-    AST_BASE(type_ph)->location = AST_BASE(ident)->location;
-    AST_BASE(ident)->parent = (ASTBase*)type_ph;
-    
-    type_ph->name = ident;
-    return (ASTTypeExpression*)type_ph;
+    act_on_type_name(AST_BASE(ident)->location, ident, (ASTTypeName**)result);
+    return true;
 }
 
-ASTTypeExpression *parse_type_expression(Context *ctx) {
-    ASTTypeExpression *expr = NULL;
-    parse_type_constant(ctx, (ASTTypeConstant**)&expr);
-    
-    return expr;
+bool parse_type_expression(Context *ctx, ASTTypeExpression **result) {
+    return parse_type_constant(ctx, (ASTTypeConstant**)result);
 }
 
 bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
@@ -656,8 +647,8 @@ bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
     
-    ASTTypeExpression *type = parse_type_expression_or_placeholder(ctx);
-    if (type == NULL) { goto fail_parse; }
+    ASTTypeExpression *type = NULL;
+    if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
     if (name == NULL) { goto fail_parse; }
@@ -761,8 +752,8 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
 
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
-    ASTTypeExpression *type = parse_type_expression_or_placeholder(ctx);
-    if (type == NULL) { goto fail_parse; }
+    ASTTypeExpression *type = NULL;
+    if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
     
     ASTIdent *name = parse_ident(ctx);
     if (type == NULL) { goto fail_parse; }

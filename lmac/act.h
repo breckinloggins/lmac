@@ -38,4 +38,6 @@ void act_on_type_constant(SourceLocation sl,
                           uint32_t type_id, uint8_t bit_flags, uint64_t bit_size,
                           ASTTypeConstant **result);
 
+void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result);
+
 #endif

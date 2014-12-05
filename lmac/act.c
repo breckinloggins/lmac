@@ -123,3 +123,15 @@ void act_on_type_constant(SourceLocation sl,
     
     *result = type;
 }
+
+void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result) {
+    if (result == NULL) return;
+    
+    ASTTypeName *type_name = ast_create_type_name();
+    AST_BASE(type_name)->location = sl;
+    AST_BASE(name)->parent = (ASTBase*)type_name;
+    
+    type_name->name = name;
+    
+    *result = type_name;
+}
