@@ -138,6 +138,10 @@ typedef struct {
 } ASTExpression;
 
 typedef struct {
+    ASTBase base;
+} ASTExprEmpty;
+
+typedef struct {
     ASTExpression base;
     
     ASTIdent *name;

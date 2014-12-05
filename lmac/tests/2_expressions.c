@@ -3,10 +3,13 @@
 
 // TODO(bloggins): Move this into the prelude
 $$() int = $32;
+$$() void = $();
 
 int a = 1;
 int b = 2;
 int c = 4;
+
+void foo() { }
 
 int main() {
 
@@ -18,7 +21,9 @@ int main() {
 
     int addsub3 = a + b - c;
     int addsub4 = a - b + c - c;
-
+    
+    //foo();
+    
     int mul2 = a * b;
     int mul3 = a * b * c;
 

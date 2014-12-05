@@ -62,7 +62,7 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
     }
     
     //Spelling sp = AST_BASE(node)->location.spelling;
-    if (node->base.type_id & TYPE_FLAG_UNIT) {
+    if (node->base.type_id == 0) {
         CG("void");
     } else {
         switch (node->bit_size) {

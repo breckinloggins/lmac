@@ -400,7 +400,40 @@ ASTExpression *parse_unary_expression(Context *ctx) {
      | '(' type_name ')' '{' initializer_list ',' '}'
  */
 ASTExpression *parse_postfix_expression(Context *ctx) {
-    return parse_primary_expression(ctx);
+    ASTExpression *expr = parse_primary_expression(ctx);
+    if (expr == NULL) {
+        return NULL;
+    }
+    
+    // TODO(bloggins): This is a hack to prevent casts from looking
+    // like function calls. If the expression on the left is a type
+    // expression, then don't treat it as indexable or callable or whatever.
+    //
+    // In the future, I'd like to do the opposite. I want to treat the TYPE
+    // as callable, indexible, etc. and implement casts that way. That also
+    // allows for overloadable casting in a cool way.
+    if (AST_BASE(expr)->kind == AST_EXPR_PAREN) {
+        ASTExprParen *paren = (ASTExprParen*)expr;
+        if (ast_node_is_type_expression((ASTBase*)paren->inner)) {
+            return expr;
+        }
+    }
+    
+    for (;;) {
+        Token t = peek_token(ctx);
+        if (t.kind == TOK_LPAREN) {
+            // Assume we have a callable
+            next_token(ctx);  // gobble gobble
+            
+            // TODO: ARGS
+            
+            expect_token(ctx, TOK_RPAREN);
+        } else {
+            break;
+        }
+    }
+    
+    return expr;
 }
 
 /* primary_expression: 
@@ -663,12 +696,33 @@ fail_parse:
     return NULL;
 }
 
+ASTBase *parse_stmt_expression(Context *ctx) {
+    ASTBase *expr = (ASTBase*)parse_expression(ctx);
+    if (expr != NULL) {
+        expect_token(ctx, TOK_SEMICOLON);
+        return expr;
+    }
+    
+    // We could also have an empty expression and just a semi-colon
+    Context s = snapshot(ctx);
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_SEMICOLON))) { goto fail_parse; }
+    
+    return (ASTBase*)ast_create_expr_empty();
+    
+fail_parse:
+    restore(ctx, s);
+    return NULL;
+}
+
 ASTBase *parse_block_stmt(Context *ctx) {
     // NOTE(bloggins): When a parse function just switches
     //                  on other parse functions, there's no
     //                  need to save the context ourselves
     
     ASTBase *stmt = (ASTBase *)parse_defn_var(ctx);
+    if (stmt == NULL) {
+        stmt = (ASTBase*)parse_stmt_expression(ctx);
+    }
     if (stmt == NULL) {
         stmt = (ASTBase*)parse_stmt_return(ctx);
     }
