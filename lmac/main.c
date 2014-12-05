@@ -114,6 +114,7 @@ int main(int argc, const char * argv[]) {
     long fsize = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     
+    g_ctx.file = file;
     g_ctx.buf = (uint8_t *)malloc(fsize + 1);
     fread(g_ctx.buf, fsize, 1, fp);
     fclose(fp);
