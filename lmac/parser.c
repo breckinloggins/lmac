@@ -819,29 +819,25 @@ fail_parse:
     return NULL;
 }
 
-void parse_end(Context *ctx) {
+bool parse_end(Context *ctx) {
     expect_token(ctx, TOK_END);
+    return true;
 }
 
-ASTTopLevel *parse_toplevel(Context *ctx) {
+bool parse_toplevel(Context *ctx) {
     Context s = snapshot(ctx);
     ASTList *stmts = NULL;
     
-    ASTTopLevel *tl = ast_create_toplevel();
     ASTBase *stmt;
     while ((stmt = (ASTBase*)parse_defn_var(ctx)) ||
            (stmt = (ASTBase*)parse_defn_fn(ctx)) ||
            (stmt = (ASTBase*)parse_pp_directive(ctx))) {
-        stmt->parent = (ASTBase*)tl;
         ast_list_add(&stmts, stmt);
     }
     
-    parse_end(ctx);
+    act_on_toplevel(ctx, parsed_source_location(ctx, s), stmts);
     
-    tl->base.location = parsed_source_location(ctx, s);
-    tl->definitions = stmts;
-    
-    return tl;
+    return parse_end(ctx);
 }
 
 
@@ -914,10 +910,7 @@ fail_parse:
 #pragma mark Public API
 
 void parser_parse(Context *ctx) {
-    ASTTopLevel *tl = parse_toplevel(ctx);
-    if (!tl) {
+    if (!parse_toplevel(ctx)) {
         exit(ERR_PARSE);
     }
-    
-    ctx->ast = tl;
 }

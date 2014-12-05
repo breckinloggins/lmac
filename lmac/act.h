@@ -11,6 +11,10 @@
 #ifndef lmac_act_h
 #define lmac_act_h
 
+#include "token.h"
+#include "ast.h"
+#include "context.h"
 
+void act_on_toplevel(Context *ctx, SourceLocation sl, ASTList *stmts);
 
 #endif
