@@ -43,7 +43,7 @@ ASTBase *ast_create(ASTKind kind, size_t size) {
 #define STANDARD_VISIT_PRE()                                    \
     int result = visit(node, VISIT_PRE, ctx);                   \
     if (result != VISIT_OK) {                                   \
-        return result;                                          \
+        return result == VISIT_HANDLED ? VISIT_OK : result;     \
     }
 
 #define STANDARD_VISIT_POST()                                   \
@@ -204,7 +204,7 @@ AST_ACCEPT_FN(AST_TYPE_CONSTANT) {
     STANDARD_VISIT()
 }
 
-AST_ACCEPT_FN(AST_TYPE_PLACEHOLDER) {
+AST_ACCEPT_FN(AST_TYPE_NAME) {
     STANDARD_VISIT()
 }
 
@@ -279,8 +279,118 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
     }
 }
 
+ASTBase *ast_nearest_scope_node(ASTBase *node) {
+    assert(node && "node should not be null (all nodes should parent to eventual AST_TOPLEVEL");
+    if (node->kind == AST_TOPLEVEL || node->kind == AST_BLOCK) {
+        return node;
+    }
+    
+    return ast_nearest_scope_node(node->parent);
+}
+
+ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node) {
+    ASTBase *scope = ast_nearest_scope_node(node);
+    
+    ASTList *stmts = NULL;
+    if (scope->kind == AST_TOPLEVEL) {
+        stmts = ((ASTTopLevel*)scope)->definitions;
+    } else if (scope->kind == AST_BLOCK) {
+        stmts = ((ASTBlock*)scope)->statements;
+    }
+    
+    ASTLIST_FOREACH(ASTBase*, scope_node, stmts, {
+        ASTIdent *defn_ident = NULL;
+        if (scope_node->kind == AST_DEFN_FUNC) {
+            defn_ident = ((ASTDefnFunc*)scope_node)->name;
+        } else if (scope_node->kind == AST_DEFN_VAR) {
+            defn_ident = ((ASTDefnVar*)scope_node)->name;
+        } else {
+            continue;
+        }
+        
+        assert(defn_ident && "definitions should always be named");
+        if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
+            return scope_node;
+        }
+    })
+    
+    if (scope->kind == AST_TOPLEVEL) {
+        return NULL;
+    }
+    
+    return ast_nearest_spelling_definition(spelling, node->parent);
+}
+
+
+// TODO(bloggins): Probably need to move into a separate type checking file
+
 bool ast_node_is_type_expression(ASTBase *node) {
     return node != NULL && node->kind > AST_TYPE_BEGIN && node->kind < AST_TYPE_END;
+}
+
+bool ast_node_is_type_definition(ASTBase *node) {
+    if (node->kind != AST_DEFN_VAR) {
+        return false;
+    }
+    
+    ASTDefnVar *var = (ASTDefnVar*)node;
+    return (var->type != NULL && (var->type->type_id & TYPE_FLAG_KIND));
+}
+
+ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
+    // NOTE(bloggins): Get the "standard" type for this type. For example, the
+    // canonical type of a type name is the canonical type of the resolved type
+    // name.
+    if (type == NULL) {
+        // For convenience, the canonical type of NULL is NULL
+        return NULL;
+    }
+    
+    switch (AST_BASE(type)->kind) {
+        case AST_TYPE_CONSTANT: {
+            /* itself */
+            return type;
+        } break;
+        case AST_TYPE_NAME: {
+            /* the canonical type of the resolved name if it's resolved */
+            ASTTypeName *type_name = (ASTTypeName*)type;
+            if (type_name->resolved_type == NULL) {
+                Spelling sp = AST_BASE(type_name)->location.spelling;
+                ASTBase *type_defn = ast_nearest_spelling_definition(sp, (ASTBase*)type_name);
+                if (type_defn == NULL) {
+                    diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
+                                "undefined type '%s'",
+                                spelling_cstring(sp));
+                    exit(ERR_ANALYZE);
+                } else if (ast_node_is_type_definition(type_defn)) {
+                    // TODO(bloggins): HACK: We need to abstract this to just
+                    // getting the type of any AST node, because right now this
+                    // has incestuous knowledge of the implementation of
+                    // ast_node_is_type_definition!
+                    ASTDefnVar *defn = (ASTDefnVar*)type_defn;
+                    type_name->resolved_type = (ASTTypeExpression*)defn->expression;
+                    assert(type_name->resolved_type && "claimed to resolve a type but didn't");
+                } else {
+                    diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
+                               "'%s' is a %s, not a type",
+                                spelling_cstring(sp),
+                                ast_get_kind_name(AST_BASE(type_defn)->kind));
+                    exit(ERR_ANALYZE);
+                }
+            }
+            
+            return ast_type_get_canonical_type(type_name->resolved_type);
+        }
+        default: assert(false && "Unhandled type kind");
+    }
+}
+
+uint32_t ast_type_next_type_id() {
+    // TODO(bloggins): Common types should probably be pre-reserved for more stable
+    // type ids
+    static uint32_t next_id = 1;
+    
+    return next_id++;
 }
 
 #pragma mark Convenience Initializers

@@ -36,69 +36,32 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         ast_list_add(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
     } else if (node->kind == AST_DEFN_FUNC) {
         ASTDefnFunc *func = (ASTDefnFunc*)node;
-        Spelling sp_type = AST_BASE(func->type)->location.spelling;
+        ASTTypeExpression *canonical_type = ast_type_get_canonical_type(func->type);
+        Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);
         
         if (spelling_streq(func->name->base.location.spelling, "main") &&
-            !spelling_streq(sp_type, "int")) {
-            ANALYZE_ERROR(&(func->base.location), "function main() must have return type 'int'");
+            !spelling_streq(sp_type, "$32")) {
+            // TODO(bloggins): This is temporary and wrong
+            ANALYZE_ERROR(&(func->base.location), "function main() must have return type '$32'");
         }
         
     } else if (node->kind == AST_DEFN_VAR) {
         ASTDefnVar *var = (ASTDefnVar*)node;
-        Spelling sp_type = AST_BASE(var->type)->location.spelling;
+        ASTTypeExpression *canonical_type = ast_type_get_canonical_type(var->type);
+        Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);
-    } else if (ast_node_is_type_expression(node)) {
-        Spelling sp_t = node->location.spelling;
-        if (!spelling_streq(sp_t, "int") && !spelling_streq(sp_t, "void")) {
-            ANALYZE_ERROR(&node->location, "invalid type '%s'", spelling_cstring(sp_t));
+    } else if (ast_node_is_type_definition(node)) {
+        if (AST_BASE(node)->kind == AST_TYPE_NAME) {
+            // Don't need to do anything right now, just don't want to fall to below
+        } else if (AST_BASE(node)->kind != AST_TYPE_CONSTANT) {
+            // This is just a placeholder so we can catch types we can't codegen yet
+            Spelling sp_t = node->location.spelling;
+            ANALYZE_ERROR(&node->location, "invalid type '%s' (not supported)", spelling_cstring(sp_t));
         }
-
     }
     
     return VISIT_OK;
-}
-
-ASTBase *nearest_scope_node(ASTBase *node) {
-    assert(node && "node should not be null (all nodes should parent to eventual AST_TOPLEVEL");
-    if (node->kind == AST_TOPLEVEL || node->kind == AST_BLOCK) {
-        return node;
-    }
-    
-    return nearest_scope_node(node->parent);
-}
-
-bool spelling_defined_in_scope(Spelling spelling, ASTBase* node) {
-    ASTBase *scope = nearest_scope_node(node);
-
-    ASTList *stmts = NULL;
-    if (scope->kind == AST_TOPLEVEL) {
-        stmts = ((ASTTopLevel*)scope)->definitions;
-    } else if (scope->kind == AST_BLOCK) {
-        stmts = ((ASTBlock*)scope)->statements;
-    }
-    
-    ASTLIST_FOREACH(ASTBase*, scope_node, stmts, {
-        ASTIdent *defn_ident = NULL;
-        if (scope_node->kind == AST_DEFN_FUNC) {
-            defn_ident = ((ASTDefnFunc*)scope_node)->name;
-        } else if (scope_node->kind == AST_DEFN_VAR) {
-            defn_ident = ((ASTDefnVar*)scope_node)->name;
-        } else {
-            continue;
-        }
-        
-        assert(defn_ident && "definitions should always be named");
-        if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
-            return true;
-        }
-    })
-    
-    if (scope->kind == AST_TOPLEVEL) {
-        return false;
-    }
-
-    return spelling_defined_in_scope(spelling, node->parent);
 }
 
 void analyzer_analyze(ASTTopLevel *ast) {
@@ -106,7 +69,7 @@ void analyzer_analyze(ASTTopLevel *ast) {
     ast_visit((ASTBase*)ast, ast_visitor, &ctx);
     
     ASTLIST_FOREACH(ASTIdent*, ident, ctx.identifiers, {
-        if (!spelling_defined_in_scope(ident->base.location.spelling, (ASTBase*)ident)) {
+        if (ast_nearest_spelling_definition(ident->base.location.spelling, (ASTBase*)ident) == NULL) {
             ANALYZE_ERROR(&ident->base.location, "undeclared identifier '%s'", spelling_cstring(ident->base.location.spelling));
         }
     })

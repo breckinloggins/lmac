@@ -1,6 +1,9 @@
 // Test of expression types
 #pragma CLITE fcg_explicit_parens  /* make the code generator group all expressions explicitly */
 
+// TODO(bloggins): Move this into the prelude
+$$() int = $32;
+
 int a = 1;
 int b = 2;
 int c = 4;

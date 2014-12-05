@@ -15,6 +15,7 @@
 #include "clite.h"
 
 #include <limits.h>
+#include <ctype.h>
 
 ASTExpression *parse_expression(Context *ctx);
 ASTExpression *parse_primary_expression(Context *ctx);
@@ -489,11 +490,11 @@ ASTTypeExpression *parse_type_expression_or_placeholder(Context *ctx) {
         return NULL;
     }
     
-    ASTTypePlaceholder *type_ph = ast_create_type_placeholder();
+    ASTTypeName *type_ph = ast_create_type_name();
     AST_BASE(type_ph)->location = AST_BASE(ident)->location;
     AST_BASE(ident)->parent = (ASTBase*)type_ph;
     
-    type_ph->type_name = ident;
+    type_ph->name = ident;
     return (ASTTypeExpression*)type_ph;
 }
 
@@ -504,33 +505,88 @@ ASTTypeExpression *parse_type_expression(Context *ctx) {
 ASTTypeConstant *parse_type_constant(Context *ctx) {
     Context s = snapshot(ctx);
     
-    // TODO(bloggins): This is just bootstrapping code
+    Token tdollar = accept_token(ctx, TOK_DOLLAR);
+    if (IS_TOKEN_NONE(tdollar)) { goto fail_parse; }
     
-    Token t = accept_token(ctx, TOK_IDENT);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
-    Spelling sp_t = t.location.spelling;
-    uint8_t bit_flags = BIT_FLAG_NONE;
     uint32_t type_id = 0;
+    uint8_t bit_flags = BIT_FLAG_NONE;
     uint64_t bit_size = 0;
-    if (spelling_streq(sp_t, "void")) {
-        type_id = TYPE_FLAG_UNIT;
-    } else if (spelling_streq(sp_t, "int")) {
-        bit_flags |= BIT_FLAG_SIGNED;
-        type_id = 1;
-        bit_size = 32;
+    
+    if (!IS_TOKEN_NONE(accept_token(ctx, TOK_DOLLAR))) {
+        
+        // In the future we could support higher-kinds and dependent
+        // type infrastructure by recursively parsing type expressions,
+        // but not now. Only accept the unit type for the meta-kind
+        expect_token(ctx, TOK_LPAREN);
+        expect_token(ctx, TOK_RPAREN);
+        
+        type_id |= TYPE_FLAG_SINGLETON;
+        type_id |= TYPE_FLAG_KIND;
+    } else if (!IS_TOKEN_NONE(accept_token(ctx, TOK_LPAREN))) {
+        Token tnum = accept_token(ctx, TOK_NUMBER);
+        if (IS_TOKEN_NONE(tnum)) {
+            // It's the unit type
+            type_id |= TYPE_FLAG_UNIT;
+        } else {
+            // TODO(bloggins): Implement them!
+            diag_printf(DIAG_FATAL, &tnum.location, "singleton types are not yet implemented");
+            exit(ERR_PARSE);
+        }
+        
+        expect_token(ctx, TOK_RPAREN);
     } else {
-        goto fail_parse;
-    }
     
-    if (bit_size > WORD_BIT) {
-        diag_printf(DIAG_ERROR, &t.location, "invalid type size. %d is greater "
-                    "than the machine word size of %d bits", bit_size, WORD_BIT);
-        exit(ERR_PARSE);
+        // At this point we are expecting either an IDENT (which should then be of
+        // a certain form), or a number
+        Token tbit_size = accept_token(ctx, TOK_NUMBER);
+        if (IS_TOKEN_NONE(tbit_size)) {
+            // It must be embedded in the ident
+            Token ttype_desc = expect_token(ctx, TOK_IDENT);
+            Spelling desc_sp = ttype_desc.location.spelling;
+            const char *desc = spelling_cstring(desc_sp);
+            
+            // TODO(bloggins): finish this mess
+            diag_printf(DIAG_FATAL, &ttype_desc.location, "type constant specifiers are not currently supported");
+            exit(ERR_PARSE);
+            
+    #if 0
+            if (desc[0] == 'f') {
+                if (desc[1] == 0) {
+                    diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
+                                "description '%s' is invalid; it has no size", desc);
+                    exit(ERR_PARSE);
+                }
+                
+                if (!isdigit(desc[1])) {
+                    diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
+                                "description '%s' is invalid; bit size expected after flags", desc);
+                    exit(ERR_PARSE);
+                }
+            }
+    #endif
+        } else {
+            type_id |= ast_type_next_type_id();
+            bit_flags |= BIT_FLAG_SIGNED;
+            bit_size = strtoul(spelling_cstring(tbit_size.location.spelling), NULL, 10);
+        }
+        
+        SourceLocation sl = parsed_source_location(ctx, s);
+        // Clean up the source location a bit so it starts right at the dollar sign
+        sl.range_start = tdollar.location.range_start;
+        
+        if (bit_size > WORD_BIT) {
+            diag_printf(DIAG_ERROR, &sl, "invalid type size. %d is greater "
+                        "than the machine word size of %d bits", bit_size, WORD_BIT);
+            exit(ERR_PARSE);
+        }
     }
-    
     ASTTypeConstant *type = ast_create_type_constant();
-    AST_BASE(type)->location = t.location;
+    
+    SourceLocation sl = parsed_source_location(ctx, s);
+    // Clean up the source location a bit so it starts right at the dollar sign
+    sl.range_start = tdollar.location.range_start;
+
+    AST_BASE(type)->location = sl;
     type->base.type_id = type_id;
     type->bit_flags = bit_flags;
     type->bit_size = bit_size;

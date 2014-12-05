@@ -6,9 +6,12 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
+$$() int = $32;
+
+int x = 4;
 int main() {
-    
-    int a = (int)(3 + 4);
     int b = 3;
+    int a = ($32)(3 + 4);
+    $32 c = b;
     return 0;
 }

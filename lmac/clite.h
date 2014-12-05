@@ -92,6 +92,7 @@ typedef enum {
 } VisitPhase;
 
 #define VISIT_OK        0
+#define VISIT_HANDLED   1   /* When returned VISIT_PRE phase, stops default visit and post */
 typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 
 #define AST_BASE(node) ((ASTBase*)(node))
@@ -242,9 +243,14 @@ typedef struct {
     ASTTypeExpression base;
     
     /* The identifier that might or might not be a type... possible... one fine day */
-    ASTIdent *type_name;
+    ASTIdent *name;
     
-} ASTTypePlaceholder;
+    /* Computed */
+    struct {
+        ASTTypeExpression *resolved_type;
+    };
+    
+} ASTTypeName;
 
 /*
  * Compiler Context
@@ -301,7 +307,12 @@ const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 void ast_list_add(ASTList **list, ASTBase *node);
 void ast_fprint(FILE *f, ASTBase *node, int indent);
+ASTBase *ast_nearest_scope_node(ASTBase *node);
+ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
+bool ast_node_is_type_definition(ASTBase *node);
 bool ast_node_is_type_expression(ASTBase *node);
+ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type);
+uint32_t ast_type_next_type_id();
 void ast_init_expr_binary(ASTExprBinary *binop, ASTExpression *left,
                           ASTExpression *right, ASTOperator *op);
 
