@@ -22,8 +22,8 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result);
 bool parse_expr_postfix(Context *ctx, ASTExpression **result);
 bool parse_expr_unary(Context *ctx, ASTExpression **result);
 bool parse_expr_cast(Context *ctx, ASTExpression **result);
-ASTExpression *parse_multiplicative_expression(Context *ctx);
-ASTExpression *parse_additive_expression(Context *ctx);
+bool parse_expr_multiplicative(Context *ctx, ASTExpression **result);
+bool parse_expr_additive(Context *ctx, ASTExpression **result);
 ASTExpression *parse_shift_expression(Context *ctx);
 ASTExpression *parse_relational_expression(Context *ctx);
 ASTExpression *parse_equality_expression(Context *ctx);
@@ -140,6 +140,33 @@ fail_parse:
 /* ====== Expressions ====== */
 #pragma mark Expressions
 
+bool parse_next_expr_binary(Context *ctx, TokenKind allowed_ops[],
+    bool (*parse_expr_right)(Context *ctx, ASTExpression **right),
+                            ASTExpression **result) {
+    assert(result && "must pass a valid result pointer");
+    
+    Token t = peek_token(ctx);
+    if (!token_is_of_kind(t, allowed_ops)) {
+        return false;
+    }
+    
+    char op = (char)*t.location.range_start;
+        
+    // Assume we have a binary expression
+    next_token(ctx);  // gobble gobble
+    
+    ASTExpression *left = *result;
+    ASTExpression *right = NULL;
+    if (!parse_expr_right(ctx, &right)) {
+        SourceLocation sl = parsed_source_location(ctx, *ctx);
+        diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
+        exit(ERR_PARSE);
+    }
+    
+    act_on_expr_binary(t.location, left, right, op, (ASTExprBinary**)result);
+    return true;
+}
+
 /*
  expression
 	: assignment_expression
@@ -241,7 +268,9 @@ ASTExpression *parse_relational_expression(Context *ctx) {
 	| shift_expression TOK_RIGHT additive_expression
  */
 ASTExpression *parse_shift_expression(Context *ctx) {
-    return parse_additive_expression(ctx);
+    ASTExpression *expr = NULL;
+    parse_expr_additive(ctx, &expr);
+    return expr;
 }
 
 /*
@@ -250,39 +279,18 @@ ASTExpression *parse_shift_expression(Context *ctx) {
 	| additive_expression '+' multiplicative_expression
 	| additive_expression '-' multiplicative_expression
  */
-ASTExpression *parse_additive_expression(Context *ctx) {
-    ASTExpression *expr = parse_multiplicative_expression(ctx);
-    
-    for (;;) {
-        Token t = peek_token(ctx);
-        if (t.kind == TOK_PLUS || t.kind == TOK_MINUS) {
-            char op = (char)*t.location.range_start;
-            
-            // Assume we have a binary expression
-            next_token(ctx);  // gobble gobble
-            
-            ASTExpression *left = expr;
-            ASTExpression *right = parse_multiplicative_expression(ctx);
-            if (right == NULL) {
-                SourceLocation sl = parsed_source_location(ctx, *ctx);
-                diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
-                exit(ERR_PARSE);
-            }
-            
-            // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
-            ASTExprBinary *binop = ast_create_expr_binary();
-            ASTOperator *op_node = ast_create_operator();
-            op_node->base.location = t.location;
-            op_node->op = op;
-            ast_init_expr_binary(binop, left, right, op_node);
-            
-            expr = (ASTExpression*)binop;
-        } else {
-            break;
-        }
+bool parse_expr_additive(Context *ctx, ASTExpression **result) {
+    // TODO(bloggins): extract this into parse_expr_binary(ctx, [valid_operator_kinds], result)
+    if (!parse_expr_multiplicative(ctx, result)) {
+        return NULL;
     }
     
-    return expr;
+    TokenKind ops[] = {TOK_PLUS, TOK_MINUS, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_multiplicative, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
@@ -292,42 +300,17 @@ ASTExpression *parse_additive_expression(Context *ctx) {
 	| multiplicative_expression '/' cast_expression
 	| multiplicative_expression '%' cast_expression
  */
-ASTExpression *parse_multiplicative_expression(Context *ctx) {
-    ASTExpression *expr = NULL;
-    if (!parse_expr_cast(ctx, &expr)) {
+bool parse_expr_multiplicative(Context *ctx, ASTExpression **result) {
+    if (!parse_expr_cast(ctx, result)) {
         return NULL;
     }
     
-    for (;;) {
-        Token t = peek_token(ctx);
-        if (t.kind == TOK_STAR || t.kind == TOK_FORWARDSLASH || t.kind == TOK_PERCENT) {
-            char op = (char)*t.location.range_start;
-            
-            // Assume we have a binary expression
-            next_token(ctx);  // gobble gobble
-            
-            ASTExpression *left = expr;
-            ASTExpression *right = NULL;
-            if (!parse_expr_cast(ctx, &right)) {
-                SourceLocation sl = parsed_source_location(ctx, *ctx);
-                diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
-                exit(ERR_PARSE);
-            }
-            
-            // TODO(bloggins): move to ast.c in function like "ast_init_expr_binary(...)"
-            ASTExprBinary *binop = ast_create_expr_binary();
-            ASTOperator *op_node = ast_create_operator();
-            op_node->base.location = t.location;
-            op_node->op = op;
-            ast_init_expr_binary(binop, left, right, op_node);
-            
-            expr = (ASTExpression*)binop;
-        } else {
-            break;
-        }
+    TokenKind ops[] = {TOK_STAR, TOK_FORWARDSLASH, TOK_PERCENT, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_cast, result)) {
+        // Keep going
     }
     
-    return expr;
+    return true;
 }
 
 /*

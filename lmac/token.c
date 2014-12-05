@@ -40,3 +40,20 @@ void token_fprint(FILE *f, Token t) {
     }
     fprintf(f, "}\n");
 }
+
+bool token_is_of_kind(Token t, TokenKind kind[]) {
+    size_t idx = 0;
+    for (;;) {
+        if (kind[idx] == TOK_LAST) {
+            return false;
+        }
+        
+        if (t.kind == kind[idx]) {
+            return true;
+        }
+        
+        ++idx;
+    }
+    
+    return false;
+}

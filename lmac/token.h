@@ -62,5 +62,7 @@ size_t token_strlen(Token t);
 bool token_streq(Token t, const char *str);
 void token_fprint(FILE *f, Token t);
 
+/* NOTE: pass TOK_LAST at the end! */
+bool token_is_of_kind(Token t, TokenKind kind[]);
 
 #endif

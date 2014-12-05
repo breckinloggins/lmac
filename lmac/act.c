@@ -199,3 +199,16 @@ void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
     
     *result = cast_expr;
 }
+
+void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *right,
+                        char op, ASTExprBinary **result) {
+    if (result == NULL) return;
+    
+    ASTExprBinary *binop = ast_create_expr_binary();
+    ASTOperator *op_node = ast_create_operator();
+    op_node->base.location = sl;
+    op_node->op = op;
+    ast_init_expr_binary(binop, left, right, op_node);
+    
+    *result = binop;
+}

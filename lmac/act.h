@@ -53,4 +53,7 @@ void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
 void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
                       ASTExpression *expr, ASTExprCast **result);
 
+void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *right,
+                        char op, ASTExprBinary **result);
+
 #endif
