@@ -505,6 +505,7 @@ bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
 bool parse_expr_string(Context *ctx, ASTExprString **result) {
     Context s = snapshot(ctx);
     
+    // TODO(bloggins): Handle escapes
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_DOUBLE_QUOTE))) { goto fail_parse; }
     
     uint8_t *range_start = ctx->pos;
