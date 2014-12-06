@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "tests/3_type_exprs.c"
+            argument = "tests/2_expressions.c"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

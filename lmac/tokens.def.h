@@ -65,7 +65,17 @@ TOKEN(TOK_LANGLE, leftangle)
 TOKEN(TOK_RANGLE, rightangle)
 TOKEN(TOK_2LANGLE, two_leftangle)
 TOKEN(TOK_2RANGLE, two_rightangle)
-    
+TOKEN(TOK_BANG, bang)
+TOKEN(TOK_AMP, ampersand)
+TOKEN(TOK_CARET, caret)
+TOKEN(TOK_PIPE, pipe)
+TOKEN(TOK_LANGLE_EQUALS, leftangle_equals)
+TOKEN(TOK_RANGLE_EQUALS, rightangle_equals)
+TOKEN(TOK_EQUALS_EQUALS, equals_equals)
+TOKEN(TOK_BANG_EQUALS, bang_equals)
+TOKEN(TOK_AMP_AMP, ampersand_ampersand)
+TOKEN(TOK_PIPE_PIPE, pipe_pipe)
+
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code
  */

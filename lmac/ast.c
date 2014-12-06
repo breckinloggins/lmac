@@ -296,7 +296,7 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
         fprintf(f, " <%d>", ((ASTExprNumber*)node)->number);
     } else if (node->kind == AST_EXPR_BINARY) {
         ASTExprBinary *binop = (ASTExprBinary*)node;
-        fprintf(f, " <%c>", binop->op->op);
+        fprintf(f, " <%s>", spelling_cstring(binop->op->base.location.spelling));
     }
 }
 

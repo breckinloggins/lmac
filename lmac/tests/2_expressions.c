@@ -19,6 +19,21 @@ int main() {
     int lshift = add2 << 2;
     int rshift = add2 >> 2;
     
+    int lt = add2 < 1;
+    int gr = add2 > 1;
+    int lte = add2 <= 1;
+    int gte = add2 >= 1;
+    
+    int eq = add2 == 1;
+    int neq = add2 != 1;
+    
+    int and = add2 & 1;
+    int or = add2 | 1;
+    int xor = add2 ^ 1;
+    
+    int land = add2 && 1;
+    int lor = add2 || 1;
+    
     int sub2 = a - b;
     int sub3 = a - b - c;
 

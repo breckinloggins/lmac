@@ -135,6 +135,17 @@ Token lexer_next_token(Context *ctx) {
             break;
         case '=':
             t.kind = TOK_EQUALS;
+            if ((char)*(ctx->pos+1) == '=') {
+                t.kind = TOK_EQUALS_EQUALS;
+                ctx->pos++;
+            }
+            break;
+        case '!':
+            t.kind = TOK_BANG;
+            if ((char)*(ctx->pos+1) == '=') {
+                t.kind = TOK_BANG_EQUALS;
+                ctx->pos++;
+            }
             break;
         case '+':
             t.kind = TOK_PLUS;
@@ -167,6 +178,9 @@ Token lexer_next_token(Context *ctx) {
             if ((char)*(ctx->pos+1) == '<') {
                 t.kind = TOK_2LANGLE;
                 ctx->pos++;
+            } else if ((char)*(ctx->pos+1) == '=') {
+                t.kind = TOK_LANGLE_EQUALS;
+                ctx->pos++;
             }
             break;
         case '>':
@@ -174,7 +188,27 @@ Token lexer_next_token(Context *ctx) {
             if ((char)*(ctx->pos+1) == '>') {
                 t.kind = TOK_2RANGLE;
                 ctx->pos++;
+            } else if ((char)*(ctx->pos+1) == '=') {
+                t.kind = TOK_RANGLE_EQUALS;
+                ctx->pos++;
             }
+            break;
+        case '&':
+            t.kind = TOK_AMP;
+            if ((char)*(ctx->pos+1) == '&') {
+                t.kind = TOK_AMP_AMP;
+                ctx->pos++;
+            }
+            break;
+        case '|':
+            t.kind = TOK_PIPE;
+            if ((char)*(ctx->pos+1) == '|') {
+                t.kind = TOK_PIPE_PIPE;
+                ctx->pos++;
+            }
+            break;
+        case '^':
+            t.kind = TOK_CARET;
             break;
         case ' ': case '\t':
             t.kind = TOK_WS;

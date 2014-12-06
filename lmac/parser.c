@@ -29,7 +29,7 @@ bool parse_expr_relational(Context *ctx, ASTExpression **result);
 bool parse_expr_equality(Context *ctx, ASTExpression **result);
 bool parse_expr_and(Context *ctx, ASTExpression **result);
 bool parse_expr_exclusive_or(Context *ctx, ASTExpression **result);
-bool parse_expr_inclusve_or(Context *ctx, ASTExpression **result);
+bool parse_expr_inclusive_or(Context *ctx, ASTExpression **result);
 bool parse_expr_logical_and(Context *ctx, ASTExpression **result);
 bool parse_expr_logical_or(Context *ctx, ASTExpression **result);
 bool parse_expr_conditional(Context *ctx, ASTExpression **result);
@@ -197,68 +197,132 @@ bool parse_expr_conditional(Context *ctx, ASTExpression **result) {
 /*
  logical_or_expression
 	: logical_and_expression
-	| logical_or_expression TOK_OROR logical_and_expression
+	| logical_or_expression TOK_PIPE_PIPE logical_and_expression
  */
 bool parse_expr_logical_or(Context *ctx, ASTExpression **result) {
-    return parse_expr_logical_and(ctx, result);
+    if (!parse_expr_logical_and(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_PIPE_PIPE, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_logical_and, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  logical_and_expression
 	: inclusive_or_expression
-	| logical_and_expression TOK_ANDAND inclusive_or_expression
+	| logical_and_expression TOK_AMP_AMP inclusive_or_expression
  */
 bool parse_expr_logical_and(Context *ctx, ASTExpression **result) {
-    return parse_expr_inclusve_or(ctx, result);
+    if (!parse_expr_inclusive_or(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_AMP_AMP, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_inclusive_or, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  inclusive_or_expression
 	: exclusive_or_expression
-	| inclusive_or_expression '|' exclusive_or_expression
+	| inclusive_or_expression TOK_PIPE exclusive_or_expression
  */
-bool parse_expr_inclusve_or(Context *ctx, ASTExpression **result) {
-    return parse_expr_exclusive_or(ctx, result);
+bool parse_expr_inclusive_or(Context *ctx, ASTExpression **result) {
+    if (!parse_expr_exclusive_or(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_PIPE, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_exclusive_or, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  exclusive_or_expression
 	: and_expression
-	| exclusive_or_expression '^' and_expression
+	| exclusive_or_expression TOK_CARET and_expression
  */
 bool parse_expr_exclusive_or(Context *ctx, ASTExpression **result) {
-    return parse_expr_and(ctx, result);
+    if (!parse_expr_and(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_CARET, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_and, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  and_expression
 	: equality_expression
-	| and_expression '&' equality_expression
+	| and_expression TOK_AMP equality_expression
  */
 bool parse_expr_and(Context *ctx, ASTExpression **result) {
-    return parse_expr_equality(ctx, result);
+    if (!parse_expr_equality(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_AMP, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_equality, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  equality_expression
 	: relational_expression
-	| equality_expression EQ_OP relational_expression
-	| equality_expression NE_OP relational_expression
+	| equality_expression TOK_EQUALS_EQUALS relational_expression
+	| equality_expression TOK_BANG_EQUALS relational_expression
  */
 bool parse_expr_equality(Context *ctx, ASTExpression **result) {
-    return parse_expr_relational(ctx, result);
+    if (!parse_expr_relational(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_EQUALS_EQUALS, TOK_BANG_EQUALS, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_relational, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
  relational_expression
 	: shift_expression
-	| relational_expression '<' shift_expression
-	| relational_expression '>' shift_expression
-	| relational_expression TOK_LTE shift_expression
-	| relational_expression TOK_GTE shift_expression
+	| relational_expression TOK_LANGLE shift_expression
+	| relational_expression TOK_RANGLE shift_expression
+	| relational_expression TOK_LANGLE_EQUALS shift_expression
+	| relational_expression TOK_RANGLE_EQUALS shift_expression
  */
 bool parse_expr_relational(Context *ctx, ASTExpression **result) {
-    return parse_expr_shift(ctx, result);
+    if (!parse_expr_shift(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_LANGLE, TOK_RANGLE, TOK_LANGLE_EQUALS,
+        TOK_RANGLE_EQUALS, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_shift, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
