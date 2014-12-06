@@ -210,6 +210,12 @@ Token lexer_next_token(Context *ctx) {
         case '^':
             t.kind = TOK_CARET;
             break;
+        case '\'':
+            t.kind = TOK_QUOTE;
+            break;
+        case '"':
+            t.kind = TOK_DOUBLE_QUOTE;
+            break;
         case ' ': case '\t':
             t.kind = TOK_WS;
             break;

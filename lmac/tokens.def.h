@@ -50,6 +50,8 @@ TOKEN(TOK_RBRACE, rightbrace)
 TOKEN(TOK_LPAREN, leftparen)
 TOKEN(TOK_RPAREN, rightparen)
 TOKEN(TOK_EQUALS, equals)
+TOKEN(TOK_DOUBLE_QUOTE, double_quote)
+TOKEN(TOK_QUOTE, quote)
 
 /* Math and logic symbols */
 /* NOTE(bloggins): These should be named by their lexical form and NOT their

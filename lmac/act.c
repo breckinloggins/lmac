@@ -166,6 +166,16 @@ void act_on_expr_number(SourceLocation sl, int n, ASTExprNumber **result) {
     *result = number;
 }
 
+void act_on_expr_string(SourceLocation sl, ASTExprString **result) {
+    if (result == NULL) return;
+    
+    ASTExprString *str = ast_create_expr_string();
+    
+    AST_BASE(str)->location = sl;
+    
+    *result = str;
+}
+
 void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
                        ASTExprParen **result) {
     if (result == NULL) return;

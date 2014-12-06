@@ -216,6 +216,16 @@ CG_VISIT_FN(AST_EXPR_NUMBER, ASTExprNumber) {
     return VISIT_OK;
 }
 
+CG_VISIT_FN(AST_EXPR_STRING, ASTExprString) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    
+    if (phase == VISIT_PRE) {
+        CG("\"%s\"", spelling_cstring(AST_BASE(node)->location.spelling));
+    }
+    
+    return VISIT_OK;
+}
+
 CG_VISIT_FN(AST_EXPR_PAREN, ASTExprParen) {
     // type *node, VisitPhase phase, CGContext *ctx
 
@@ -344,6 +354,7 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         CG_DISPATCH(AST_EXPR_BINARY, ASTExprBinary);
         CG_DISPATCH(AST_EXPR_IDENT, ASTExprIdent);
         CG_DISPATCH(AST_EXPR_NUMBER, ASTExprNumber);
+        CG_DISPATCH(AST_EXPR_STRING, ASTExprString);
         CG_DISPATCH(AST_EXPR_CAST, ASTExprCast);
         CG_DISPATCH(AST_EXPR_PAREN, ASTExprParen);
         CG_DISPATCH(AST_EXPR_CALL, ASTExprCall);

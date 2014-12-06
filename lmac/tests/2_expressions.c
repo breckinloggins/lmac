@@ -19,6 +19,8 @@ int main() {
     int lshift = add2 << 2;
     int rshift = add2 >> 2;
     
+    //$u8* str = "this is a string";
+    
     int lt = add2 < 1;
     int gr = add2 > 1;
     int lte = add2 <= 1;

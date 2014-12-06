@@ -502,6 +502,32 @@ bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
     return true;
 }
 
+bool parse_expr_string(Context *ctx, ASTExprString **result) {
+    Context s = snapshot(ctx);
+    
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_DOUBLE_QUOTE))) { goto fail_parse; }
+    
+    uint8_t *range_start = ctx->pos;
+    while ((char)*(ctx->pos++) != '"') {
+        if ((char)*(ctx->pos) == '\n') {
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "unterminated string constant");
+            exit(ERR_PARSE);
+        }
+    }
+    uint8_t *range_end = ctx->pos;
+    
+    SourceLocation sl = parsed_source_location(ctx, s);
+    sl.range_start = range_start;
+    sl.range_end = range_end - 1;
+    act_on_expr_string(sl, result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
 /* primary_expression: 
  type_expression
  | TOK_IDENT
@@ -519,7 +545,7 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
         act_on_expr_ident(t.location, (ASTExprIdent**)result);
-    } else {
+    } else if (!parse_expr_string(ctx, (ASTExprString**)result)) {
         t = accept_token(ctx, TOK_NUMBER);
         if (!IS_TOKEN_NONE(t)) {
             int n = (int)strtol((char*)t.location.range_start, NULL, 10);
@@ -542,11 +568,6 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
                 }
             }
         }
-    }
-    
-    if (result) {
-        // TODO(bloggins): Do we still need this?
-        AST_BASE(*result)->location = parsed_source_location(ctx, s);
     }
     
     return true;

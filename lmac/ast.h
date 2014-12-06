@@ -106,6 +106,12 @@ typedef struct {
 typedef struct {
     ASTExpression base;
     
+    // string literal. Actual string is the node spelling
+} ASTExprString;
+
+typedef struct {
+    ASTExpression base;
+    
     ASTExpression *inner;
 } ASTExprParen;
 
