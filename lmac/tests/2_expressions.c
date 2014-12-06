@@ -16,6 +16,9 @@ int main() {
     int add2 = a + b;
     int add3 = a + b + c;
 
+    int lshift = add2 << 2;
+    int rshift = add2 >> 2;
+    
     int sub2 = a - b;
     int sub3 = a - b - c;
 

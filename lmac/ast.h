@@ -66,7 +66,8 @@ typedef struct {
 
 typedef struct {
     ASTBase base;
-    char op;
+    
+    Token op;
 } ASTOperator;
 
 typedef struct {

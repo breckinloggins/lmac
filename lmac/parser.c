@@ -151,8 +151,6 @@ bool parse_next_expr_binary(Context *ctx, TokenKind allowed_ops[],
         return false;
     }
     
-    char op = (char)*t.location.range_start;
-        
     // Assume we have a binary expression
     next_token(ctx);  // gobble gobble
     
@@ -160,11 +158,12 @@ bool parse_next_expr_binary(Context *ctx, TokenKind allowed_ops[],
     ASTExpression *right = NULL;
     if (!parse_expr_right(ctx, &right)) {
         SourceLocation sl = parsed_source_location(ctx, *ctx);
-        diag_printf(DIAG_ERROR, &sl, "expected expression after '%c'", op);
+        diag_printf(DIAG_ERROR, &sl, "expected expression after '%s'",
+                    spelling_cstring(t.location.spelling));
         exit(ERR_PARSE);
     }
     
-    act_on_expr_binary(t.location, left, right, op, (ASTExprBinary**)result);
+    act_on_expr_binary(t.location, left, right, t, (ASTExprBinary**)result);
     return true;
 }
 
@@ -265,11 +264,20 @@ bool parse_expr_relational(Context *ctx, ASTExpression **result) {
 /*
  shift_expression
 	: additive_expression
-	| shift_expression TOK_LEFT additive_expression
-	| shift_expression TOK_RIGHT additive_expression
+	| shift_expression TOK_2LANGLE additive_expression
+	| shift_expression TOK_2RANGLE additive_expression
  */
 bool parse_expr_shift(Context *ctx, ASTExpression **result) {
-    return parse_expr_additive(ctx, result);
+    if (!parse_expr_additive(ctx, result)) {
+        return false;
+    }
+    
+    TokenKind ops[] = {TOK_2LANGLE, TOK_2RANGLE, TOK_LAST};
+    while (parse_next_expr_binary(ctx, ops, parse_expr_additive, result)) {
+        // Keep going
+    }
+    
+    return true;
 }
 
 /*
@@ -281,7 +289,7 @@ bool parse_expr_shift(Context *ctx, ASTExpression **result) {
 bool parse_expr_additive(Context *ctx, ASTExpression **result) {
     // TODO(bloggins): extract this into parse_expr_binary(ctx, [valid_operator_kinds], result)
     if (!parse_expr_multiplicative(ctx, result)) {
-        return NULL;
+        return false;
     }
     
     TokenKind ops[] = {TOK_PLUS, TOK_MINUS, TOK_LAST};

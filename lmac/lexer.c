@@ -162,6 +162,20 @@ Token lexer_next_token(Context *ctx) {
         case '%':
             t.kind = TOK_PERCENT;
             break;
+        case '<':
+            t.kind = TOK_LANGLE;
+            if ((char)*(ctx->pos+1) == '<') {
+                t.kind = TOK_2LANGLE;
+                ctx->pos++;
+            }
+            break;
+        case '>':
+            t.kind = TOK_RANGLE;
+            if ((char)*(ctx->pos+1) == '>') {
+                t.kind = TOK_2RANGLE;
+                ctx->pos++;
+            }
+            break;
         case ' ': case '\t':
             t.kind = TOK_WS;
             break;

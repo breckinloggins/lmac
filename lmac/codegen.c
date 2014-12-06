@@ -190,7 +190,8 @@ CG_VISIT_FN(AST_OPERATOR, ASTOperator) {
     // type *node, VisitPhase phase, CGContext *ctx
     
     if (phase == VISIT_PRE) {
-        CGSPACE(); CG("%c", node->op); CGSPACE();
+        Spelling op_sp = node->op.location.spelling;
+        CGSPACE(); CG("%s", spelling_cstring(op_sp)); CGSPACE();
     }
     
     return VISIT_OK;

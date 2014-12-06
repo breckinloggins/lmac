@@ -61,6 +61,10 @@ TOKEN(TOK_MINUS, minus)
 TOKEN(TOK_STAR, star)
 TOKEN(TOK_FORWARDSLASH, forwardslash)
 TOKEN(TOK_PERCENT, percent)
+TOKEN(TOK_LANGLE, leftangle)
+TOKEN(TOK_RANGLE, rightangle)
+TOKEN(TOK_2LANGLE, two_leftangle)
+TOKEN(TOK_2RANGLE, two_rightangle)
     
 /* Our tokenizer is whitespace and comment preserving
  * to better map input code to generated code

@@ -209,7 +209,7 @@ void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
 }
 
 void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *right,
-                        char op, ASTExprBinary **result) {
+                        Token op, ASTExprBinary **result) {
     if (result == NULL) return;
     
     ASTExprBinary *binop = ast_create_expr_binary();
