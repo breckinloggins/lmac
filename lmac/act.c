@@ -74,6 +74,11 @@ void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
                             ASTStmtExpr **result) {
     if (result == NULL) return;
     
+    if (expr == NULL) {
+        // Expression statements can be empty
+        expr = (ASTExpression*)ast_create_expr_empty();
+    }
+    
     ASTStmtExpr *stmt = ast_create_stmt_expr();
     AST_BASE(expr)->parent = (ASTBase*)stmt;
     
@@ -136,8 +141,11 @@ void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result) {
     *result = type_name;
 }
 
-void act_on_expr_ident(SourceLocation sl, ASTIdent *name, ASTExprIdent **result) {
+void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result) {
     if (result == NULL) return;
+    
+    ASTIdent *name = ast_create_ident();
+    AST_BASE(name)->location = sl;
     
     ASTExprIdent *ident = ast_create_expr_ident();
     name->base.location = sl;
@@ -211,4 +219,13 @@ void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *r
     ast_init_expr_binary(binop, left, right, op_node);
     
     *result = binop;
+}
+
+void act_on_ident(SourceLocation sl, ASTIdent **result) {
+    if (result == NULL) return;
+    
+    ASTIdent *ident = ast_create_ident();
+    ident->base.location = sl;
+    
+    *result = ident;
 }

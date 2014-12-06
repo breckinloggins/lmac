@@ -40,7 +40,7 @@ void act_on_type_constant(SourceLocation sl,
 
 void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result);
 
-void act_on_expr_ident(SourceLocation sl, ASTIdent *name, ASTExprIdent **result);
+void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result);
 
 void act_on_expr_number(SourceLocation sl, int number, ASTExprNumber **result);
 
@@ -56,4 +56,5 @@ void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
 void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *right,
                         char op, ASTExprBinary **result);
 
+void act_on_ident(SourceLocation sl, ASTIdent **result);
 #endif

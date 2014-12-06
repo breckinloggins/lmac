@@ -123,19 +123,18 @@ Token expect_token(Context *ctx, TokenKind kind) {
 /* ====== Identifiers ====== */
 #pragma mark Identifiers
 
-ASTIdent *parse_ident(Context *ctx) {
+bool parse_ident(Context *ctx, ASTIdent **result) {
     Context s = snapshot(ctx);
     
     Token t = accept_token(ctx, TOK_IDENT);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTIdent *ident = ast_create_ident();
-    ident->base.location = t.location;
-    return ident;
+    act_on_ident(t.location, result);
+    return true;
     
 fail_parse:
     restore(ctx, s);
-    return NULL;
+    return false;
 }
 
 
@@ -447,10 +446,7 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
     
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
-        ASTIdent *name = ast_create_ident();
-        AST_BASE(name)->location = t.location;
-        
-        act_on_expr_ident(t.location, name, (ASTExprIdent**)result);
+        act_on_expr_ident(t.location, (ASTExprIdent**)result);
     } else {
         t = accept_token(ctx, TOK_NUMBER);
         if (!IS_TOKEN_NONE(t)) {
@@ -499,9 +495,9 @@ bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result) {
     
     // Well, do we have an ident? Because if so it could be a type name
     // we don't know yet
-    ASTIdent *ident = parse_ident(ctx);
-    if (ident == NULL) {
-        return NULL;
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) {
+        return false;
     }
     
     act_on_type_name(AST_BASE(ident)->location, ident, (ASTTypeName**)result);
@@ -624,8 +620,8 @@ bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     ASTTypeExpression *type = NULL;
     if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
     
-    ASTIdent *name = parse_ident(ctx);
-    if (name == NULL) { goto fail_parse; }
+    ASTIdent *name = NULL;
+    if (!parse_ident(ctx, &name)) { goto fail_parse; }
     
     Token t = accept_token(ctx, TOK_EQUALS);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
@@ -680,8 +676,6 @@ bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
         // We could also have an empty expression and just a semi-colon
         s = snapshot(ctx);
         if (IS_TOKEN_NONE(accept_token(ctx, TOK_SEMICOLON))) { goto fail_parse; }
-        
-        expr = (ASTExpression*)ast_create_expr_empty();
     }
     
     act_on_stmt_expression(parsed_source_location(ctx, s), expr, result);
@@ -733,8 +727,8 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     ASTTypeExpression *type = NULL;
     if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
     
-    ASTIdent *name = parse_ident(ctx);
-    if (type == NULL) { goto fail_parse; }
+    ASTIdent *name = NULL;
+    if (!parse_ident(ctx, &name)) { goto fail_parse; }
     
     Token t = accept_token(ctx, TOK_LPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
@@ -789,8 +783,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
     
-    ASTIdent *directive = parse_ident(ctx);
-    if (directive == NULL) {
+    ASTIdent *directive = NULL;
+    if (!parse_ident(ctx, &directive)) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
         exit(ERR_PARSE);
@@ -809,8 +803,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     // TODO(bloggins): This is not valid C syntax for pragma. We do this for
     // now until we have a more complete pre-processor.
-    ASTIdent *arg1 = parse_ident(ctx);
-    if (arg1 == NULL || arg1->base.location.line != lineof_directive) {
+    ASTIdent *arg1 = NULL;
+    if (!parse_ident(ctx, &arg1) || arg1->base.location.line != lineof_directive) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "argument expected after pragma");
         exit(ERR_PARSE);
@@ -826,8 +820,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     }
 
     // This is the actual argument to be used for directives
-    ASTIdent *arg2 = parse_ident(ctx);
-    if (arg2 == NULL || arg2->base.location.line != lineof_directive) {
+    ASTIdent *arg2 = NULL;
+    if (!parse_ident(ctx, &arg2) || arg2->base.location.line != lineof_directive) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "second argument expected after pragma");
         exit(ERR_PARSE);
