@@ -17,24 +17,26 @@
 #include <limits.h>
 #include <ctype.h>
 
-ASTExpression *parse_expression(Context *ctx);
+bool parse_expression(Context *ctx, ASTExpression **result);
 bool parse_expr_primary(Context *ctx, ASTExpression **result);
 bool parse_expr_postfix(Context *ctx, ASTExpression **result);
 bool parse_expr_unary(Context *ctx, ASTExpression **result);
 bool parse_expr_cast(Context *ctx, ASTExpression **result);
 bool parse_expr_multiplicative(Context *ctx, ASTExpression **result);
 bool parse_expr_additive(Context *ctx, ASTExpression **result);
-ASTExpression *parse_shift_expression(Context *ctx);
-ASTExpression *parse_relational_expression(Context *ctx);
-ASTExpression *parse_equality_expression(Context *ctx);
-ASTExpression *parse_and_expression(Context *ctx);
-ASTExpression *parse_exclusive_or_expression(Context *ctx);
-ASTExpression *parse_inclusve_or_expression(Context *ctx);
-ASTExpression *parse_logical_and_expression(Context *ctx);
-ASTExpression *parse_logical_or_expression(Context *ctx);
-ASTExpression *parse_conditional_expression(Context *ctx);
-ASTExpression *parse_assignment_expression(Context *ctx);
+bool parse_expr_shift(Context *ctx, ASTExpression **result);
+bool parse_expr_relational(Context *ctx, ASTExpression **result);
+bool parse_expr_equality(Context *ctx, ASTExpression **result);
+bool parse_expr_and(Context *ctx, ASTExpression **result);
+bool parse_expr_exclusive_or(Context *ctx, ASTExpression **result);
+bool parse_expr_inclusve_or(Context *ctx, ASTExpression **result);
+bool parse_expr_logical_and(Context *ctx, ASTExpression **result);
+bool parse_expr_logical_or(Context *ctx, ASTExpression **result);
+bool parse_expr_conditional(Context *ctx, ASTExpression **result);
+bool parse_expr_assignment(Context *ctx, ASTExpression **result);
+
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result);
+
 bool parse_type_expression(Context *ctx, ASTTypeExpression **result);
 bool parse_type_constant(Context *ctx, ASTTypeConstant **result);
 bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result);
@@ -172,8 +174,8 @@ bool parse_next_expr_binary(Context *ctx, TokenKind allowed_ops[],
 	: assignment_expression
 	| expression ',' assignment_expression
  */
-ASTExpression *parse_expression(Context *ctx) {
-    return parse_assignment_expression(ctx);
+bool parse_expression(Context *ctx, ASTExpression **result) {
+    return parse_expr_assignment(ctx, result);
 }
 
 /*
@@ -181,8 +183,8 @@ ASTExpression *parse_expression(Context *ctx) {
 	: conditional_expression
 	| unary_expression assignment_operator assignment_expression
  */
-ASTExpression *parse_assignment_expression(Context *ctx) {
-    return parse_conditional_expression(ctx);
+bool parse_expr_assignment(Context *ctx, ASTExpression **result) {
+    return parse_expr_conditional(ctx, result);
 }
 
 /*
@@ -190,8 +192,8 @@ ASTExpression *parse_assignment_expression(Context *ctx) {
 	: logical_or_expression
 	| logical_or_expression '?' expression ':' conditional_expression
  */
-ASTExpression *parse_conditional_expression(Context *ctx) {
-    return parse_logical_or_expression(ctx);
+bool parse_expr_conditional(Context *ctx, ASTExpression **result) {
+    return parse_expr_logical_or(ctx, result);
 }
 
 /*
@@ -199,8 +201,8 @@ ASTExpression *parse_conditional_expression(Context *ctx) {
 	: logical_and_expression
 	| logical_or_expression TOK_OROR logical_and_expression
  */
-ASTExpression *parse_logical_or_expression(Context *ctx) {
-    return parse_logical_and_expression(ctx);
+bool parse_expr_logical_or(Context *ctx, ASTExpression **result) {
+    return parse_expr_logical_and(ctx, result);
 }
 
 /*
@@ -208,8 +210,8 @@ ASTExpression *parse_logical_or_expression(Context *ctx) {
 	: inclusive_or_expression
 	| logical_and_expression TOK_ANDAND inclusive_or_expression
  */
-ASTExpression *parse_logical_and_expression(Context *ctx) {
-    return parse_inclusve_or_expression(ctx);
+bool parse_expr_logical_and(Context *ctx, ASTExpression **result) {
+    return parse_expr_inclusve_or(ctx, result);
 }
 
 /*
@@ -217,8 +219,8 @@ ASTExpression *parse_logical_and_expression(Context *ctx) {
 	: exclusive_or_expression
 	| inclusive_or_expression '|' exclusive_or_expression
  */
-ASTExpression *parse_inclusve_or_expression(Context *ctx) {
-    return parse_exclusive_or_expression(ctx);
+bool parse_expr_inclusve_or(Context *ctx, ASTExpression **result) {
+    return parse_expr_exclusive_or(ctx, result);
 }
 
 /*
@@ -226,8 +228,8 @@ ASTExpression *parse_inclusve_or_expression(Context *ctx) {
 	: and_expression
 	| exclusive_or_expression '^' and_expression
  */
-ASTExpression *parse_exclusive_or_expression(Context *ctx) {
-    return parse_and_expression(ctx);
+bool parse_expr_exclusive_or(Context *ctx, ASTExpression **result) {
+    return parse_expr_and(ctx, result);
 }
 
 /*
@@ -235,8 +237,8 @@ ASTExpression *parse_exclusive_or_expression(Context *ctx) {
 	: equality_expression
 	| and_expression '&' equality_expression
  */
-ASTExpression *parse_and_expression(Context *ctx) {
-    return parse_equality_expression(ctx);
+bool parse_expr_and(Context *ctx, ASTExpression **result) {
+    return parse_expr_equality(ctx, result);
 }
 
 /*
@@ -245,8 +247,8 @@ ASTExpression *parse_and_expression(Context *ctx) {
 	| equality_expression EQ_OP relational_expression
 	| equality_expression NE_OP relational_expression
  */
-ASTExpression *parse_equality_expression(Context *ctx) {
-    return parse_relational_expression(ctx);
+bool parse_expr_equality(Context *ctx, ASTExpression **result) {
+    return parse_expr_relational(ctx, result);
 }
 
 /*
@@ -257,8 +259,8 @@ ASTExpression *parse_equality_expression(Context *ctx) {
 	| relational_expression TOK_LTE shift_expression
 	| relational_expression TOK_GTE shift_expression
  */
-ASTExpression *parse_relational_expression(Context *ctx) {
-    return parse_shift_expression(ctx);
+bool parse_expr_relational(Context *ctx, ASTExpression **result) {
+    return parse_expr_shift(ctx, result);
 }
 
 /*
@@ -267,10 +269,8 @@ ASTExpression *parse_relational_expression(Context *ctx) {
 	| shift_expression TOK_LEFT additive_expression
 	| shift_expression TOK_RIGHT additive_expression
  */
-ASTExpression *parse_shift_expression(Context *ctx) {
-    ASTExpression *expr = NULL;
-    parse_expr_additive(ctx, &expr);
-    return expr;
+bool parse_expr_shift(Context *ctx, ASTExpression **result) {
+    return parse_expr_additive(ctx, result);
 }
 
 /*
@@ -459,13 +459,13 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
         } else {
             t = accept_token(ctx, TOK_LPAREN);
             if (!IS_TOKEN_NONE(t)) {
-                ASTExpression *inner = parse_expression(ctx);
-                t = expect_token(ctx, TOK_RPAREN);
-                if (inner == NULL) {
+                ASTExpression *inner = NULL;
+                if (!parse_expression(ctx, &inner)) {
                     diag_printf(DIAG_ERROR, &t.location, "expected expression");
                     exit(ERR_PARSE);
                 }
-                
+                t = expect_token(ctx, TOK_RPAREN);
+               
                 act_on_expr_paren(t.location, inner, (ASTExprParen**)result);
             } else {
                 // This is last because it's unlikely
@@ -630,8 +630,8 @@ bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     Token t = accept_token(ctx, TOK_EQUALS);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
-    ASTExpression *expr = parse_expression(ctx);
-    if (expr == NULL) { goto fail_parse; }
+    ASTExpression *expr = NULL;
+    if (!parse_expression(ctx, &expr)) { goto fail_parse; }
     
     expect_token(ctx, TOK_SEMICOLON);
 
@@ -648,8 +648,8 @@ bool parse_stmt_return(Context *ctx, ASTStmtReturn **result) {
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_RETURN))) { goto fail_parse; }
     
-    ASTExpression *expr = parse_expression(ctx);
-    if (expr == NULL) {
+    ASTExpression *expr = NULL;
+    if (!parse_expression(ctx, &expr)) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "expected expression");
         exit(ERR_PARSE);
@@ -666,7 +666,11 @@ fail_parse:
 }
 
 bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
-    ASTExpression *expr = parse_expression(ctx);
+    ASTExpression *expr = NULL;
+    if (!parse_expression(ctx, &expr)) {
+        return false;
+    }
+    
     Context s = {};
     
     if (expr != NULL) {
