@@ -264,6 +264,19 @@ int ast_visit(ASTBase *node, VisitFn visitor, void *ctx) {
     return node->accept(node, visitor, ctx);
 }
 
+int visitor_clean(ASTBase *node, VisitPhase phase, void *ctx) {
+    if (phase == VISIT_PRE) {
+        free(node->visit_data);
+        node->visit_data = NULL;
+    }
+    
+    return VISIT_OK;
+}
+
+void ast_visit_data_clean(ASTBase *node) {
+    ast_visit(node, visitor_clean, NULL);
+}
+
 void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
     char indent[indent_level + 1];
     for (int i = 0; i < indent_level; i++) {

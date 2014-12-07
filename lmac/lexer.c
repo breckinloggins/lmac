@@ -10,7 +10,9 @@
 
 #include "clite.h"
 
-// TODO(bloggins): http://en.wikipedia.org/wiki/Punycode for UTF-8 identifiers?
+// TODO(bloggins):
+// This lexer should support unicode and UTF-8 encoding
+// http://en.wikipedia.org/wiki/Punycode for UTF-8 identifiers?
 
 SourceLocation lexed_source_location(Context *ctx) {
     SourceLocation sl = {0};

@@ -821,6 +821,8 @@ bool parse_block_stmt(Context *ctx, ASTBase **result) {
     //                  on other parse functions, there's no
     //                  need to save the context ourselves
     
+    // TODO(bloggins): Support automatic semicolon insertion per go spec
+    
     return
         parse_defn_var(ctx, (ASTDefnVar**)result) ||
         parse_stmt_expression(ctx, (ASTStmtExpr**)result) ||

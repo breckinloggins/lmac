@@ -97,6 +97,7 @@ void exit_handler() {
 #if 0
     PrintCtx pctx = {};
     ast_visit((ASTBase*)g_ctx.ast, print_visitor, &pctx);
+    ast_visit_data_clean((ASTBase*)g_ctx.ast);
 #endif
 }
 

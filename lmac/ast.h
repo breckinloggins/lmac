@@ -38,6 +38,17 @@ typedef struct ASTBase {
     /* Either set in parse or calculated on demand */
     struct Scope *scope;
     
+    /* Arbitrary data that visitors can attach to the node. All visit data
+     * must be cleaned with ast_visit_data_clean() after each
+     * complete logical pass.
+     *
+     * All data attached to the node must have been created by the system 
+     * allocator (usually through malloc/calloc), because ast_visit_data_clean
+     * calls free() on the data before setting the pointer to NULL.
+     */
+    void *visit_data;
+    
+    /* The visitor function for this node */
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
@@ -234,6 +245,7 @@ typedef struct {
 
 const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
+void ast_visit_data_clean(ASTBase *node);
 struct Scope *ast_nearest_scope(ASTBase *node);
 ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
 bool ast_node_is_type_definition(ASTBase *node);

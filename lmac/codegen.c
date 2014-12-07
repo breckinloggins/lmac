@@ -396,4 +396,5 @@ void codegen_generate(FILE *f, ASTTopLevel *ast) {
     cgctx.f = f;
     
     ast_visit((ASTBase*)ast, cg_visitor, &cgctx);
+    ast_visit_data_clean((ASTBase*)ast);
 }

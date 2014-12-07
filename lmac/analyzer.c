@@ -73,4 +73,6 @@ void analyzer_analyze(ASTTopLevel *ast) {
             ANALYZE_ERROR(&ident->base.location, "I don't know what '%s' is", spelling_cstring(ident->base.location.spelling));
         }
     })
+    
+    ast_visit_data_clean((ASTBase*)ast);
 }
