@@ -9,7 +9,7 @@
 #include "clite.h"
 
 typedef struct {
-    ASTList *identifiers;
+    List *identifiers;
 } AnalyzeCtx;
 
 #define ANALYZE_ERROR(sl, ...)                                              \
@@ -33,7 +33,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     AnalyzeCtx *actx = (AnalyzeCtx*)ctx;
     
     if (node->kind == AST_EXPR_IDENT) {
-        ast_list_add(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
+        list_append(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
     } else if (node->kind == AST_DEFN_FUNC) {
         ASTDefnFunc *func = (ASTDefnFunc*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(func->type);
@@ -67,10 +67,10 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
 void analyzer_analyze(ASTTopLevel *ast) {
     AnalyzeCtx ctx = {};
     ast_visit((ASTBase*)ast, ast_visitor, &ctx);
-    
-    ASTLIST_FOREACH(ASTIdent*, ident, ctx.identifiers, {
+
+    List_FOREACH(ASTIdent*, ident, ctx.identifiers, {
         if (ast_nearest_spelling_definition(ident->base.location.spelling, (ASTBase*)ident) == NULL) {
-            ANALYZE_ERROR(&ident->base.location, "undeclared identifier '%s'", spelling_cstring(ident->base.location.spelling));
+            ANALYZE_ERROR(&ident->base.location, "I don't know what '%s' is", spelling_cstring(ident->base.location.spelling));
         }
     })
 }

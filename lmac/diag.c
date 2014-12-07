@@ -14,6 +14,8 @@ global_variable const char *g_diag_kind_names[] = {
 #   include "diag.def.h"
 };
 
+int diag_errno = 0;
+
 const char *diag_get_name(DiagKind kind) {
     return g_diag_kind_names[kind];
 }
@@ -31,12 +33,14 @@ void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...) {
             file_name = loc->file;
         }
         
-        fprintf(f, " (%s:%d)", file_name, loc->line);
+        fprintf(f, " (%s: line %d)", file_name, loc->line);
     }
     fprintf(f, ": ");
     vfprintf(f, fmt, ap);
     fprintf(f, "\n");
     
     va_end(ap);
+    
+    diag_errno = (int)kind;
 }
 

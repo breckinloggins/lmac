@@ -18,12 +18,12 @@
 void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
                       ASTPPPragma **result);
 
-void act_on_toplevel(SourceLocation sl, ASTList *stmts, ASTTopLevel **result);
+void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts, ASTTopLevel **result);
 
-void act_on_defn_var(SourceLocation sl, ASTTypeExpression *type,
+void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
                      ASTIdent *name, ASTExpression *expr, ASTDefnVar **result);
 
-void act_on_defn_fn(SourceLocation sl, ASTTypeExpression *type,
+void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
                      ASTIdent *name, ASTBlock *block, ASTDefnFunc **result);
 
 void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
@@ -32,13 +32,16 @@ void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
 void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
                             ASTStmtReturn **result);
 
-void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result);
+void act_on_block(SourceLocation sl, List *stmts, ASTBlock **result);
 
 void act_on_type_constant(SourceLocation sl,
                           uint32_t type_id, uint8_t bit_flags, uint64_t bit_size,
                           ASTTypeConstant **result);
 
 void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result);
+
+void act_on_type_pointer(SourceLocation sl, ASTTypeExpression *pointed_to,
+                         ASTTypePointer **result);
 
 void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result);
 

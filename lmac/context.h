@@ -10,11 +10,12 @@
 #define lmac_context_h
 
 #include "ast.h"
+#include "scope.h"
 
 /*
  * Compiler Context
  */
-typedef struct {
+typedef struct Context {
     const char *file;
     
     /* The entire contents of the current translation unit */
@@ -24,8 +25,13 @@ typedef struct {
     uint8_t *pos;
     uint32_t line;
     
+    Scope *active_scope;
+    
     /* Parsed AST */
     ASTTopLevel *ast;
 } Context;
+
+Scope *context_scope_push(Context *ctx);
+Scope *context_scope_pop(Context *ctx);
 
 #endif

@@ -14,24 +14,8 @@ typedef enum {
 #   include "ast.def.h"
 } ASTKind;
 
-
+struct Scope;
 struct ASTBase;
-struct ASTList;
-typedef struct ASTList {
-    struct ASTBase *node;
-    struct ASTList *next;
-} ASTList;
-
-#define ASTLIST_FOREACH(type, var_name, ast_list, block)                    \
-do {                                                                        \
-ASTList *list_copy = ast_list;                                          \
-while((list_copy) != NULL) {                                            \
-type var_name = (type)(list_copy)->node;                            \
-assert(var_name != NULL);                                           \
-list_copy = list_copy->next;                                        \
-block                                                               \
-}                                                                       \
-} while(0);
 
 typedef enum {
     VISIT_PRE,
@@ -51,17 +35,23 @@ typedef struct ASTBase {
     SourceLocation location;
     struct ASTBase *parent;
     
+    /* Either set in parse or calculated on demand */
+    struct Scope *scope;
+    
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
 typedef struct {
     ASTBase base;
     
-    ASTList *statements;
+    List *statements;
 } ASTBlock;
 
 typedef struct {
     ASTBase base;
+    
+    /* Computed */
+    ASTBase *declaration;
 } ASTIdent;
 
 typedef struct {
@@ -151,7 +141,7 @@ typedef struct {
     ASTExpression *expression;
 } ASTStmtExpr;
 
-#pragma mark Mist AST
+#pragma mark Misc AST
 
 typedef struct {
     ASTBase base;
@@ -166,7 +156,7 @@ typedef struct {
 typedef struct {
     ASTBase base;
     
-    ASTList *definitions;
+    List *definitions;
 } ASTTopLevel;
 
 // see http://jhnet.co.uk/articles/cpp_magic for fun
@@ -224,24 +214,33 @@ typedef struct {
     ASTIdent *name;
     
     /* Computed */
-    struct {
-        ASTTypeExpression *resolved_type;
-    };
+    ASTTypeExpression *resolved_type;
     
 } ASTTypeName;
+
+typedef struct {
+    ASTTypeExpression base;
+    
+    ASTTypeExpression *pointer_to;
+    
+} ASTTypePointer;
 
 
 const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
-void ast_list_add(ASTList **list, ASTBase *node);
-void ast_fprint(FILE *f, ASTBase *node, int indent);
-ASTBase *ast_nearest_scope_node(ASTBase *node);
+struct Scope *ast_nearest_scope(ASTBase *node);
 ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
 bool ast_node_is_type_definition(ASTBase *node);
 bool ast_node_is_type_expression(ASTBase *node);
+ASTBase* ast_ident_find_declaration(ASTIdent *ident);
+bool ast_ident_is_type_name(ASTIdent *name);
+ASTTypeExpression *ast_typename_resolve(ASTTypeName *name);
 ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type);
 uint32_t ast_type_next_type_id();
 void ast_init_expr_binary(ASTExprBinary *binop, ASTExpression *left,
                           ASTExpression *right, ASTOperator *op);
+void ast_dump(ASTBase *node);
+
+void ast_fprint(FILE *f, ASTBase *node, int indent);
 
 #endif

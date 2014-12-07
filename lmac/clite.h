@@ -17,9 +17,11 @@
 #include <string.h>
 #include <assert.h>
 
+#include "list.h"
 #include "token.h"
 #include "ast.h"
 #include "act.h"
+#include "scope.h"
 #include "context.h"
 
 // Makes these easier to search for an minimize / eliminate later
@@ -41,6 +43,7 @@
 
 const char *diag_get_name(DiagKind kind);
 void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...);
+extern int diag_errno;
 
 Token lexer_next_token(Context *ctx);
 Token lexer_peek_token(Context *ctx);

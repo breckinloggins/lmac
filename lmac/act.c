@@ -23,27 +23,30 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
     *result = pragma;
 }
 
-void act_on_toplevel(SourceLocation sl, ASTList *stmts, ASTTopLevel **result) {
+void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
+                     ASTTopLevel **result) {
     if (result == NULL) return;
     
     ASTTopLevel *tl = ast_create_toplevel();
     
     tl->base.location = sl;
+    tl->base.scope = scope;
     tl->definitions = stmts;
     
-    ASTLIST_FOREACH(ASTBase*, stmt, stmts, {
+    List_FOREACH(ASTBase*, stmt, stmts, {
         stmt->parent = (ASTBase*)tl;
     });
     
     *result = tl;
 }
 
-void act_on_defn_var(SourceLocation sl, ASTTypeExpression*type,
+void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type,
                      ASTIdent *name, ASTExpression *expr, ASTDefnVar **result) {
     if (result == NULL) return;
     
     ASTDefnVar *defn = ast_create_defn_var();
     defn->base.location = sl;
+    defn->base.scope = scope;
     AST_BASE(type)->parent = name->base.parent =
         AST_BASE(expr)->parent = (ASTBase*)defn;
     
@@ -51,15 +54,19 @@ void act_on_defn_var(SourceLocation sl, ASTTypeExpression*type,
     defn->name = name;
     defn->expression = expr;
     
+    if (scope != NULL) {
+        scope_declaration_add(scope, (ASTBase*)defn);
+    }
     *result = defn;
 }
 
-void act_on_defn_fn(SourceLocation sl, ASTTypeExpression *type,
+void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
                     ASTIdent *name, ASTBlock *block, ASTDefnFunc **result) {
     if (result == NULL) return;
     
     ASTDefnFunc *defn = ast_create_defn_func();
     defn->base.location = sl;
+    defn->base.scope = scope;
     block->base.parent = (ASTBase*)defn;
     AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
     
@@ -67,6 +74,9 @@ void act_on_defn_fn(SourceLocation sl, ASTTypeExpression *type,
     defn->name = name;
     defn->block = block;
     
+    if (scope != NULL) {
+        scope_declaration_add(scope, (ASTBase*)defn);
+    }
     *result = defn;
 }
 
@@ -100,13 +110,13 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
     *result = stmt;
 }
 
-void act_on_block(SourceLocation sl, ASTList *stmts, ASTBlock **result) {
+void act_on_block(SourceLocation sl, List *stmts, ASTBlock **result) {
     if (result == NULL) return;
     
     ASTBlock *b = ast_create_block();
     b->base.location = sl;
     
-    ASTLIST_FOREACH(ASTBase*, stmt, stmts, {
+    List_FOREACH(ASTBase*, stmt, stmts, {
         stmt->parent = (ASTBase*)b;
     });
     
@@ -139,6 +149,19 @@ void act_on_type_name(SourceLocation sl, ASTIdent *name, ASTTypeName **result) {
     type_name->name = name;
     
     *result = type_name;
+}
+
+void act_on_type_pointer(SourceLocation sl, ASTTypeExpression *pointed_to,
+                         ASTTypePointer **result) {
+    if (result == NULL) return;
+    
+    ASTTypePointer *ptr = ast_create_type_pointer();
+    AST_BASE(ptr)->location = sl;
+    AST_BASE(pointed_to)->parent = (ASTBase*)ptr;
+    
+    ptr->pointer_to = pointed_to;
+    
+    *result = ptr;
 }
 
 void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result) {

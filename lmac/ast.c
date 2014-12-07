@@ -169,7 +169,7 @@ AST_ACCEPT_FN(AST_BLOCK) {
     
     ASTBlock *b = (ASTBlock*)node;
     
-    ASTLIST_FOREACH(ASTBase*, defn, b->statements, {
+    List_FOREACH(ASTBase*, defn, b->statements, {
         STANDARD_ACCEPT(defn)
     })
     
@@ -197,7 +197,7 @@ AST_ACCEPT_FN(AST_TOPLEVEL) {
     
     ASTTopLevel *tl = (ASTTopLevel*)node;
 
-    ASTLIST_FOREACH(ASTBase*, defn, tl->definitions, {
+    List_FOREACH(ASTBase*, defn, tl->definitions, {
         STANDARD_ACCEPT(defn)
     })
     
@@ -233,6 +233,14 @@ AST_ACCEPT_FN(AST_TYPE_NAME) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_TYPE_POINTER) {
+    STANDARD_VISIT_PRE()
+    
+    STANDARD_ACCEPT(((ASTTypePointer*)node)->pointer_to);
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_TYPE_END) {
     STANDARD_VISIT()
 }
@@ -254,26 +262,6 @@ type *ast_create_##name() {                                 \
 
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx) {
     return node->accept(node, visitor, ctx);
-}
-
-void ast_list_add(ASTList **list, ASTBase *node) {
-    assert(node && "Node is NULL");
-    
-    ASTList *l = NULL;
-    if (*list == NULL) {
-        *list = calloc(1, sizeof(ASTList));
-        l = *list;
-    } else {
-        l = *list;
-        while (l->next != NULL) {
-            l = l->next;
-        }
-        
-        l->next = calloc(1, sizeof(ASTList));
-        l = l->next;
-    }
-    
-    l->node = node;
 }
 
 void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
@@ -304,46 +292,58 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
     }
 }
 
-ASTBase *ast_nearest_scope_node(ASTBase *node) {
-    assert(node && "node should not be null (all nodes should parent to eventual AST_TOPLEVEL");
-    if (node->kind == AST_TOPLEVEL || node->kind == AST_BLOCK) {
-        return node;
+Scope *ast_nearest_scope(ASTBase *node) {
+    assert(node && "node should not be null");
+    assert(node->location.ctx && "node scope not searchable without parse context");
+    
+    if (node->scope != NULL) {
+        // That's convenient
+        return node->scope;
     }
     
-    return ast_nearest_scope_node(node->parent);
+    ASTBase *search_node = node;
+    while (search_node != NULL) {
+        if (search_node->scope != NULL) {
+            node->scope = search_node->scope;
+            return node->scope;
+        }
+        
+        search_node = search_node->parent;
+    }
+    
+    Context *ctx = node->location.ctx;
+    assert(ctx->active_scope && "context does not have an active scope");
+    
+    // Might as well cache it now. It's not like it's going to change
+    node->scope = ctx->active_scope;
+    
+    return ctx->active_scope;
 }
 
 ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node) {
-    ASTBase *scope = ast_nearest_scope_node(node);
+    Scope *scope = ast_nearest_scope(node);
     
-    ASTList *stmts = NULL;
-    if (scope->kind == AST_TOPLEVEL) {
-        stmts = ((ASTTopLevel*)scope)->definitions;
-    } else if (scope->kind == AST_BLOCK) {
-        stmts = ((ASTBlock*)scope)->statements;
-    }
-    
-    ASTLIST_FOREACH(ASTBase*, scope_node, stmts, {
-        ASTIdent *defn_ident = NULL;
-        if (scope_node->kind == AST_DEFN_FUNC) {
-            defn_ident = ((ASTDefnFunc*)scope_node)->name;
-        } else if (scope_node->kind == AST_DEFN_VAR) {
-            defn_ident = ((ASTDefnVar*)scope_node)->name;
-        } else {
-            continue;
-        }
+    do {
+        List_FOREACH(ASTBase*, scope_node, scope->declarations, {
+            ASTIdent *defn_ident = NULL;
+            if (scope_node->kind == AST_DEFN_FUNC) {
+                defn_ident = ((ASTDefnFunc*)scope_node)->name;
+            } else if (scope_node->kind == AST_DEFN_VAR) {
+                defn_ident = ((ASTDefnVar*)scope_node)->name;
+            } else {
+                continue;
+            }
+            
+            assert(defn_ident && "definitions should always be named");
+            if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
+                return scope_node;
+            }
+        })
         
-        assert(defn_ident && "definitions should always be named");
-        if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
-            return scope_node;
-        }
-    })
+        scope = scope->parent;
+    } while (scope != NULL);
     
-    if (scope->kind == AST_TOPLEVEL) {
-        return NULL;
-    }
-    
-    return ast_nearest_spelling_definition(spelling, node->parent);
+    return NULL;
 }
 
 
@@ -362,6 +362,54 @@ bool ast_node_is_type_definition(ASTBase *node) {
     return (var->type != NULL && (var->type->type_id & TYPE_FLAG_KIND));
 }
 
+ASTBase* ast_ident_find_declaration(ASTIdent *ident) {
+    if (ident->declaration != NULL) {
+        return ident->declaration;
+    }
+    
+    Spelling sp = AST_BASE(ident)->location.spelling;
+    ident->declaration = ast_nearest_spelling_definition(sp, (ASTBase*)ident);
+    
+    return ident->declaration; // May still be null
+}
+
+bool ast_ident_is_type_name(ASTIdent *name) {
+    ASTBase *type_defn = ast_ident_find_declaration(name);
+    if (type_defn == NULL) {
+        diag_printf(ERR_ANALYZE, &name->base.location,
+                    "I don't know what '%s' is",
+                    spelling_cstring(name->base.location.spelling));
+        exit(ERR_ANALYZE);
+    }
+    return ast_node_is_type_definition(type_defn);
+    
+}
+
+ASTTypeExpression *ast_typename_resolve(ASTTypeName *name) {
+    if (name->resolved_type != NULL) {
+        return name->resolved_type;
+    }
+    
+    ASTBase *type_defn = ast_ident_find_declaration(name->name);
+    if (type_defn == NULL) {
+        return NULL;
+    } else if (ast_node_is_type_definition(type_defn)) {
+        // TODO(bloggins): HACK: We need to abstract this to just
+        // getting the type of any AST node, because right now this
+        // has incestuous knowledge of the implementation of
+        // ast_node_is_type_definition!
+        ASTDefnVar *defn = (ASTDefnVar*)type_defn;
+        assert(defn->expression && "claimed to resolve a type but didn't");
+        
+        // Is there any reason to NOT cache it?
+        name->resolved_type = (ASTTypeExpression*)defn->expression;
+        return (ASTTypeExpression*)defn->expression;
+    }
+    
+    return NULL;
+}
+
+
 ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
     // NOTE(bloggins): Get the "standard" type for this type. For example, the
     // canonical type of a type name is the canonical type of the resolved type
@@ -379,6 +427,7 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
         case AST_TYPE_NAME: {
             /* the canonical type of the resolved name if it's resolved */
             ASTTypeName *type_name = (ASTTypeName*)type;
+            ast_typename_resolve(type_name);
             if (type_name->resolved_type == NULL) {
                 Spelling sp = AST_BASE(type_name)->location.spelling;
                 ASTBase *type_defn = ast_nearest_spelling_definition(sp, (ASTBase*)type_name);
@@ -387,14 +436,6 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
                                 "undefined type '%s'",
                                 spelling_cstring(sp));
                     exit(ERR_ANALYZE);
-                } else if (ast_node_is_type_definition(type_defn)) {
-                    // TODO(bloggins): HACK: We need to abstract this to just
-                    // getting the type of any AST node, because right now this
-                    // has incestuous knowledge of the implementation of
-                    // ast_node_is_type_definition!
-                    ASTDefnVar *defn = (ASTDefnVar*)type_defn;
-                    type_name->resolved_type = (ASTTypeExpression*)defn->expression;
-                    assert(type_name->resolved_type && "claimed to resolve a type but didn't");
                 } else {
                     diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
                                "'%s' is a %s, not a type",
@@ -416,6 +457,10 @@ uint32_t ast_type_next_type_id() {
     static uint32_t next_id = 1;
     
     return next_id++;
+}
+
+void ast_dump(ASTBase *node) {
+    ast_fprint(stderr, node, 0);
 }
 
 #pragma mark Convenience Initializers

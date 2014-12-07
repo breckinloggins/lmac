@@ -90,6 +90,10 @@ const char *lookup_cmd(const char *cmd) {
 }
 
 void exit_handler() {
+    if (diag_errno > 0) {
+        // Comment out to stop breaking on error
+        asm("int $3");
+    }
 #if 0
     PrintCtx pctx = {};
     ast_visit((ASTBase*)g_ctx.ast, print_visitor, &pctx);
@@ -134,6 +138,9 @@ int main(int argc, const char * argv[]) {
     g_ctx.pos = g_ctx.buf;
     g_ctx.line = 1;
     
+    // Initialize top scope, builtins, etc. here before parsing
+    context_scope_push(&g_ctx);
+    
     parser_parse(&g_ctx);
     
     // NOTE(bloggins): Sanity check
@@ -141,6 +148,9 @@ int main(int argc, const char * argv[]) {
         diag_printf(DIAG_FATAL, NULL, "unexpected end of input", file);
         return ERR_LEX;
     }
+    
+    // Don't keep parse context around after the full parse tree is created
+    g_ctx.active_scope = NULL;
     
     analyzer_analyze(g_ctx.ast);
     

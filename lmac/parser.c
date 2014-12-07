@@ -39,7 +39,7 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result);
 
 bool parse_type_expression(Context *ctx, ASTTypeExpression **result);
 bool parse_type_constant(Context *ctx, ASTTypeConstant **result);
-bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result);
+bool parse_type_name(Context *ctx, ASTTypeName **result);
 
 
 #pragma mark Parse Utility Functions
@@ -57,9 +57,10 @@ void restore(Context *ctx, Context snapshot) {
 }
 
 SourceLocation parsed_source_location(Context *ctx, Context snapshot) {
-    SourceLocation sl = {};
+    SourceLocation sl = {0};
     sl.file = ctx->file;
     sl.line = snapshot.line;
+    sl.ctx = ctx;
     sl.range_start = snapshot.pos;
     sl.range_end = ctx->pos;
     
@@ -581,25 +582,55 @@ fail_parse:
 
 /* ====== Type Expressions ====== */
 #pragma mark Type Expressions
+// TODO(bloggins): See if we can completely unify type expressions with
+// normal expressions so we can get rid of everything except the type
+// literals. We could do this by having the parse allow arbitrary expressions
+// on types and the analyzer would check validity. Similarly, places that
+// currently take type expressions would just take epressions and the analyzer
+// would determine if the expression is appropriate (for example, if the
+// expression is an identifier or pure function call that the compiler can verify
+// results in a type, then it would be allowed). For compile-time functions
+// that are guaranteed to terminate, look into "Total Functional Programming".
 
-bool parse_type_expression_or_name(Context *ctx, ASTTypeExpression **result) {
-    if (parse_type_expression(ctx, result)) {
-        return true;
-    }
-    
-    // Well, do we have an ident? Because if so it could be a type name
-    // we don't know yet
-    ASTIdent *ident = NULL;
-    if (!parse_ident(ctx, &ident)) {
+bool parse_type_expression(Context *ctx, ASTTypeExpression **result) {
+    if (!parse_type_constant(ctx, (ASTTypeConstant**)result) &&
+        !parse_type_name(ctx, (ASTTypeName**)result)) {
         return false;
     }
     
-    act_on_type_name(AST_BASE(ident)->location, ident, (ASTTypeName**)result);
+    // Check for pointers
+    for (;;) {
+        Token t = peek_token(ctx);
+        if (t.kind == TOK_STAR) {
+            next_token(ctx);  // gobble gobble
+            
+            // TODO: ARGS
+            if (result != NULL) {
+                ASTTypeExpression *pointed_to = *result;
+                act_on_type_pointer(t.location, pointed_to, (ASTTypePointer**)result);
+            }
+        } else {
+            break;
+        }
+    }
+    
     return true;
 }
 
-bool parse_type_expression(Context *ctx, ASTTypeExpression **result) {
-    return parse_type_constant(ctx, (ASTTypeConstant**)result);
+bool parse_type_name(Context *ctx, ASTTypeName **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) { goto fail_parse; }
+    
+    if (!ast_ident_is_type_name(ident)) { goto fail_parse; }
+    
+    act_on_type_name(AST_BASE(ident)->location, ident, (ASTTypeName**)result);
+    return true;
+
+fail_parse:
+    restore(ctx, s);
+    return false;
 }
 
 bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
@@ -712,7 +743,7 @@ bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     Context s = snapshot(ctx);
     
     ASTTypeExpression *type = NULL;
-    if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
+    if (!parse_type_expression(ctx, &type)) { goto fail_parse; }
     
     ASTIdent *name = NULL;
     if (!parse_ident(ctx, &name)) { goto fail_parse; }
@@ -725,7 +756,8 @@ bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
     
     expect_token(ctx, TOK_SEMICOLON);
 
-    act_on_defn_var(parsed_source_location(ctx, s), type, name, expr, result);
+    act_on_defn_var(parsed_source_location(ctx, s), ctx->active_scope,
+                    type, name, expr, result);
     return true;
     
 fail_parse:
@@ -793,22 +825,26 @@ bool parse_block_stmt(Context *ctx, ASTBase **result) {
 
 bool parse_block(Context *ctx, ASTBlock **result) {
     Context s = snapshot(ctx);
-    ASTList *stmts = NULL;
+    List *stmts = NULL;
+    
+    context_scope_push(ctx);
     
     Token t = accept_token(ctx, TOK_LBRACE);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
     ASTBase *stmt = NULL;
     while (parse_block_stmt(ctx, &stmt)) {
-        ast_list_add(&stmts, stmt);
+        list_append(&stmts, stmt);
     }
     
     expect_token(ctx, TOK_RBRACE);
     
     act_on_block(parsed_source_location(ctx, s), stmts, result);
+    context_scope_pop(ctx);
     return true;
     
 fail_parse:
+    context_scope_pop(ctx);
     restore(ctx, s);
     return false;
 }
@@ -819,7 +855,7 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
     ASTTypeExpression *type = NULL;
-    if (!parse_type_expression_or_name(ctx, &type)) { goto fail_parse; }
+    if (!parse_type_expression(ctx, &type)) { goto fail_parse; }
     
     ASTIdent *name = NULL;
     if (!parse_ident(ctx, &name)) { goto fail_parse; }
@@ -833,7 +869,8 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     ASTBlock *block = NULL;
     if (!parse_block(ctx, &block)) { goto fail_parse; }
     
-    act_on_defn_fn(parsed_source_location(ctx, s), type, name, block, result);
+    act_on_defn_fn(parsed_source_location(ctx, s), ctx->active_scope,
+                   type, name, block, result);
     return true;
     
 fail_parse:
@@ -848,20 +885,27 @@ bool parse_end(Context *ctx) {
 
 bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     Context s = snapshot(ctx);
-    ASTList *stmts = NULL;
+    List *stmts = NULL;
+    
+    Scope *scope = context_scope_push(ctx);
     
     ASTBase *stmt = NULL;
     while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
            parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
            parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
-        ast_list_add(&stmts, stmt);
+        list_append(&stmts, stmt);
     }
     
     if (!parse_end(ctx)) {
+        context_scope_pop(ctx);
         return false;
     }
     
-    act_on_toplevel(parsed_source_location(ctx, s), stmts, result);
+    act_on_toplevel(parsed_source_location(ctx, s), scope, stmts, result);
+    
+    // This is safe because there's yet another scope above this -
+    // the compiler's builtins scope
+    context_scope_pop(ctx);
     
     return true;
 }

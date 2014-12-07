@@ -21,7 +21,9 @@ typedef enum {
 #   include "tokens.def.h"
 } TokenKind;
 
+struct Context;
 typedef struct {
+    struct Context *ctx;
     uint8_t *start;
     uint8_t *end;
 } Spelling;
@@ -32,6 +34,7 @@ typedef struct {
     
     union {
         struct {
+            struct Context *ctx;
             uint8_t *range_start;
             uint8_t *range_end;
         };

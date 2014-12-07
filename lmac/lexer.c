@@ -13,9 +13,10 @@
 // TODO(bloggins): http://en.wikipedia.org/wiki/Punycode for UTF-8 identifiers?
 
 SourceLocation lexed_source_location(Context *ctx) {
-    SourceLocation sl = {};
+    SourceLocation sl = {0};
     sl.file = ctx->file;
     sl.line = ctx->line;
+    sl.ctx = ctx;
     sl.range_start = ctx->pos;
     sl.range_end = ctx->pos + 1;
     
@@ -97,10 +98,11 @@ Token lexer_peek_token(Context *ctx) {
 }
 
 Token lexer_next_token(Context *ctx) {
-    Token t;
+    Token t = {};
     t.kind = TOK_UNKOWN;
     t.location.file = ctx->file;
     t.location.line = ctx->line;
+    t.location.ctx = ctx;
     t.location.range_start = ctx->pos;
     t.location.range_end = ctx->pos;
     
