@@ -45,17 +45,17 @@ void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type,
     if (result == NULL) return;
     
     ASTDefnVar *defn = ast_create_defn_var();
-    defn->base.location = sl;
-    defn->base.scope = scope;
+    AST_BASE(defn)->location = sl;
+    AST_BASE(defn)->scope = scope;
     AST_BASE(type)->parent = name->base.parent =
         AST_BASE(expr)->parent = (ASTBase*)defn;
     
     defn->type = type;
-    defn->name = name;
+    defn->base.name = name;
     defn->expression = expr;
     
     if (scope != NULL) {
-        scope_declaration_add(scope, (ASTBase*)defn);
+        scope_declaration_add(scope, (ASTDeclaration*)defn);
     }
     *result = defn;
 }
@@ -65,17 +65,17 @@ void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
     if (result == NULL) return;
     
     ASTDefnFunc *defn = ast_create_defn_func();
-    defn->base.location = sl;
-    defn->base.scope = scope;
+    AST_BASE(defn)->location = sl;
+    AST_BASE(defn)->scope = scope;
     block->base.parent = (ASTBase*)defn;
     AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
     
     defn->type = type;
-    defn->name = name;
+    defn->base.name = name;
     defn->block = block;
     
     if (scope != NULL) {
-        scope_declaration_add(scope, (ASTBase*)defn);
+        scope_declaration_add(scope, (ASTDeclaration*)defn);
     }
     *result = defn;
 }

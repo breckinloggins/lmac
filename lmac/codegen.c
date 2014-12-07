@@ -169,7 +169,7 @@ CG_VISIT_FN(AST_DEFN_FUNC, ASTDefnFunc) {
     if (phase == VISIT_PRE) {
         ast_visit((ASTBase*)node->type, cg_visitor, ctx);
         CGSPACE();
-        CGNODE(node->name); CG("() ");
+        CGNODE(node->base.name); CG("() ");
         ast_visit((ASTBase*)node->block, cg_visitor, ctx);
     }
     

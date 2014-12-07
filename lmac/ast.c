@@ -147,7 +147,7 @@ AST_ACCEPT_FN(AST_DEFN_FUNC) {
     ASTDefnFunc *defn = (ASTDefnFunc*)node;
     
     STANDARD_ACCEPT(defn->type)
-    STANDARD_ACCEPT(defn->name)
+    STANDARD_ACCEPT(defn->base.name)
     STANDARD_ACCEPT(defn->block)
     
     STANDARD_VISIT_POST()
@@ -158,7 +158,7 @@ AST_ACCEPT_FN(AST_DEFN_VAR) {
     ASTDefnVar *defn = (ASTDefnVar*)node;
     
     STANDARD_ACCEPT(defn->type)
-    STANDARD_ACCEPT(defn->name)
+    STANDARD_ACCEPT(defn->base.name)
     STANDARD_ACCEPT(defn->expression)
     
     STANDARD_VISIT_POST()
@@ -320,23 +320,23 @@ Scope *ast_nearest_scope(ASTBase *node) {
     return ctx->active_scope;
 }
 
-ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node) {
+ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node) {
     Scope *scope = ast_nearest_scope(node);
     
     do {
         List_FOREACH(ASTBase*, scope_node, scope->declarations, {
             ASTIdent *defn_ident = NULL;
             if (scope_node->kind == AST_DEFN_FUNC) {
-                defn_ident = ((ASTDefnFunc*)scope_node)->name;
+                defn_ident = ((ASTDefnFunc*)scope_node)->base.name;
             } else if (scope_node->kind == AST_DEFN_VAR) {
-                defn_ident = ((ASTDefnVar*)scope_node)->name;
+                defn_ident = ((ASTDefnVar*)scope_node)->base.name;
             } else {
                 continue;
             }
             
             assert(defn_ident && "definitions should always be named");
             if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
-                return scope_node;
+                return (ASTDeclaration*)scope_node;
             }
         })
         
@@ -362,7 +362,7 @@ bool ast_node_is_type_definition(ASTBase *node) {
     return (var->type != NULL && (var->type->type_id & TYPE_FLAG_KIND));
 }
 
-ASTBase* ast_ident_find_declaration(ASTIdent *ident) {
+ASTDeclaration* ast_ident_find_declaration(ASTIdent *ident) {
     if (ident->declaration != NULL) {
         return ident->declaration;
     }
@@ -374,14 +374,14 @@ ASTBase* ast_ident_find_declaration(ASTIdent *ident) {
 }
 
 bool ast_ident_is_type_name(ASTIdent *name) {
-    ASTBase *type_defn = ast_ident_find_declaration(name);
-    if (type_defn == NULL) {
+    ASTDeclaration *type_decl = ast_ident_find_declaration(name);
+    if (type_decl == NULL) {
         diag_printf(ERR_ANALYZE, &name->base.location,
                     "I don't know what '%s' is",
                     spelling_cstring(name->base.location.spelling));
         exit(ERR_ANALYZE);
     }
-    return ast_node_is_type_definition(type_defn);
+    return ast_node_is_type_definition((ASTBase*)type_decl);
     
 }
 
@@ -390,15 +390,15 @@ ASTTypeExpression *ast_typename_resolve(ASTTypeName *name) {
         return name->resolved_type;
     }
     
-    ASTBase *type_defn = ast_ident_find_declaration(name->name);
-    if (type_defn == NULL) {
+    ASTDeclaration *type_decl = ast_ident_find_declaration(name->name);
+    if (type_decl == NULL) {
         return NULL;
-    } else if (ast_node_is_type_definition(type_defn)) {
+    } else if (ast_node_is_type_definition((ASTBase*)type_decl)) {
         // TODO(bloggins): HACK: We need to abstract this to just
         // getting the type of any AST node, because right now this
         // has incestuous knowledge of the implementation of
         // ast_node_is_type_definition!
-        ASTDefnVar *defn = (ASTDefnVar*)type_defn;
+        ASTDefnVar *defn = (ASTDefnVar*)type_decl;
         assert(defn->expression && "claimed to resolve a type but didn't");
         
         // Is there any reason to NOT cache it?
@@ -430,8 +430,8 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
             ast_typename_resolve(type_name);
             if (type_name->resolved_type == NULL) {
                 Spelling sp = AST_BASE(type_name)->location.spelling;
-                ASTBase *type_defn = ast_nearest_spelling_definition(sp, (ASTBase*)type_name);
-                if (type_defn == NULL) {
+                ASTDeclaration *type_decl = ast_nearest_spelling_definition(sp, (ASTBase*)type_name);
+                if (type_decl == NULL) {
                     diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
                                 "undefined type '%s'",
                                 spelling_cstring(sp));
@@ -440,7 +440,7 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
                     diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
                                "'%s' is a %s, not a type",
                                 spelling_cstring(sp),
-                                ast_get_kind_name(AST_BASE(type_defn)->kind));
+                                ast_get_kind_name(AST_BASE(type_decl)->kind));
                     exit(ERR_ANALYZE);
                 }
             }

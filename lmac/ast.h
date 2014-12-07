@@ -41,17 +41,24 @@ typedef struct ASTBase {
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
+struct ASTIdent;
+typedef struct ASTDeclaration {
+    ASTBase base;
+    
+    struct ASTIdent *name;
+} ASTDeclaration;
+
 typedef struct {
     ASTBase base;
     
     List *statements;
 } ASTBlock;
 
-typedef struct {
+typedef struct ASTIdent {
     ASTBase base;
     
     /* Computed */
-    ASTBase *declaration;
+    ASTDeclaration *declaration;
 } ASTIdent;
 
 typedef struct {
@@ -61,10 +68,9 @@ typedef struct {
 } ASTOperator;
 
 typedef struct {
-    ASTBase base;
+    ASTDeclaration base;
     
     struct ASTTypeExpression *type;
-    ASTIdent *name;
     ASTBlock *block;
     
 } ASTDefnFunc;
@@ -144,10 +150,9 @@ typedef struct {
 #pragma mark Misc AST
 
 typedef struct {
-    ASTBase base;
+    ASTDeclaration base;
     
     struct ASTTypeExpression *type;
-    ASTIdent *name;
     
     ASTExpression *expression;
     
@@ -230,10 +235,10 @@ typedef struct {
 const char *ast_get_kind_name(ASTKind kind);
 int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 struct Scope *ast_nearest_scope(ASTBase *node);
-ASTBase* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
+ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
 bool ast_node_is_type_definition(ASTBase *node);
 bool ast_node_is_type_expression(ASTBase *node);
-ASTBase* ast_ident_find_declaration(ASTIdent *ident);
+ASTDeclaration* ast_ident_find_declaration(ASTIdent *ident);
 bool ast_ident_is_type_name(ASTIdent *name);
 ASTTypeExpression *ast_typename_resolve(ASTTypeName *name);
 ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type);

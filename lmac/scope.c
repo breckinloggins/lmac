@@ -23,9 +23,20 @@ void scope_child_add(Scope *scope, Scope *child) {
     child->parent = scope;
 }
 
-void scope_declaration_add(Scope *scope, ASTBase *decl) {
+void scope_declaration_add(Scope *scope, ASTDeclaration *decl) {
     assert(scope && "scope should not be null");
     assert(decl && "declaration should not be null");
+    
+    List_FOREACH(ASTDeclaration*, d, scope->declarations, {
+        if (spelling_equal(d->name->base.location.spelling,
+                           decl->name->base.location.spelling)) {
+            SourceLocation *sl = &(AST_BASE(decl)->location);
+            Spelling sp = decl->name->base.location.spelling;
+            diag_printf(DIAG_ERROR, sl, "something named '%s' was "
+                        "already declared in this scope", spelling_cstring(sp));
+            exit(ERR_ANALYZE);
+        }
+    })
     
     list_append(&scope->declarations, decl);
 }

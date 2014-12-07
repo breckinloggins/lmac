@@ -40,10 +40,10 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);
         
-        if (spelling_streq(func->name->base.location.spelling, "main") &&
+        if (spelling_streq(func->base.name->base.location.spelling, "main") &&
             !spelling_streq(sp_type, "$32")) {
             // TODO(bloggins): This is temporary and wrong
-            ANALYZE_ERROR(&(func->base.location), "function main() must have return type '$32'");
+            ANALYZE_ERROR(&(AST_BASE(func)->location), "function main() must have return type '$32'");
         }
         
     } else if (node->kind == AST_DEFN_VAR) {
