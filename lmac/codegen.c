@@ -78,6 +78,20 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                     break;
  
             }
+        } else if (node->bit_flags & BIT_FLAG_CHAR) {
+            if (!(node->bit_flags & BIT_FLAG_SIGNED)) CG("unsigned ");
+            
+            switch (node->bit_size) {
+                case 8: CG("char"); break;
+                case 16: CG("wchar_t"); break;
+                default:
+                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                                "Don't know how to make a %d-bit character",
+                                node->bit_size);
+                    exit(ERR_CODEGEN);
+                    break;
+            }
+            
         } else {
             if (!(node->bit_flags & BIT_FLAG_SIGNED)) CG("u");
             
@@ -97,6 +111,15 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
         }
     }
     
+    return VISIT_OK;
+}
+
+CG_VISIT_FN(AST_TYPE_POINTER, ASTTypePointer) {
+    if (phase == VISIT_PRE) {
+        return VISIT_OK;
+    }
+    
+    CG("*");
     return VISIT_OK;
 }
 
@@ -361,6 +384,7 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
         CG_DISPATCH(AST_TYPE_CONSTANT, ASTTypeConstant);
         CG_DISPATCH(AST_TYPE_NAME, ASTTypeName);
+        CG_DISPATCH(AST_TYPE_POINTER, ASTTypePointer);
     
         CG_DISPATCH(AST_PP_PRAGMA, ASTPPPragma);
     CG_DISPATCH_END()

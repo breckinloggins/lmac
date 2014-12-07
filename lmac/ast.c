@@ -447,6 +447,12 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
             
             return ast_type_get_canonical_type(type_name->resolved_type);
         }
+        case AST_TYPE_POINTER: {
+            /* NOTE(bloggins): hmmmm, what to do here? At this point I'd just prefer to
+             * return itself and see if that works. Just make sure it's resolved first */
+            ast_type_get_canonical_type(((ASTTypePointer*)type)->pointer_to);
+            return type;
+        }
         default: assert(false && "Unhandled type kind");
     }
 }

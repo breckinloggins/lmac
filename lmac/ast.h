@@ -191,6 +191,7 @@ typedef struct ASTTypeExpression {
 
 #define BIT_FLAG_NONE           0
 #define BIT_FLAG_FP             0x01
+#define BIT_FLAG_CHAR           0x02
 #define BIT_FLAG_SIGNED         0x80
 
 typedef struct {

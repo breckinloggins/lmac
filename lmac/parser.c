@@ -681,6 +681,10 @@ bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
                     bit_flags |= BIT_FLAG_FP;
                     bit_flags |= BIT_FLAG_SIGNED; /* just to be sure */
                 } break;
+                case 'c': {
+                    bit_flags |= BIT_FLAG_CHAR;
+                    bit_flags |= BIT_FLAG_SIGNED;
+                } break;
                 case 's': {
                     bit_flags |= BIT_FLAG_SIGNED;
                 } break;

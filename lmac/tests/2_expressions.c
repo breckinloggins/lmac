@@ -3,6 +3,7 @@
 
 // TODO(bloggins): Move this into the prelude
 $$() int = $32;
+$$() char = $c8;
 $$() void = $();
 
 int a = 1;
@@ -19,7 +20,8 @@ int main() {
     int lshift = add2 << 2;
     int rshift = add2 >> 2;
     
-    //$u8* str = "this is a string";
+    $c8* str = "this is a string";
+    char *str2 = "and this is another string";
     
     int lt = add2 < 1;
     int gr = add2 > 1;
