@@ -920,19 +920,11 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
 /* ====== Preprocessor ====== */
 #pragma mark Preprocessor
 
-bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
-    // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
-    // for right now preprocessor tokens will just be inserted into the AST
+bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
     Context s = snapshot(ctx);
     
-    if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
-    
     ASTIdent *directive = NULL;
-    if (!parse_ident(ctx, &directive)) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
-        exit(ERR_PARSE);
-    }
+    if (!parse_ident(ctx, &directive)) { goto fail_parse; }
     
     if (!spelling_streq(directive->base.location.spelling, "pragma")) {
         SourceLocation sl = parsed_source_location(ctx, s);
@@ -962,7 +954,7 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         
         
     }
-
+    
     // This is the actual argument to be used for directives
     ASTIdent *arg2 = NULL;
     if (!parse_ident(ctx, &arg2) || arg2->base.location.line != lineof_directive) {
@@ -973,6 +965,25 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
                      (ASTPPPragma**)result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
+bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
+    // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
+    // for right now preprocessor tokens will just be inserted into the AST
+    Context s = snapshot(ctx);
+    
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
+    
+    if (!parse_pp_pragma(ctx, (ASTPPPragma**)result)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
+        exit(ERR_PARSE);
+    }    
     return true;
     
 fail_parse:
