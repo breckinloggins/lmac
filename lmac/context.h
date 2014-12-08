@@ -25,6 +25,10 @@ typedef struct Context {
     uint8_t *pos;
     uint32_t line;
     
+    /* TODO(bloggins): Turn this into a list and control error termination
+     * better */
+    int last_error;
+    
     Scope *active_scope;
     
     /* Parsed AST */

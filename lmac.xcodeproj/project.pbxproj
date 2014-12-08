@@ -20,6 +20,7 @@
 		F87793561A33B84E0035D3C0 /* scope.c in Sources */ = {isa = PBXBuildFile; fileRef = F87793551A33B84E0035D3C0 /* scope.c */; };
 		F87793581A33BBF50035D3C0 /* context.c in Sources */ = {isa = PBXBuildFile; fileRef = F87793571A33BBF50035D3C0 /* context.c */; };
 		F877935C1A33C3BD0035D3C0 /* list.c in Sources */ = {isa = PBXBuildFile; fileRef = F877935B1A33C3BD0035D3C0 /* list.c */; };
+		F877935F1A360F360035D3C0 /* run.c in Sources */ = {isa = PBXBuildFile; fileRef = F877935E1A360F360035D3C0 /* run.c */; };
 		F8E3D32E1A3254170044FBBA /* act.c in Sources */ = {isa = PBXBuildFile; fileRef = F8E3D32D1A3254170044FBBA /* act.c */; };
 /* End PBXBuildFile section */
 
@@ -57,6 +58,8 @@
 		F87793571A33BBF50035D3C0 /* context.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = context.c; sourceTree = "<group>"; };
 		F87793591A33BEE80035D3C0 /* list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
 		F877935B1A33C3BD0035D3C0 /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
+		F877935D1A360E9D0035D3C0 /* run.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = run.h; sourceTree = "<group>"; };
+		F877935E1A360F360035D3C0 /* run.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = run.c; sourceTree = "<group>"; };
 		F8E3D3271A32506C0044FBBA /* ast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.h; sourceTree = "<group>"; };
 		F8E3D32A1A32514E0044FBBA /* token.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = token.h; sourceTree = "<group>"; };
 		F8E3D32B1A32524C0044FBBA /* act.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = act.h; sourceTree = "<group>"; };
@@ -110,6 +113,7 @@
 				F8597E2E1A2FD60500383FCF /* codegen.c */,
 				F87793571A33BBF50035D3C0 /* context.c */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
+				F877935E1A360F360035D3C0 /* run.c */,
 			);
 			path = lmac;
 			sourceTree = "<group>";
@@ -124,6 +128,7 @@
 				F8E3D32A1A32514E0044FBBA /* token.h */,
 				F8E3D32C1A3253C70044FBBA /* context.h */,
 				F87793541A33B6B50035D3C0 /* scope.h */,
+				F877935D1A360E9D0035D3C0 /* run.h */,
 			);
 			name = headers;
 			sourceTree = "<group>";
@@ -207,6 +212,7 @@
 				F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
 				F8597E281A2FAE4400383FCF /* analyzer.c in Sources */,
+				F877935F1A360F360035D3C0 /* run.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
