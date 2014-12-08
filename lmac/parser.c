@@ -920,22 +920,15 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
 /* ====== Preprocessor ====== */
 #pragma mark Preprocessor
 
+/* Because things could get... meta */
+typedef bool (*PPParseFn(Context *ctx, void **result));
+
 bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
     Context s = snapshot(ctx);
     
-    ASTIdent *directive = NULL;
-    if (!parse_ident(ctx, &directive)) { goto fail_parse; }
-    
-    if (!spelling_streq(directive->base.location.spelling, "pragma")) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "unrecognized preprocessor directive '%s'",
-                    spelling_cstring(directive->base.location.spelling));
-        exit(ERR_PARSE);
-    }
-    
     // This is a hack to make sure we only parse pragma directives on the line
     // the pragma was defined on.
-    uint32_t lineof_directive = directive->base.location.line;
+    uint32_t lineof_directive = ctx->line;
     
     // TODO(bloggins): This is not valid C syntax for pragma. We do this for
     // now until we have a more complete pre-processor.
@@ -979,7 +972,23 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
     
-    if (!parse_pp_pragma(ctx, (ASTPPPragma**)result)) {
+    ASTIdent *directive = NULL;
+    if (!parse_ident(ctx, &directive)) { goto fail_parse; }
+    
+    Spelling directive_sp = AST_BASE(directive)->location.spelling;
+    PPParseFn *parse_fn = NULL;
+    if (spelling_streq(directive_sp, "pragma")) {
+        parse_fn = (PPParseFn*)parse_pp_pragma;
+    }
+    
+    if (parse_fn == NULL) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "unrecognized preprocessor directive '%s'",
+                    spelling_cstring(directive->base.location.spelling));
+        exit(ERR_PARSE);
+    }
+    
+    if (!parse_fn(ctx, (void**)result)) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
         exit(ERR_PARSE);
