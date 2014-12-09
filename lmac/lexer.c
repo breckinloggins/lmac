@@ -91,6 +91,31 @@ void maybe_lex_keyword(Context *ctx, Token *t) {
     }
 }
 
+Token lexer_lex_chunk(Context *ctx, char end_of_chunk_marker, char chunk_marker_escape) {
+    Token t = {};
+    t.kind = TOK_NONE;
+    t.location = lexed_source_location(ctx);
+    
+    bool in_escape = false;
+    for (;;) {
+        char ch = (char)*(ctx->pos++);
+        if (!in_escape && (ch == chunk_marker_escape)) {
+            // NOTE(bloggins): We read this in unprocessed because we always
+            // store the EXACT spelling. Code that uses the spelling will need
+            // to do the work to remove the escape character
+            in_escape = true;
+        } else if (in_escape) {
+            in_escape = false;
+        } else if (ch == end_of_chunk_marker) {
+            break;
+        }
+    }
+    
+    t.location.range_end = ctx->pos;
+    t.kind = TOK_CHUNK;
+    return t;
+}
+
 Token lexer_peek_token(Context *ctx) {
     uint8_t *saved_pos = ctx->pos;
     Token t = lexer_next_token(ctx);

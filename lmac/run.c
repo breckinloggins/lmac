@@ -63,11 +63,9 @@ const char *lookup_cmd(const char *cmd) {
     return path;
 }
 
-Context *run_context(Context *ctx) {
-    if (ctx == NULL) {
-        diag_printf(DIAG_ERROR, NULL, "can't currently invent the universe");
-        exit(ERR_42);
-    }
+Context *compile_context(Context *ctx) {
+    assert(ctx && "must have a valid context");
+    assert(ctx->kind == CONTEXT_KIND_COMPILE);
     
     Context *outer = calloc(1, sizeof(Context));
     outer->file = ctx->file;
@@ -80,7 +78,7 @@ Context *run_context(Context *ctx) {
         outer->last_error = ERR_CC;
         return outer;
     }
-
+    
     // TODO(bloggins): this is probably not the most memory efficient thing we could do
     FILE *fp = fopen(ctx->file, "rb");
     fseek(fp, 0, SEEK_END);
@@ -143,4 +141,34 @@ Context *run_context(Context *ctx) {
     outer->ast = NULL;
     
     return outer;
+}
+
+Context *interpret_context(Context *ctx) {
+    assert(ctx && "must have a valid context");
+    assert(ctx->kind == CONTEXT_KIND_INTERPRET);
+    
+    return NULL;
+}
+
+Context *run_context(Context *ctx) {
+    if (ctx == NULL) {
+        diag_printf(DIAG_ERROR, NULL, "can't currently invent the universe");
+        exit(ERR_42);
+    }
+    
+    switch (ctx->kind) {
+        case CONTEXT_KIND_COMPILE: {
+            return compile_context(ctx);
+        } break;
+        case CONTEXT_KIND_INTERPRET: {
+            fprintf(stderr, "Would interpret\n");
+            return NULL;
+        } break;
+        default: {
+            diag_printf(DIAG_FATAL, NULL, "unhandled case");
+            exit(ERR_RUN);
+        } break;
+    }
+    
+    return NULL;
 }

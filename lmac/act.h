@@ -15,6 +15,9 @@
 #include "ast.h"
 #include "context.h"
 
+void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
+                   ASTBase **result);
+
 void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
                       ASTPPPragma **result);
 

@@ -37,6 +37,7 @@
 #define ERR_ANALYZE             6
 #define ERR_CODEGEN             7
 #define ERR_CC                  8
+#define ERR_RUN                 9
 #define ERR_42                  42
 
 /*
@@ -50,6 +51,8 @@ extern int diag_errno;
 Token lexer_next_token(Context *ctx);
 Token lexer_peek_token(Context *ctx);
 void lexer_put_back(Context *ctx, Token token);
+Token lexer_lex_chunk(Context *ctx, char end_of_chunk_marker,
+                      char chunk_marker_escape);
 
 void parser_parse(Context *ctx);
 

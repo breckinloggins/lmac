@@ -12,10 +12,18 @@
 #include "ast.h"
 #include "scope.h"
 
+typedef enum ContextKind {
+    CONTEXT_KIND_NONE = 0,
+    CONTEXT_KIND_COMPILE,
+    //CONTEXT_ACTION_PARSE,     // would just return an AST
+    CONTEXT_KIND_INTERPRET,
+} ContextKind;
+
 /*
  * Compiler Context
  */
 typedef struct Context {
+    ContextKind kind;
     const char *file;
     
     /* The entire contents of the current translation unit */

@@ -944,8 +944,6 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
         diag_printf(DIAG_ERROR, &sl, "unsupported argument '%s' after pragma. Only 'CLITE' is supported",
                     spelling_cstring(arg1->base.location.spelling));
         exit(ERR_PARSE);
-        
-        
     }
     
     // This is the actual argument to be used for directives
@@ -958,6 +956,17 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
     
     act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
                      (ASTPPPragma**)result);
+    return true;
+}
+
+bool parse_pp_run(Context *ctx, ASTBase **result) {
+    Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
+    if (chunk.kind != TOK_CHUNK) {
+        diag_printf(DIAG_FATAL, &chunk.location, "parse error parsing run directive");
+        exit(ERR_PARSE);
+    }
+    
+    act_on_pp_run(chunk.location, ctx, chunk, '\\', result);
     return true;
 }
 
@@ -975,6 +984,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     PPParseFn *parse_fn = NULL;
     if (spelling_streq(directive_sp, "pragma")) {
         parse_fn = (PPParseFn*)parse_pp_pragma;
+    } else if (spelling_streq(directive_sp, "run")) {
+        parse_fn = (PPParseFn*)parse_pp_run;
     }
     
     if (parse_fn == NULL) {

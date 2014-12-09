@@ -25,6 +25,9 @@ TOKEN(TOK_NONE, none)
 /* Preprocessor symbol */
 TOKEN(TOK_HASH, hash)
 
+/* An unprocessed "chunk" of source text (usually used by the preprocessor) */
+TOKEN(TOK_CHUNK, chunk)
+
 /* Type Literal symbol */
 TOKEN(TOK_DOLLAR, dollar)
 

@@ -8,6 +8,44 @@
 
 #include "clite.h"
 
+void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
+                   ASTBase **result) {
+    if (result == NULL) return;
+    
+    Spelling chunk_sp = chunk.location.spelling;
+    const char *chunk_src = spelling_cstring(chunk_sp);
+    char *chunk_processed = calloc(1, (strlen(chunk_src) + 1) * sizeof(char));
+    const char *p = chunk_src;
+    int idx = 0;
+    while (*p != 0) {
+        if (*p != chunk_escape) {
+            chunk_processed[idx++] = *p;
+        }
+        
+        p++;
+    }
+    
+    // We want to chop off the end of the chunk at the end-of-chunk marker,
+    // which will be the last character processed
+    if (idx > 0) {
+        idx--;
+    }
+    chunk_processed[idx] = 0;
+    
+    // TODO(bloggins): Fork/join here
+    Context run_ctx = *ctx;
+    // run_ctx.active_scope = ????? hmmmm
+    run_ctx.kind = CONTEXT_KIND_INTERPRET;
+    run_ctx.ast = NULL;
+    run_ctx.buf = (uint8_t*)chunk_processed;
+    run_ctx.pos = run_ctx.buf;
+    run_context(&run_ctx);  // Return value?
+    
+    fprintf(stderr, "FOUND CHUNK: \"%s\"\n", chunk_processed);
+    *result = (ASTBase*)ast_create_expr_empty();
+    free(chunk_processed);
+}
+
 void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
                       ASTPPPragma **result) {
     if (result == NULL) return;
@@ -20,7 +58,7 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
     AST_BASE(arg2)->parent = (ASTBase*)pragma;
     pragma->arg = arg2;
     
-    *result = pragma;
+    //*result = pragma;
 }
 
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
