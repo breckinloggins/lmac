@@ -18,7 +18,9 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     const char *p = chunk_src;
     int idx = 0;
     while (*p != 0) {
-        if (*p != chunk_escape) {
+        if (*p != chunk_escape && p != chunk_src) {
+            // Skipped over any escape as well as the first character in
+            // the chunk (which is a space)
             chunk_processed[idx++] = *p;
         }
         
@@ -41,8 +43,20 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     run_ctx.pos = run_ctx.buf;
     run_context(&run_ctx);  // Return value?
     
-    fprintf(stderr, "FOUND CHUNK: \"%s\"\n", chunk_processed);
-    *result = (ASTBase*)ast_create_expr_empty();
+    //*result = (ASTBase*)ast_create_expr_empty();
+    ASTExpression *expr = (ASTExpression*)ast_create_expr_empty();
+    if (!strcmp(chunk_processed, "42")) {
+        ASTExprNumber *number = ast_create_expr_number();
+        number->number = 1;
+        number->base.base.location = chunk.location;
+        expr = (ASTExpression*)number;
+    } else {
+        fprintf(stderr, "FOUND WEIRD CHUNK: \"%s\"\n", chunk_processed);
+    }
+    
+    expr->base.location = chunk.location;
+    *result = (ASTBase*)expr;
+    
     free(chunk_processed);
 }
 

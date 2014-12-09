@@ -16,6 +16,12 @@
 it is a comment, but it will still parse all of it.                             \
 At least, I think it will.
 
+$32 a = #run 42
+// TODO(bloggins): This semicolon after the line has to be there to placate the
+// parser, but we should be able to remove it with automatic semicolon insertion
+;
+
+
 $32 main() {
-    return 0;
+    return a;
 }

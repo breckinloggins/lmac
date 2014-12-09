@@ -82,6 +82,10 @@ AST_ACCEPT_FN(AST_OPERATOR) {
     STANDARD_VISIT()
 }
 
+AST_ACCEPT_FN(AST_EXPR_BEGIN) {
+    assert(false && "we should never have one of these");
+}
+
 AST_ACCEPT_FN(AST_EXPR_EMPTY) {
     STANDARD_VISIT()
 }
@@ -140,6 +144,10 @@ AST_ACCEPT_FN(AST_EXPR_CALL) {
     STANDARD_ACCEPT(call->callable);
     
     STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_EXPR_END) {
+    assert(false && "we should never have one of these");
 }
 
 AST_ACCEPT_FN(AST_DEFN_FUNC) {
@@ -361,6 +369,9 @@ ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node
 
 
 // TODO(bloggins): Probably need to move into a separate type checking file
+bool ast_node_is_expression(ASTBase *node) {
+    return node != NULL && node->kind > AST_EXPR_BEGIN && node->kind < AST_EXPR_END;
+}
 
 bool ast_node_is_type_expression(ASTBase *node) {
     return node != NULL && node->kind > AST_TYPE_BEGIN && node->kind < AST_TYPE_END;

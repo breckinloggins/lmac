@@ -536,7 +536,8 @@ fail_parse:
  | constant 
  | string
  | '(' type_expression ')' | '(' expression ')' 
- | generic_selection 
+ | generic_selection
+ | preprocessor expression
  */
 bool parse_expr_primary(Context *ctx, ASTExpression **result) {
     Context s = snapshot(ctx);
@@ -564,9 +565,19 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
                
                 act_on_expr_paren(t.location, inner, (ASTExprParen**)result);
             } else {
-                // This is last because it's unlikely
                 if (!parse_type_expression(ctx, (ASTTypeExpression**)result)) {
-                    goto fail_parse;
+                    // This is last because it's unlikely
+                    if (parse_pp_directive(ctx, (ASTPPDirective**)result)) {
+                        if (result != NULL) {
+                            if (!ast_node_is_expression((ASTBase*)*result)) {
+                                diag_printf(DIAG_ERROR, &((ASTBase*)*result)->location,
+                                            "expected expression from preprocessor");
+                                exit(ERR_PARSE);
+                            }
+                        }
+                    } else {
+                        goto fail_parse;
+                    }
                 }
             }
         }

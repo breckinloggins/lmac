@@ -248,6 +248,7 @@ int ast_visit(ASTBase *node, VisitFn visitor, void *ctx);
 void ast_visit_data_clean(ASTBase *node);
 struct Scope *ast_nearest_scope(ASTBase *node);
 ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node);
+bool ast_node_is_expression(ASTBase *node);
 bool ast_node_is_type_definition(ASTBase *node);
 bool ast_node_is_type_expression(ASTBase *node);
 ASTDeclaration* ast_ident_find_declaration(ASTIdent *ident);

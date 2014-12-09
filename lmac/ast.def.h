@@ -23,6 +23,7 @@ AST(OPERATOR, operator, ASTOperator)
 AST(STMT_RETURN, stmt_return, ASTStmtReturn)
 AST(STMT_EXPR, stmt_expr, ASTStmtExpr)
 
+AST(EXPR_BEGIN, expr_begin, ASTBase)
 AST(EXPR_EMPTY, expr_empty, ASTExprEmpty)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)
 AST(EXPR_STRING, expr_string, ASTExprString)
@@ -31,6 +32,7 @@ AST(EXPR_PAREN, expr_paren, ASTExprParen)
 AST(EXPR_CAST, expr_cast, ASTExprCast)
 AST(EXPR_BINARY, expr_binary, ASTExprBinary)
 AST(EXPR_CALL, expr_call, ASTExprCall)
+AST(EXPR_END, expr_end, ASTBase)
 
 /* Preprocessor */
 AST(PP_PRAGMA, pp_pragma, ASTPPPragma)
