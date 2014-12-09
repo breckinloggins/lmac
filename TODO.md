@@ -1,0 +1,2 @@
+- represent the file being compiled in the AST as an ASTFile
+- have an AST_IS(object, kind), TOKEN_IS(...) macros to cleanup all the ((FOOBase*)cast)->kind == KIND tests
