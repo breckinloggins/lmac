@@ -959,10 +959,6 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
     act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
                      (ASTPPPragma**)result);
     return true;
-    
-fail_parse:
-    restore(ctx, s);
-    return false;
 }
 
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
