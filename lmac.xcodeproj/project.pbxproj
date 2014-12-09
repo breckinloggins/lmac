@@ -60,7 +60,6 @@
 		F877935B1A33C3BD0035D3C0 /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
 		F877935D1A360E9D0035D3C0 /* run.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = run.h; sourceTree = "<group>"; };
 		F877935E1A360F360035D3C0 /* run.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = run.c; sourceTree = "<group>"; };
-		F87793601A36CB500035D3C0 /* 4_meta.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = 4_meta.c; path = lmac/tests/4_meta.c; sourceTree = "<group>"; };
 		F8E3D3271A32506C0044FBBA /* ast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.h; sourceTree = "<group>"; };
 		F8E3D32A1A32514E0044FBBA /* token.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = token.h; sourceTree = "<group>"; };
 		F8E3D32B1A32524C0044FBBA /* act.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = act.h; sourceTree = "<group>"; };
@@ -82,7 +81,6 @@
 		F84DD9231A2D2C9C00ED052E = {
 			isa = PBXGroup;
 			children = (
-				F87793601A36CB500035D3C0 /* 4_meta.c */,
 				F84DD92E1A2D2C9C00ED052E /* lmac */,
 				F84DD92D1A2D2C9C00ED052E /* Products */,
 			);
