@@ -40,7 +40,7 @@ typedef struct Context {
     Scope *active_scope;
     
     /* Parsed AST */
-    ASTTopLevel *ast;
+    ASTBase *ast;
 } Context;
 
 Scope *context_scope_push(Context *ctx);

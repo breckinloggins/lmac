@@ -23,6 +23,7 @@ AST(OPERATOR, operator, ASTOperator)
 AST(STMT_RETURN, stmt_return, ASTStmtReturn)
 AST(STMT_EXPR, stmt_expr, ASTStmtExpr)
 
+/* Expressions */
 AST(EXPR_BEGIN, expr_begin, ASTBase)
 AST(EXPR_EMPTY, expr_empty, ASTExprEmpty)
 AST(EXPR_NUMBER, expr_number, ASTExprNumber)

@@ -146,7 +146,9 @@ Context *compile_context(Context *ctx) {
 Context *interpret_context(Context *ctx) {
     assert(ctx && "must have a valid context");
     assert(ctx->kind == CONTEXT_KIND_INTERPRET);
-    
+    // call interp_interpret()
+    diag_printf(DIAG_FATAL, NULL, "interpret not implemented yet");
+    exit(ERR_INTERPRET);
     return NULL;
 }
 
@@ -161,8 +163,7 @@ Context *run_context(Context *ctx) {
             return compile_context(ctx);
         } break;
         case CONTEXT_KIND_INTERPRET: {
-            fprintf(stderr, "Would interpret\n");
-            return NULL;
+            return interpret_context(ctx);
         } break;
         default: {
             diag_printf(DIAG_FATAL, NULL, "unhandled case");

@@ -38,6 +38,7 @@
 #define ERR_CODEGEN             7
 #define ERR_CC                  8
 #define ERR_RUN                 9
+#define ERR_INTERPRET           10
 #define ERR_42                  42
 
 /*
@@ -62,6 +63,8 @@ type *ast_create_##name();
 #include "ast.def.h"
 
 void analyzer_analyze(ASTTopLevel *ast);
+
+bool interp_interpret(ASTBase *node, ASTBase **result);
 
 void codegen_generate(FILE *f, ASTTopLevel *ast);
 

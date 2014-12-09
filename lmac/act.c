@@ -41,21 +41,11 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     run_ctx.ast = NULL;
     run_ctx.buf = (uint8_t*)chunk_processed;
     run_ctx.pos = run_ctx.buf;
-    run_context(&run_ctx);  // Return value?
+    Context *out_ctx = run_context(&run_ctx);  // Return value?
     
-    //*result = (ASTBase*)ast_create_expr_empty();
-    ASTExpression *expr = (ASTExpression*)ast_create_expr_empty();
-    if (!strcmp(chunk_processed, "42")) {
-        ASTExprNumber *number = ast_create_expr_number();
-        number->number = 1;
-        number->base.base.location = chunk.location;
-        expr = (ASTExpression*)number;
-    } else {
-        fprintf(stderr, "FOUND WEIRD CHUNK: \"%s\"\n", chunk_processed);
-    }
-    
-    expr->base.location = chunk.location;
-    *result = (ASTBase*)expr;
+    // TODO(bloggins): error checking and null checking
+    *result = out_ctx->ast;
+    free(out_ctx);  // Not enough. Need a context_destroy() call
     
     free(chunk_processed);
 }
