@@ -9,7 +9,7 @@
 #include "clite.h"
 
 void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
-                   ASTBase **result) {
+                   ParseFn parser, ASTBase **result) {
     if (result == NULL) return;
     
     Spelling chunk_sp = chunk.location.spelling;
@@ -40,8 +40,10 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     run_ctx.buf = (uint8_t*)chunk_processed;
     run_ctx.buf_size = idx;
     run_ctx.pos = run_ctx.buf;
-    parser_parse(&run_ctx);
-    analyzer_analyze(run_ctx.ast);
+    
+    if (parser(&run_ctx, &(run_ctx.ast))) {
+        analyzer_analyze(run_ctx.ast);
+    }
     
     *result = run_ctx.ast;
     

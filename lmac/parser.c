@@ -977,7 +977,7 @@ bool parse_pp_run(Context *ctx, ASTBase **result) {
         exit(ERR_PARSE);
     }
     
-    act_on_pp_run(chunk.location, ctx, chunk, '\\', result);
+    act_on_pp_run(chunk.location, ctx, chunk, '\\', parse_expression, result);
     return true;
 }
 

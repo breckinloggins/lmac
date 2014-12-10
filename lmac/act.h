@@ -15,8 +15,11 @@
 #include "ast.h"
 #include "context.h"
 
+// The signature of most functions in the parser
+typedef bool (*ParseFn)(Context *ctx, ASTBase **result);
+
 void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
-                   ASTBase **result);
+                   ParseFn parser, ASTBase **result);
 
 void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
                       ASTPPPragma **result);
