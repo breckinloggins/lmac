@@ -409,7 +409,7 @@ bool parse_expr_cast(Context *ctx, ASTExpression **result) {
         exit(ERR_PARSE);
     }
     
-    if (AST_IS(*result, AST_EXPR_PAREN)) {
+    if (!AST_IS(*result, AST_EXPR_PAREN)) {
         return true;
     }
     
@@ -1023,6 +1023,12 @@ fail_parse:
 
 void parser_parse(Context *ctx) {
     if (!parse_toplevel(ctx, (ASTTopLevel**)&ctx->ast)) {
+        exit(ERR_PARSE);
+    }
+    
+    // NOTE(bloggins): Sanity check
+    if (ctx->pos - ctx->buf < ctx->buf_size) {
+        diag_printf(DIAG_ERROR, NULL, "unexpected end of input", ctx->file);
         exit(ERR_PARSE);
     }
 }

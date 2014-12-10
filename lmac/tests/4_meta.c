@@ -9,17 +9,17 @@
 // Test #run and other weird things
 
 // The following two run commands should work but do... nothing. Nothing at all
-#run
-#run    // Like I said, nothing at all, though this will still try to "run" the comment
+//#run
+//#run    // Like I said, nothing at all, though this will still try to "run" the comment
 
-#run    // This is an example of a multiline chunk. It will do nothing. because \
+//#run    // This is an example of a multiline chunk. It will do nothing. because \
 it is a comment, but it will still parse all of it.                             \
 At least, I think it will.
 
-$32 a = #run 42
+//$32 a = #run 42
 // TODO(bloggins): This semicolon after the line has to be there to placate the
 // parser, but we should be able to remove it with automatic semicolon insertion
-;
+//;
 
 
 $32 main() {

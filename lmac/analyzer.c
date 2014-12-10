@@ -54,7 +54,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     } else if (ast_node_is_type_definition(node)) {
         if (AST_IS(node, AST_TYPE_NAME)) {
             // Don't need to do anything right now, just don't want to fall to below
-        } else if (AST_IS(node, AST_TYPE_CONSTANT)) {
+        } else if (!AST_IS(node, AST_TYPE_CONSTANT)) {
             // This is just a placeholder so we can catch types we can't codegen yet
             Spelling sp_t = node->location.spelling;
             ANALYZE_ERROR(&node->location, "invalid type '%s' (not supported)", spelling_cstring(sp_t));

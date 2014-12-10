@@ -58,8 +58,7 @@ int main(int argc, const char * argv[]) {
     atexit(exit_handler);
     
     Context ctx = {0};
-    ctx.kind = CONTEXT_KIND_COMPILE;
     ctx.file = file;
     
-    return run_context(&ctx)->last_error;    
+    return run_compile(&ctx);
 }

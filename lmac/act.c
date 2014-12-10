@@ -36,16 +36,14 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     
     // TODO(bloggins): Fork/join here
     Context run_ctx = *ctx;
-    // run_ctx.active_scope = ????? hmmmm
-    run_ctx.kind = CONTEXT_KIND_INTERPRET;
     run_ctx.ast = NULL;
     run_ctx.buf = (uint8_t*)chunk_processed;
+    run_ctx.buf_size = idx;
     run_ctx.pos = run_ctx.buf;
-    Context *out_ctx = run_context(&run_ctx);  // Return value?
+    parser_parse(&run_ctx);
+    analyzer_analyze(run_ctx.ast);
     
-    // TODO(bloggins): error checking and null checking
-    *result = out_ctx->ast;
-    free(out_ctx);  // Not enough. Need a context_destroy() call
+    *result = run_ctx.ast;
     
     free(chunk_processed);
 }
@@ -62,7 +60,7 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
     AST_BASE(arg2)->parent = (ASTBase*)pragma;
     pragma->arg = arg2;
     
-    //*result = pragma;
+    *result = pragma;
 }
 
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,

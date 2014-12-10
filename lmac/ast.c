@@ -378,7 +378,7 @@ bool ast_node_is_type_expression(ASTBase *node) {
 }
 
 bool ast_node_is_type_definition(ASTBase *node) {
-    if (AST_IS(node, AST_DEFN_VAR)) {
+    if (!AST_IS(node, AST_DEFN_VAR)) {
         return false;
     }
     

@@ -59,7 +59,6 @@
 		F87793571A33BBF50035D3C0 /* context.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = context.c; sourceTree = "<group>"; };
 		F87793591A33BEE80035D3C0 /* list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
 		F877935B1A33C3BD0035D3C0 /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
-		F877935D1A360E9D0035D3C0 /* run.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = run.h; sourceTree = "<group>"; };
 		F877935E1A360F360035D3C0 /* run.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = run.c; sourceTree = "<group>"; };
 		F87793611A36EC140035D3C0 /* interp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = interp.c; sourceTree = "<group>"; };
 		F8E3D3271A32506C0044FBBA /* ast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.h; sourceTree = "<group>"; };
@@ -131,7 +130,6 @@
 				F8E3D32A1A32514E0044FBBA /* token.h */,
 				F8E3D32C1A3253C70044FBBA /* context.h */,
 				F87793541A33B6B50035D3C0 /* scope.h */,
-				F877935D1A360E9D0035D3C0 /* run.h */,
 			);
 			name = headers;
 			sourceTree = "<group>";

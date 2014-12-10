@@ -63,20 +63,14 @@ const char *lookup_cmd(const char *cmd) {
     return path;
 }
 
-Context *compile_context(Context *ctx) {
+int run_compile(Context *ctx) {
     assert(ctx && "must have a valid context");
-    assert(ctx->kind == CONTEXT_KIND_COMPILE);
-    
-    Context *outer = calloc(1, sizeof(Context));
-    outer->file = ctx->file;
-    outer->last_error = ctx->last_error;
     
     // TODO(bloggins): Extract to a driver struct
     const char *cc_path = lookup_cmd("cc");
     if (cc_path == NULL) {
         diag_printf(DIAG_ERROR, NULL, "can't find c compiler (cc)");
-        outer->last_error = ERR_CC;
-        return outer;
+        exit(ERR_CC);
     }
     
     // TODO(bloggins): this is probably not the most memory efficient thing we could do
@@ -91,6 +85,7 @@ Context *compile_context(Context *ctx) {
     
     // Ensure null-termination
     ctx->buf[fsize] = 0;
+    ctx->buf_size = fsize;
     ctx->pos = ctx->buf;
     ctx->line = 1;
     
@@ -98,15 +93,6 @@ Context *compile_context(Context *ctx) {
     context_scope_push(ctx);
     
     parser_parse(ctx);
-    
-    // NOTE(bloggins): Sanity check
-    if (ctx->pos - ctx->buf < fsize) {
-        diag_printf(DIAG_FATAL, NULL, "unexpected end of input", ctx->file);
-        // TODO(bloggins): Include a pointer to the inner context into the outer \
-        // for possible error recovery and other tricks
-        outer->last_error = ERR_LEX;
-        return outer;
-    }
     
     // Don't keep parse context around after the full parse tree is created
     ctx->active_scope = NULL;
@@ -134,42 +120,7 @@ Context *compile_context(Context *ctx) {
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.
-    outer->last_error = run_cmd("%s -o %s %s", cc_path, obj_file, out_file);
-    
-    // Only recursive invocations of the compiler will result in an AST in the
-    // outer context
-    outer->ast = NULL;
-    
-    return outer;
+    return run_cmd("%s -o %s %s", cc_path, obj_file, out_file);
 }
 
-Context *interpret_context(Context *ctx) {
-    assert(ctx && "must have a valid context");
-    assert(ctx->kind == CONTEXT_KIND_INTERPRET);
-    // call interp_interpret()
-    diag_printf(DIAG_FATAL, NULL, "interpret not implemented yet");
-    exit(ERR_INTERPRET);
-    return NULL;
-}
 
-Context *run_context(Context *ctx) {
-    if (ctx == NULL) {
-        diag_printf(DIAG_ERROR, NULL, "can't currently invent the universe");
-        exit(ERR_42);
-    }
-    
-    switch (ctx->kind) {
-        case CONTEXT_KIND_COMPILE: {
-            return compile_context(ctx);
-        } break;
-        case CONTEXT_KIND_INTERPRET: {
-            return interpret_context(ctx);
-        } break;
-        default: {
-            diag_printf(DIAG_FATAL, NULL, "unhandled case");
-            exit(ERR_RUN);
-        } break;
-    }
-    
-    return NULL;
-}

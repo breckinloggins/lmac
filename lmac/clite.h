@@ -23,7 +23,6 @@
 #include "act.h"
 #include "scope.h"
 #include "context.h"
-#include "run.h"
 
 // Makes these easier to search for an minimize / eliminate later
 #define global_variable static
@@ -63,9 +62,8 @@ type *ast_create_##name();
 #include "ast.def.h"
 
 void analyzer_analyze(ASTBase *ast);
-
 bool interp_interpret(ASTBase *node, ASTBase **result);
-
 void codegen_generate(FILE *f, ASTBase *ast);
+int run_compile(Context *ctx);
 
 #endif
