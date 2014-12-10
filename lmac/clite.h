@@ -62,10 +62,10 @@ void parser_parse(Context *ctx);
 type *ast_create_##name();
 #include "ast.def.h"
 
-void analyzer_analyze(ASTTopLevel *ast);
+void analyzer_analyze(ASTBase *ast);
 
 bool interp_interpret(ASTBase *node, ASTBase **result);
 
-void codegen_generate(FILE *f, ASTTopLevel *ast);
+void codegen_generate(FILE *f, ASTBase *ast);
 
 #endif

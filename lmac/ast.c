@@ -293,7 +293,7 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
     indent[indent_level] = 0;
     
     fprintf(f, "%s%d:%s", indent, node->location.line, ast_get_kind_name(node->kind));
-    if (node->kind == AST_DEFN_VAR || node->kind == AST_IDENT) {
+    if (AST_IS(node, AST_DEFN_VAR) || AST_IS(node, AST_IDENT)) {
         size_t content_size = node->location.range_end - node->location.range_start;
         char content[content_size + 1];
         char *pc = (char *)node->location.range_start;
@@ -305,9 +305,9 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
         content[content_size] = 0;
         
         fprintf(f, " <%s>", content);
-    } else if (node->kind == AST_EXPR_NUMBER) {
+    } else if (AST_IS(node, AST_EXPR_NUMBER)) {
         fprintf(f, " <%d>", ((ASTExprNumber*)node)->number);
-    } else if (node->kind == AST_EXPR_BINARY) {
+    } else if (AST_IS(node, AST_EXPR_BINARY)) {
         ASTExprBinary *binop = (ASTExprBinary*)node;
         fprintf(f, " <%s>", spelling_cstring(binop->op->base.location.spelling));
     }
@@ -347,9 +347,9 @@ ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node
     do {
         List_FOREACH(ASTBase*, scope_node, scope->declarations, {
             ASTIdent *defn_ident = NULL;
-            if (scope_node->kind == AST_DEFN_FUNC) {
+            if (AST_IS(scope_node, AST_DEFN_FUNC)) {
                 defn_ident = ((ASTDefnFunc*)scope_node)->base.name;
-            } else if (scope_node->kind == AST_DEFN_VAR) {
+            } else if (AST_IS(scope_node, AST_DEFN_VAR)) {
                 defn_ident = ((ASTDefnVar*)scope_node)->base.name;
             } else {
                 continue;
@@ -378,7 +378,7 @@ bool ast_node_is_type_expression(ASTBase *node) {
 }
 
 bool ast_node_is_type_definition(ASTBase *node) {
-    if (node->kind != AST_DEFN_VAR) {
+    if (AST_IS(node, AST_DEFN_VAR)) {
         return false;
     }
     

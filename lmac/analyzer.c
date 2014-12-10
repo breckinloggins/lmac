@@ -19,7 +19,7 @@ typedef struct {
 void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
     bool is_void_type = spelling_streq(sp_type, "void");
     
-    if (is_void_type && loc_node->kind == AST_DEFN_VAR) {
+    if (is_void_type && AST_IS(loc_node, AST_DEFN_VAR)) {
         ANALYZE_ERROR(&(loc_node->location),
                       "variables cannot be defined as type 'void'");
     }
@@ -32,9 +32,9 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     AnalyzeCtx *actx = (AnalyzeCtx*)ctx;
     
-    if (node->kind == AST_EXPR_IDENT) {
+    if (AST_IS(node, AST_EXPR_IDENT)) {
         list_append(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
-    } else if (node->kind == AST_DEFN_FUNC) {
+    } else if (AST_IS(node, AST_DEFN_FUNC)) {
         ASTDefnFunc *func = (ASTDefnFunc*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(func->type);
         Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
@@ -46,15 +46,15 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
             ANALYZE_ERROR(&(AST_BASE(func)->location), "function main() must have return type '$32'");
         }
         
-    } else if (node->kind == AST_DEFN_VAR) {
+    } else if (AST_IS(node, AST_DEFN_VAR)) {
         ASTDefnVar *var = (ASTDefnVar*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(var->type);
         Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);
     } else if (ast_node_is_type_definition(node)) {
-        if (AST_BASE(node)->kind == AST_TYPE_NAME) {
+        if (AST_IS(node, AST_TYPE_NAME)) {
             // Don't need to do anything right now, just don't want to fall to below
-        } else if (AST_BASE(node)->kind != AST_TYPE_CONSTANT) {
+        } else if (AST_IS(node, AST_TYPE_CONSTANT)) {
             // This is just a placeholder so we can catch types we can't codegen yet
             Spelling sp_t = node->location.spelling;
             ANALYZE_ERROR(&node->location, "invalid type '%s' (not supported)", spelling_cstring(sp_t));
@@ -64,7 +64,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     return VISIT_OK;
 }
 
-void analyzer_analyze(ASTTopLevel *ast) {
+void analyzer_analyze(ASTBase *ast) {
     AnalyzeCtx ctx = {};
     ast_visit((ASTBase*)ast, ast_visitor, &ctx);
 
@@ -74,5 +74,5 @@ void analyzer_analyze(ASTTopLevel *ast) {
         }
     })
     
-    ast_visit_data_clean((ASTBase*)ast);
+    ast_visit_data_clean(ast);
 }

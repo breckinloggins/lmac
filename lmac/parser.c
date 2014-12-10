@@ -409,7 +409,7 @@ bool parse_expr_cast(Context *ctx, ASTExpression **result) {
         exit(ERR_PARSE);
     }
     
-    if (AST_BASE(*result)->kind != AST_EXPR_PAREN) {
+    if (AST_IS(*result, AST_EXPR_PAREN)) {
         return true;
     }
     
@@ -474,7 +474,7 @@ bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
     // In the future, I'd like to do the opposite. I want to treat the TYPE
     // as callable, indexible, etc. and implement casts that way. That also
     // allows for overloadable casting in a cool way.
-    if (*result && AST_BASE(*result)->kind == AST_EXPR_PAREN) {
+    if (*result && AST_IS(*result, AST_EXPR_PAREN)) {
         ASTExprParen *paren = (ASTExprParen*)*result;
         if (ast_node_is_type_expression((ASTBase*)paren->inner)) {
             return true;
@@ -1022,7 +1022,7 @@ fail_parse:
 #pragma mark Public API
 
 void parser_parse(Context *ctx) {
-    if (!parse_toplevel(ctx, &ctx->ast)) {
+    if (!parse_toplevel(ctx, (ASTTopLevel**)&ctx->ast)) {
         exit(ERR_PARSE);
     }
 }

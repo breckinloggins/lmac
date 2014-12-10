@@ -391,10 +391,10 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     return VISIT_OK;
 }
 
-void codegen_generate(FILE *f, ASTTopLevel *ast) {
+void codegen_generate(FILE *f, ASTBase *ast) {
     CGContext cgctx = {};
     cgctx.f = f;
     
-    ast_visit((ASTBase*)ast, cg_visitor, &cgctx);
-    ast_visit_data_clean((ASTBase*)ast);
+    ast_visit(ast, cg_visitor, &cgctx);
+    ast_visit_data_clean(ast);
 }
