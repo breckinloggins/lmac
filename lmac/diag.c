@@ -82,7 +82,10 @@ void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...) {
     va_end(ap);
     
     fprintf(f, "\n");
-    diag_fprint_line(f, loc);
+    
+    if (loc != NULL) {
+        diag_fprint_line(f, loc);
+    }
     
     diag_errno = (int)kind;
 }

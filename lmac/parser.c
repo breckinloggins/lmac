@@ -988,7 +988,11 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
         exit(ERR_PARSE);
     }
     
-    act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
+    // Anything after the 2nd argument will have to be taken care of by the
+    // action
+    Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
+    
+    act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2, chunk,
                      (ASTPPPragma**)result);
     return true;
 }
@@ -1007,25 +1011,40 @@ bool parse_pp_run(Context *ctx, ASTBase **result) {
 bool parse_pp_include(Context *ctx, ASTBase **result) {
     Context s = snapshot(ctx);
     
-    ASTExprString *str = NULL;
-    if (!parse_expr_string(ctx, &str)) { goto fail_parse; }
-    
-    const char *include_file = spelling_cstring(AST_BASE(str)->location.spelling);
-    if (include_file == NULL || include_file[0] == 0) {
-        diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
-                    "include directive must name a file");
-        exit(ERR_PARSE);
+    bool system_include = false;
+    const char *include_file = NULL;
+    if (!IS_TOKEN_NONE(accept_token(ctx, TOK_LANGLE))) {
+        Token chunk = lexer_lex_chunk(ctx, '>', 0);
+        if (chunk.kind != TOK_CHUNK) {
+            diag_printf(DIAG_ERROR, &chunk.location, "syntax error after #include");
+            exit(ERR_PARSE);
+        }
+        Spelling sp_chunk = chunk.location.spelling;
+        sp_chunk.end--; // Get rid of the '>'
+        include_file = strdup(spelling_cstring(sp_chunk));
+        system_include = true;
+    } else {
+        ASTExprString *str = NULL;
+        if (!parse_expr_string(ctx, &str)) {
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "syntax error after #include");
+            exit(ERR_PARSE);
+        }
+        
+        include_file = strdup(spelling_cstring(AST_BASE(str)->location.spelling));
+        if (include_file == NULL || include_file[0] == 0) {
+            diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
+                        "include directive must name a file");
+            exit(ERR_PARSE);
+        }
     }
     
     include_file = strdup(include_file);
-    act_on_pp_include(AST_BASE(str)->location, include_file, ctx->active_scope,
-                      result);
+    SourceLocation sl = parsed_source_location(ctx, s);
+    act_on_pp_include(sl, include_file, system_include,
+                      ctx->active_scope, result);
     
     return true;
-    
-fail_parse:
-    restore(ctx, s);
-    return false;
 }
 
 bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {

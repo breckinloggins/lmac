@@ -282,6 +282,8 @@ finish:
 }
 
 Token lexer_next_token(Context *ctx) {
+    return lexer_next_token_no_state(ctx);
+#if 0
     if (ctx->lex_mode == LEX_NORMAL) {
         return lexer_next_token_no_state(ctx);
     }
@@ -292,6 +294,7 @@ Token lexer_next_token(Context *ctx) {
             return t;
         }
     }
+#endif
 }
 
 void lexer_put_back(Context *ctx, Token token) {

@@ -187,10 +187,11 @@ typedef struct {
     ASTPPDirective base;
     
     /* Only very simple pragmas of the form
-     * #pragma CLITE arg
+     * #pragma CLITE arg [optional stuff]
      * are supported right now
      */
     ASTIdent *arg;
+    Spelling rest;
 } ASTPPPragma;
 
 typedef struct {

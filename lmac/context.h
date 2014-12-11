@@ -22,6 +22,7 @@ typedef enum {
  */
 typedef struct Context {
     const char *file;
+    List *system_header_paths;
     
     /* The entire contents of the current translation unit */
     uint8_t *buf;
