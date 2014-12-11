@@ -109,8 +109,11 @@ void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
     ASTDefnFunc *defn = ast_create_defn_func();
     AST_BASE(defn)->location = sl;
     AST_BASE(defn)->scope = scope;
-    block->base.parent = (ASTBase*)defn;
     AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
+    
+    if (block != NULL) {
+        block->base.parent = (ASTBase*)defn;
+    }
     
     defn->type = type;
     defn->base.name = name;
@@ -254,7 +257,7 @@ void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
     *result = paren;
 }
 
-void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
+void act_on_expr_call(SourceLocation sl, ASTExpression *callable, List *args,
                       ASTExprCall **result) {
     if (result == NULL) return;
     
@@ -265,6 +268,7 @@ void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
     
     AST_BASE(call)->location = sl;
     call->callable = callable;
+    call->args = args;
     
     *result = call;
 }

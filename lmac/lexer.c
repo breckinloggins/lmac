@@ -147,6 +147,9 @@ Token lexer_next_token(Context *ctx) {
         case '$':
             t.kind = TOK_DOLLAR;
             break;
+        case ',':
+            t.kind = TOK_COMMA;
+            break;
         case ';':
             t.kind = TOK_SEMICOLON;
             break;

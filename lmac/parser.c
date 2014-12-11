@@ -487,13 +487,25 @@ bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
             // Assume we have a callable
             next_token(ctx);  // gobble gobble
             
-            // TODO: ARGS
+            List *args = NULL;
+            for (;;) {
+                ASTExpression *expr = NULL;
+                if (!parse_expression(ctx, &expr)) {
+                    break;
+                }
+                
+                list_append(&args, expr);
+                
+                if (IS_TOKEN_NONE(accept_token(ctx, TOK_COMMA))) {
+                    break;
+                }
+            }
             
             expect_token(ctx, TOK_RPAREN);
             
             if (result != NULL) {
                 ASTExpression *callable = *result;
-                act_on_expr_call(t.location, callable, (ASTExprCall**)result);
+                act_on_expr_call(t.location, callable, args, (ASTExprCall**)result);
             }
         } else {
             break;
@@ -883,8 +895,11 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     t = accept_token(ctx, TOK_RPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
+    /* Optional block to define the function */
     ASTBlock *block = NULL;
-    if (!parse_block(ctx, &block)) { goto fail_parse; }
+    if (!parse_block(ctx, &block)) {
+        expect_token(ctx, TOK_SEMICOLON);
+    }
     
     act_on_defn_fn(parsed_source_location(ctx, s), ctx->active_scope,
                    type, name, block, result);
@@ -977,7 +992,7 @@ bool parse_pp_run(Context *ctx, ASTBase **result) {
         exit(ERR_PARSE);
     }
     
-    act_on_pp_run(chunk.location, ctx, chunk, '\\', parse_expression, result);
+    act_on_pp_run(chunk.location, ctx, chunk, '\\', (ParseFn)parse_expression, result);
     return true;
 }
 

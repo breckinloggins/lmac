@@ -58,7 +58,7 @@ void act_on_expr_string(SourceLocation sl, ASTExprString **result);
 void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
                        ASTExprParen **result);
 
-void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
+void act_on_expr_call(SourceLocation sl, ASTExpression *callable, List *args,
                       ASTExprCall **result);
 
 void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,
