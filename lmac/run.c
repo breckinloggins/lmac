@@ -73,21 +73,9 @@ int run_compile(Context *ctx, bool run_program) {
         exit(ERR_CC);
     }
     
-    // TODO(bloggins): this is probably not the most memory efficient thing we could do
-    FILE *fp = fopen(ctx->file, "rb");
-    fseek(fp, 0, SEEK_END);
-    long fsize = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    
-    ctx->buf = (uint8_t *)malloc(fsize + 1);
-    fread(ctx->buf, fsize, 1, fp);
-    fclose(fp);
-    
-    // Ensure null-termination
-    ctx->buf[fsize] = 0;
-    ctx->buf_size = fsize;
-    ctx->pos = ctx->buf;
-    ctx->line = 1;
+    const char *filename = ctx->file;
+    ctx->file = NULL;
+    context_load_file(ctx, filename);
     
     // Initialize top scope, builtins, etc. here before parsing
     context_scope_push(ctx);

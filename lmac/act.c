@@ -65,6 +65,19 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
     *result = pragma;
 }
 
+void act_on_pp_include(SourceLocation sl, const char *include_file, Scope *scope,
+                       ASTBase **result) {
+    if (result == NULL) return;
+    
+    Context ctx = {};
+    context_load_file(&ctx, include_file);
+    
+    context_scope_push(&ctx);
+    parser_parse(&ctx);
+    
+    *result = ctx.ast;
+}
+
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
                      ASTTopLevel **result) {
     if (result == NULL) return;

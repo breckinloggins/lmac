@@ -64,10 +64,6 @@ int main(int argc, const char * argv[]) {
     
     // Make sure the file exists
     const char *file = argv[2];
-    if (access(file, R_OK) == -1) {
-        diag_printf(DIAG_ERROR, NULL, "input file not found (%s)", file);
-        return ERR_FILE_NOT_FOUND;
-    }
     
     atexit(exit_handler);
     

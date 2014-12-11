@@ -925,7 +925,15 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
            parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
            parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
-        list_append(&stmts, stmt);
+        if (AST_IS(stmt, AST_TOPLEVEL)) {
+            // Probably from an include. Merge
+            List_FOREACH(ASTBase *, node, ((ASTTopLevel*)stmt)->definitions, {
+                scope_declaration_add(scope, (ASTDeclaration*)node);
+                list_append(&stmts, node);
+            })
+        } else {
+            list_append(&stmts, stmt);
+        }
     }
     
     if (!parse_end(ctx)) {
@@ -996,6 +1004,30 @@ bool parse_pp_run(Context *ctx, ASTBase **result) {
     return true;
 }
 
+bool parse_pp_include(Context *ctx, ASTBase **result) {
+    Context s = snapshot(ctx);
+    
+    ASTExprString *str = NULL;
+    if (!parse_expr_string(ctx, &str)) { goto fail_parse; }
+    
+    const char *include_file = spelling_cstring(AST_BASE(str)->location.spelling);
+    if (include_file == NULL || include_file[0] == 0) {
+        diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
+                    "include directive must name a file");
+        exit(ERR_PARSE);
+    }
+    
+    include_file = strdup(include_file);
+    act_on_pp_include(AST_BASE(str)->location, include_file, ctx->active_scope,
+                      result);
+    
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
     // for right now preprocessor tokens will just be inserted into the AST
@@ -1012,6 +1044,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         parse_fn = (PPParseFn*)parse_pp_pragma;
     } else if (spelling_streq(directive_sp, "run")) {
         parse_fn = (PPParseFn*)parse_pp_run;
+    } else if (spelling_streq(directive_sp, "include")) {
+        parse_fn = (PPParseFn*)parse_pp_include;
     }
     
     if (parse_fn == NULL) {

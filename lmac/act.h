@@ -24,6 +24,9 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
 void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
                       ASTPPPragma **result);
 
+void act_on_pp_include(SourceLocation sl, const char *include_file,
+                       Scope *scope, ASTBase **result);
+
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts, ASTTopLevel **result);
 
 void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
