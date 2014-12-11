@@ -12,7 +12,7 @@
 #include <libgen.h>
 #include <sys/syslimits.h>
 
-int run_cmd(const char *fmt, ...) {
+int run_cmd(const char *action, const char *fmt, ...) {
     int ret = 0;
     va_list ap;
     
@@ -23,7 +23,7 @@ int run_cmd(const char *fmt, ...) {
     assert(cmd && "cmd must not be null");
     va_end(ap);
     
-    fprintf(stderr, "[c-compile] %s\n", cmd);
+    fprintf(stderr, "[%s] %s\n", action, cmd);
     ret = system(cmd);
     free(cmd);
     
@@ -63,7 +63,7 @@ const char *lookup_cmd(const char *cmd) {
     return path;
 }
 
-int run_compile(Context *ctx) {
+int run_compile(Context *ctx, bool run_program) {
     assert(ctx && "must have a valid context");
     
     // TODO(bloggins): Extract to a driver struct
@@ -120,7 +120,12 @@ int run_compile(Context *ctx) {
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.
-    return run_cmd("%s -o %s %s", cc_path, obj_file, out_file);
+    int res = run_cmd("c-compile", "%s -o %s %s", cc_path, obj_file, out_file);
+    if (res == 0 && run_program) {
+        res = run_cmd("run", "./%s", obj_file);
+    }
+    
+    return res;
 }
 
 

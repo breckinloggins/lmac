@@ -43,13 +43,27 @@ void exit_handler() {
 }
 
 int main(int argc, const char * argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: lmac <file>\n");
+    if (argc != 3) {
+        fprintf(stderr, "Usage: lmac [build | run] <file>\n");
+        return ERR_USAGE;
+    }
+    
+    const int ACTION_BUILD = 0;
+    const int ACTION_RUN = 1;
+    
+    const char *action_str = argv[1];
+    int action;
+    if (!strcmp(action_str, "build")) {
+        action = ACTION_BUILD;
+    } else if (!strcmp(action_str, "run")) {
+        action = ACTION_RUN;
+    } else {
+        diag_printf(DIAG_FATAL, NULL, "unknown action '%s'", action_str);
         return ERR_USAGE;
     }
     
     // Make sure the file exists
-    const char *file = argv[1];
+    const char *file = argv[2];
     if (access(file, R_OK) == -1) {
         diag_printf(DIAG_ERROR, NULL, "input file not found (%s)", file);
         return ERR_FILE_NOT_FOUND;
@@ -60,5 +74,5 @@ int main(int argc, const char * argv[]) {
     Context ctx = {0};
     ctx.file = file;
     
-    return run_compile(&ctx);
+    return run_compile(&ctx, action == ACTION_RUN);
 }

@@ -64,6 +64,7 @@ type *ast_create_##name();
 void analyzer_analyze(ASTBase *ast);
 bool interp_interpret(ASTBase *node, ASTBase **result);
 void codegen_generate(FILE *f, ASTBase *ast);
-int run_compile(Context *ctx);
+int run_cmd(const char *action, const char *fmt, ...);
+int run_compile(Context *ctx, bool run_program);
 
 #endif
