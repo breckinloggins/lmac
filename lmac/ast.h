@@ -193,6 +193,24 @@ typedef struct {
     ASTIdent *arg;
 } ASTPPPragma;
 
+typedef struct {
+    ASTPPDirective base;
+    
+    ASTIdent *name;
+    Spelling value;
+} ASTPPDefinition;
+
+typedef enum {
+    PP_IF_UNKNOWN,
+    PP_IF_IFNDEF,
+} PPIfKind;
+
+typedef struct {
+    ASTPPDirective base;
+    
+    PPIfKind kind;
+} ASTPPIf;
+
 /*
  * Type Expression AST
  */

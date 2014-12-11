@@ -12,6 +12,11 @@
 #include "ast.h"
 #include "scope.h"
 
+typedef enum {
+    LEX_NORMAL,
+    LEX_PP_ONLY,
+} LexMode;
+
 /*
  * Compiler Context
  */
@@ -30,7 +35,9 @@ typedef struct Context {
      * better */
     int last_error;
     
+    LexMode lex_mode;
     Scope *active_scope;
+    List *pp_defines;
     
     /* Parsed AST */
     ASTBase *ast;

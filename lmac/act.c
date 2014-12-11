@@ -78,6 +78,33 @@ void act_on_pp_include(SourceLocation sl, const char *include_file, Scope *scope
     *result = ctx.ast;
 }
 
+void act_on_pp_define(SourceLocation sl, ASTIdent *name, Spelling value,
+                      ASTPPDefinition **result) {
+    if (result == NULL) return;
+    
+    ASTPPDefinition *pp_defn = ast_create_pp_definition();
+    AST_BASE(pp_defn)->location = sl;
+    AST_BASE(name)->parent = (ASTBase*)pp_defn;
+    pp_defn->name = name;
+    pp_defn->value = value;
+    
+    list_append(&sl.ctx->pp_defines, pp_defn);
+    
+    *result = pp_defn;
+}
+
+void act_on_pp_ifndef(SourceLocation sl, ASTIdent *ident, ASTPPIf **result) {
+    if (result == NULL) return;
+    
+    ASTPPIf *pp_if = ast_create_pp_if();
+    AST_BASE(pp_if)->location = sl;
+    pp_if->kind = PP_IF_IFNDEF;
+    // pp_if->ident = ident;
+    // sl.ctx->lex_mode = LEX_PP_ONLY;
+    
+    *result = pp_if;
+}
+
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
                      ASTTopLevel **result) {
     if (result == NULL) return;

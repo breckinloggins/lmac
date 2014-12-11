@@ -37,6 +37,8 @@ AST(EXPR_END, expr_end, ASTBase)
 
 /* Preprocessor */
 AST(PP_PRAGMA, pp_pragma, ASTPPPragma)
+AST(PP_DEFINITION, pp_definition, ASTPPDefinition)
+AST(PP_IF, pp_if, ASTPPIf)
 
 /* Type Expressions */
 AST(TYPE_BEGIN, type_begin, ASTBase)    /* Type Class Start Guard */

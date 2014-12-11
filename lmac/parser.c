@@ -1028,6 +1028,41 @@ fail_parse:
     return false;
 }
 
+bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *name = NULL;
+    if (!parse_ident(ctx, &name)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier after #define");
+        exit(ERR_PARSE);
+    }
+    
+    Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
+    if (chunk.kind != TOK_CHUNK) {
+        diag_printf(DIAG_FATAL, &chunk.location, "parse error parsing run directive");
+        exit(ERR_PARSE);
+    }
+    
+    act_on_pp_define(parsed_source_location(ctx, s), name, chunk.location.spelling,
+                     result);
+    return true;
+}
+
+bool parse_pp_ifndef(Context *ctx, ASTPPDirective **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) { goto fail_parse; }
+    
+    act_on_pp_ifndef(parsed_source_location(ctx, s), ident, (ASTPPIf**)result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     // NOTE(bloggins): Eventually the preprocessor will do something fancy, but
     // for right now preprocessor tokens will just be inserted into the AST
@@ -1046,6 +1081,10 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         parse_fn = (PPParseFn*)parse_pp_run;
     } else if (spelling_streq(directive_sp, "include")) {
         parse_fn = (PPParseFn*)parse_pp_include;
+    } else if (spelling_streq(directive_sp, "ifndef")) {
+        parse_fn = (PPParseFn*)parse_pp_ifndef;
+    } else if (spelling_streq(directive_sp, "define")) {
+        parse_fn = (PPParseFn*)parse_pp_define;
     }
     
     if (parse_fn == NULL) {
