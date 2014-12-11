@@ -925,6 +925,11 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
            parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
            parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
+        // Not every successful parse contributes an AST node
+        if (stmt == NULL) {
+            continue;
+        }
+        
         if (AST_IS(stmt, AST_TOPLEVEL)) {
             // Probably from an include. Merge
             List_FOREACH(ASTBase *, node, ((ASTTopLevel*)stmt)->definitions, {
@@ -1068,18 +1073,103 @@ bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {
     return true;
 }
 
-bool parse_pp_ifndef(Context *ctx, ASTPPDirective **result) {
+bool parse_pp_ifdef(Context *ctx, ASTPPIf **result) {
     Context s = snapshot(ctx);
     
     ASTIdent *ident = NULL;
     if (!parse_ident(ctx, &ident)) { goto fail_parse; }
     
-    act_on_pp_ifndef(parsed_source_location(ctx, s), ident, (ASTPPIf**)result);
+    // TODO(bloggins): action
+    //act_on_pp_ifndef(parsed_source_location(ctx, s), ident, result);
     return true;
     
 fail_parse:
     restore(ctx, s);
     return false;
+
+}
+
+bool parse_pp_ifndef(Context *ctx, ASTPPIf **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) { goto fail_parse; }
+    
+    act_on_pp_ifndef(parsed_source_location(ctx, s), ident, result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
+bool parse_pp_if(Context *ctx, ASTPPIf **result) {
+    Context s = snapshot(ctx);
+    
+    //
+    // TODO(bloggins): just parse an expression and interpret it
+    //
+    
+    accept_token(ctx, TOK_BANG);
+    
+    ASTIdent *kw = NULL;
+    if (!parse_ident(ctx, &kw)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier (temporary restriction)");
+        exit(ERR_PARSE);
+    }
+    
+    if (!spelling_streq(kw->base.location.spelling, "defined")) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected 'defined' (temporary restriction)");
+        exit(ERR_PARSE);
+    }
+    
+    expect_token(ctx, TOK_LPAREN);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier after 'defined'");
+        exit(ERR_PARSE);
+    }
+    
+    expect_token(ctx, TOK_RPAREN);
+    
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_else(Context *ctx, ASTPPIf **result) {
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_endif(Context *ctx, ASTPPIf **result) {
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_warning(Context *ctx, ASTPPDirective **result) {
+    Context s = snapshot(ctx);
+    
+    Token t = lexer_lex_chunk(ctx, '\n', '\\');
+    SourceLocation sl = parsed_source_location(ctx, s);
+    sl.spelling.start = 0;
+    sl.spelling.end = 0;
+    
+    // TODO(bloggins): move to action
+    diag_printf(DIAG_WARNING, &sl, "%s", t.kind == TOK_CHUNK ?
+                spelling_cstring(t.location.spelling) : "");
+    
+    return true;
 }
 
 bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
@@ -1100,10 +1190,20 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         parse_fn = (PPParseFn*)parse_pp_run;
     } else if (spelling_streq(directive_sp, "include")) {
         parse_fn = (PPParseFn*)parse_pp_include;
+    } else if (spelling_streq(directive_sp, "if")) {
+        parse_fn = (PPParseFn*)parse_pp_if;
+    } else if (spelling_streq(directive_sp, "ifdef")) {
+        parse_fn = (PPParseFn*)parse_pp_ifdef;
     } else if (spelling_streq(directive_sp, "ifndef")) {
         parse_fn = (PPParseFn*)parse_pp_ifndef;
     } else if (spelling_streq(directive_sp, "define")) {
         parse_fn = (PPParseFn*)parse_pp_define;
+    } else if (spelling_streq(directive_sp, "else")) {
+        parse_fn = (PPParseFn*)parse_pp_else;
+    } else if (spelling_streq(directive_sp, "endif")) {
+        parse_fn = (PPParseFn*)parse_pp_endif;
+    } else if (spelling_streq(directive_sp, "warning")) {
+        parse_fn = (PPParseFn*)parse_pp_warning;
     }
     
     if (parse_fn == NULL) {

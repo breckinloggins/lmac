@@ -21,10 +21,19 @@ const char *diag_get_name(DiagKind kind) {
 }
 
 void diag_fprint_line(FILE *f, SourceLocation *loc) {
+    if (loc->range_start == NULL || loc->range_end == NULL) {
+        return;
+    }
+    
     const char *buf = (const char *)loc->ctx->buf;
     
     const char *line_begin = (const char *)loc->range_end;
     const char *line_end = (const char *)loc->range_end;
+    
+    if (*line_begin == '\n') {
+        --line_begin;
+    }
+    
     while (*line_begin != '\n') {
         if (--line_begin <= buf) {
             line_begin = buf;
