@@ -28,6 +28,7 @@ typedef struct {
 #define CGSPACE() fprintf(ctx->f, " ")
 #define CGSP(spelling) fprintf(ctx->f, "%s", spelling_cstring((spelling)))
 #define CGNODE(node) fprintf(ctx->f, "%s", spelling_cstring(((ASTBase*)(node))->location.spelling))
+#define CGVISIT(node) ast_visit((ASTBase*)(node), cg_visitor, ctx)
 
 void cg_emit_srcline(CGContext *ctx, ASTBase *node) {
     if (node == NULL) {
@@ -40,7 +41,7 @@ void cg_emit_srcline(CGContext *ctx, ASTBase *node) {
     const char *filename = (node->location.ctx && node->location.ctx->file) ?
         node->location.ctx->file : NULL;
     
-    if (filename[0] == 0 || filename[0] == '\n') {
+    if (filename == NULL || filename[0] == 0 || filename[0] == '\n') {
         // TODO(bloggins): It's a bug that we have to worry about this
         filename = NULL;
     }
@@ -67,7 +68,7 @@ CG_VISIT_FN(AST_TYPE_NAME, ASTTypeName) {
     }
     
     ASTTypeExpression *type = ast_type_get_canonical_type(node->resolved_type);
-    ast_visit((ASTBase*)type, cg_visitor, ctx);
+    CGVISIT(type);
     
     return VISIT_HANDLED;
 }
@@ -211,7 +212,7 @@ CG_VISIT_FN(AST_DECL_FUNC, ASTDeclFunc) {
     // of a function definition
     if (phase == VISIT_PRE) {
         cg_emit_srcline(ctx, AST_BASE(node));
-        ast_visit((ASTBase*)node->type, cg_visitor, ctx);
+        CGVISIT(node->type);
         CGSPACE();
         CGNODE(node->base.name); CG("(");
         
@@ -221,7 +222,7 @@ CG_VISIT_FN(AST_DECL_FUNC, ASTDeclFunc) {
                 CG(", ");
                 first_param = false;
             }
-            ast_visit((ASTBase*)param, cg_visitor, ctx);
+            CGVISIT(param);
         });
         
         if (node->has_varargs) {
@@ -231,7 +232,7 @@ CG_VISIT_FN(AST_DECL_FUNC, ASTDeclFunc) {
         CG(")");
         
         if (node->block != NULL) {
-            ast_visit((ASTBase*)node->block, cg_visitor, ctx);
+            CGVISIT(node->block);
         } else {
             CG(";"); CGNL();
         }
@@ -326,9 +327,9 @@ CG_VISIT_FN(AST_EXPR_CAST, ASTExprCast) {
     }
     
     CG("(");
-    ast_visit((ASTBase*)node->type, cg_visitor, ctx);
+    CGVISIT(node->type);
     CG(")");
-    ast_visit((ASTBase*)node->expr, cg_visitor, ctx);
+    CGVISIT(node->expr);
     
     return VISIT_HANDLED;
 }
@@ -354,7 +355,7 @@ CG_VISIT_FN(AST_EXPR_CALL, ASTExprCall) {
     // type *node, VisitPhase phase, CGContext *ctx
     assert(phase != VISIT_POST);
     
-    ast_visit((ASTBase*)node->callable, cg_visitor, ctx);
+    CGVISIT(node->callable);
     CG("(");
     
     bool first = true;
@@ -363,7 +364,7 @@ CG_VISIT_FN(AST_EXPR_CALL, ASTExprCall) {
             CG(", ");
         }
         
-        ast_visit((ASTBase*)arg, cg_visitor, ctx);
+        CGVISIT(arg);
         first = false;
     })
     
@@ -422,6 +423,35 @@ CG_VISIT_FN(AST_STMT_DECL, ASTStmtDecl) {
     return VISIT_OK;
 }
 
+CG_VISIT_FN(AST_STMT_IF, ASTStmtIf) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    cg_emit_srcline(ctx, (ASTBase*)node);
+    
+    CG("if (");
+    CGVISIT(node->condition);
+    CG(")");
+    
+    if (node->stmt_true) {
+        CGVISIT(node->stmt_true);
+    } else {
+        if (node->stmt_false != NULL) {
+            diag_printf(DIAG_FATAL, &node->stmt_false->location, "codegen error: "
+                        "should not have stmt_false without stmt_true");
+            exit(ERR_CODEGEN);
+        }
+        
+        CG(";");
+    }
+    
+    if (node->stmt_false) {
+        CG(" else ");
+        CGVISIT(node->stmt_false);
+    }
+    
+    
+    return VISIT_HANDLED;
+}
+
 #pragma mark Preprocessor
 
 CG_VISIT_FN(AST_PP_PRAGMA, ASTPPPragma) {
@@ -467,6 +497,7 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         CG_DISPATCH(AST_STMT_RETURN, ASTStmtReturn);
         CG_DISPATCH(AST_STMT_EXPR, ASTStmtExpr);
         CG_DISPATCH(AST_STMT_DECL, ASTStmtDecl);
+        CG_DISPATCH(AST_STMT_IF, ASTStmtIf);
     
         CG_DISPATCH(AST_EXPR_BINARY, ASTExprBinary);
         CG_DISPATCH(AST_EXPR_IDENT, ASTExprIdent);

@@ -9,6 +9,8 @@
 #include "clite.h"
 #include <unistd.h>
 
+#pragma mark Preprocessor
+
 void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
                    ParseFn parser, ASTBase **result) {
     if (result == NULL) return;
@@ -154,6 +156,8 @@ void act_on_pp_ifndef(SourceLocation sl, ASTIdent *ident, ASTPPIf **result) {
     *result = pp_if;
 }
 
+#pragma mark Toplevel
+
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
                      ASTTopLevel **result) {
     if (result == NULL) return;
@@ -170,6 +174,8 @@ void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
     
     *result = tl;
 }
+
+#pragma mark Declarations
 
 void act_on_decl_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type, bool is_const,
                      ASTIdent *name, ASTExpression *expr, ASTDeclVar **result) {
@@ -227,6 +233,23 @@ void act_on_decl_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
     *result = decl;
 }
 
+#pragma mark Statements
+
+void act_on_block(SourceLocation sl, List *stmts, ASTBlock **result) {
+    if (result == NULL) return;
+    
+    ASTBlock *b = ast_create_block();
+    b->base.location = sl;
+    
+    List_FOREACH(ASTBase*, stmt, stmts, {
+        stmt->parent = (ASTBase*)b;
+    });
+    
+    b->statements = stmts;
+    
+    *result = b;
+}
+
 void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
                             ASTStmtExpr **result) {
     if (result == NULL) return;
@@ -273,20 +296,31 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
     *result = stmt;
 }
 
-void act_on_block(SourceLocation sl, List *stmts, ASTBlock **result) {
+void act_on_stmt_if(SourceLocation sl, ASTExpression *condition,
+                    ASTBase *stmt_true, ASTBase *stmt_false, ASTStmtIf **result) {
     if (result == NULL) return;
     
-    ASTBlock *b = ast_create_block();
-    b->base.location = sl;
+    ASTStmtIf *stmt_if = ast_create_stmt_if();
+    AST_BASE(stmt_if)->scope = sl.ctx->active_scope;
+    AST_BASE(stmt_if)->location = sl;
     
-    List_FOREACH(ASTBase*, stmt, stmts, {
-        stmt->parent = (ASTBase*)b;
-    });
+    AST_BASE(condition)->parent = (ASTBase*)stmt_if;
+    stmt_if->condition = condition;
     
-    b->statements = stmts;
+    if (stmt_true != NULL) {
+        AST_BASE(stmt_true)->parent = (ASTBase*)stmt_if;
+        stmt_if->stmt_true = stmt_true;
+    }
     
-    *result = b;
+    if (stmt_false != NULL) {
+        AST_BASE(stmt_false)->parent = (ASTBase*)stmt_if;
+        stmt_if->stmt_false = stmt_false;
+    }
+    
+    *result = stmt_if;
 }
+
+#pragma mark Type Expressions
 
 void act_on_type_constant(SourceLocation sl,
                           uint32_t type_id, uint8_t bit_flags, uint64_t bit_size,
@@ -326,6 +360,8 @@ void act_on_type_pointer(SourceLocation sl, ASTTypeExpression *pointed_to,
     
     *result = ptr;
 }
+
+#pragma mark Expressions
 
 void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result) {
     if (result == NULL) return;

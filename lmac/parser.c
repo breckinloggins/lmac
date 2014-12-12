@@ -16,8 +16,14 @@
 
 #include <limits.h>
 #include <ctype.h>
+#include <stdarg.h>
 
-bool parse_block(Context *ctx, ASTBlock **result);
+bool parse_declaration(Context *ctx, ASTDeclaration **result);
+
+bool parse_block_item(Context *ctx, ASTBase **result);
+
+bool parse_statement(Context *ctx, ASTBase **result);
+bool parse_stmt_compound(Context *ctx, ASTBlock **result);
 
 bool parse_expression(Context *ctx, ASTExpression **result);
 bool parse_expr_primary(Context *ctx, ASTExpression **result);
@@ -120,6 +126,50 @@ Token expect_token(Context *ctx, TokenKind kind) {
     return t;
 }
 
+void ap_expect_node_out(Context *ctx, ParseFn parser, ASTBase **result,
+                        const char *msg_fmt, va_list args) {
+    assert(ctx);
+    assert(parser);
+    if (!parser(ctx, result)) {
+        SourceLocation sl = parsed_source_location(ctx, *ctx);
+        
+        char *msg = NULL;
+        vasprintf(&msg, msg_fmt, args);
+        
+        diag_printf(DIAG_ERROR, &sl, msg);
+        free(msg);
+        exit(ERR_PARSE);
+    }
+    
+    /* TODO(bloggins): Subkind checking */
+    /*
+     if (node != NULL) {
+     assert(node->kind == kind);
+     }
+     */
+    
+}
+
+void expect_node_out(Context *ctx, ParseFn parser, ASTBase **result,
+                 const char *msg_fmt, ...) {
+    va_list ap;
+    va_start(ap, msg_fmt);
+    ap_expect_node_out(ctx, parser, result, msg_fmt, ap);
+    va_end(ap);
+
+}
+
+ASTBase *expect_node(Context *ctx, ParseFn parser, const char *msg_fmt, ...) {
+    ASTBase *node = NULL;
+    
+    va_list ap;
+    va_start(ap, msg_fmt);
+    ap_expect_node_out(ctx, parser, &node, msg_fmt, ap);
+    va_end(ap);
+
+    return node;
+}
+
 //
 // Parse routines
 //
@@ -158,13 +208,8 @@ bool parse_next_expr_binary(Context *ctx, TokenKind allowed_ops[],
     next_token(ctx);  // gobble gobble
     
     ASTExpression *left = *result;
-    ASTExpression *right = NULL;
-    if (!parse_expr_right(ctx, &right)) {
-        SourceLocation sl = parsed_source_location(ctx, *ctx);
-        diag_printf(DIAG_ERROR, &sl, "expected expression after '%s'",
-                    spelling_cstring(t.location.spelling));
-        exit(ERR_PARSE);
-    }
+    ASTExpression *right = (ASTExpression*)expect_node(ctx, (ParseFn)parse_expr_right,
+                                       "expected expression");
     
     act_on_expr_binary(t.location, left, right, t, (ASTExprBinary**)result);
     return true;
@@ -570,11 +615,7 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
         } else {
             t = accept_token(ctx, TOK_LPAREN);
             if (!IS_TOKEN_NONE(t)) {
-                ASTExpression *inner = NULL;
-                if (!parse_expression(ctx, &inner)) {
-                    diag_printf(DIAG_ERROR, &t.location, "expected expression");
-                    exit(ERR_PARSE);
-                }
+                ASTExpression *inner = (ASTExpression*)expect_node(ctx, (ParseFn)parse_expression, "expected expression");
                 t = expect_token(ctx, TOK_RPAREN);
                
                 act_on_expr_paren(t.location, inner, (ASTExprParen**)result);
@@ -804,10 +845,8 @@ bool parse_decl_var(Context *ctx, ASTDeclVar **result) {
     ASTExpression *expr = NULL;
     t = accept_token(ctx, TOK_EQUALS);
     if (!IS_TOKEN_NONE(t)) {
-        if (!parse_expression(ctx, &expr)) {
-            diag_printf(DIAG_ERROR, &t.location, "expected expression after assignment");
-            exit(ERR_PARSE);
-        }
+        expect_node_out(ctx, (ParseFn)parse_expression, (ASTBase**)&expr,
+                        "expected expression after assignment");
     }
     
     act_on_decl_var(parsed_source_location(ctx, s), ctx->active_scope,
@@ -868,7 +907,7 @@ bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
     
     /* Optional block to define the function */
     ASTBlock *block = NULL;
-    if (!parse_block(ctx, &block)) {
+    if (!parse_stmt_compound(ctx, &block)) {
         expect_token(ctx, TOK_SEMICOLON);
     } else {
         if (varargs_found) {
@@ -890,22 +929,34 @@ fail_parse:
     return false;
 }
 
+bool parse_decl_external(Context *ctx, ASTDeclaration **result) {
+    // TODO(bloggins): We don't need to check for semicolon here when
+    // we have the full parse_declaration grammar
+    if (parse_decl_fn(ctx, (ASTDeclFunc**)result)) {
+        return true;
+    }
+    
+    if (parse_declaration(ctx, result)) {
+        expect_token(ctx, TOK_SEMICOLON);
+        return true;
+    }
+    
+    return false;
+}
 
-/* ====== Misc (Needs categorization) ====== */
-#pragma mark Misc
+bool parse_declaration(Context *ctx, ASTDeclaration **result) {
+    return parse_decl_var(ctx, (ASTDeclVar**)result);
+}
+
+/* ====== Statments ====== */
+#pragma mark Statements
 
 bool parse_stmt_return(Context *ctx, ASTStmtReturn **result) {
     Context s = snapshot(ctx);
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_RETURN))) { goto fail_parse; }
     
-    ASTExpression *expr = NULL;
-    if (!parse_expression(ctx, &expr)) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "expected expression");
-        exit(ERR_PARSE);
-    }
-    
+    ASTExpression *expr = (ASTExpression*)expect_node(ctx, (ParseFn)parse_expression, "expected expression");
     expect_token(ctx, TOK_SEMICOLON);
     
     act_on_stmt_return(parsed_source_location(ctx, s), expr, result);
@@ -916,14 +967,16 @@ fail_parse:
     return false;
 }
 
+// TODO(bloggins): This is not correct. Declarations are not statements.
+// It's fixed except for needing to implement the rest of the decl grammar
+// so that we don't reuse parse_declaration for parse_decl_fn params.
 bool parse_stmt_declaration(Context *ctx, ASTStmtDecl **result) {
     Context s = snapshot(ctx);
     
     ASTDeclaration *decl = NULL;
-    if (!parse_decl_var(ctx, (ASTDeclVar**)&decl)) {
+    if (!parse_declaration(ctx, &decl)) {
         return false;
     }
-    
     expect_token(ctx, TOK_SEMICOLON);
     
     act_on_stmt_declaration(parsed_source_location(ctx, s), decl, result);
@@ -955,30 +1008,52 @@ fail_parse:
     return false;
 }
 
-bool parse_block_stmt(Context *ctx, ASTBase **result) {
-    // NOTE(bloggins): When a parse function just switches
-    //                  on other parse functions, there's no
-    //                  need to save the context ourselves
+bool parse_stmt_if(Context *ctx, ASTStmtIf **result) {
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_KW_IF))) {
+        return false;
+    }
     
-    // TODO(bloggins): Support automatic semicolon insertion per go spec
+    Context s = snapshot(ctx);
+    context_scope_push(ctx);
     
-    return
-        parse_stmt_declaration(ctx, (ASTStmtDecl**)result) ||
-        parse_stmt_expression(ctx, (ASTStmtExpr**)result) ||
-        parse_stmt_return(ctx, (ASTStmtReturn**)result);
+    expect_token(ctx, TOK_LPAREN);
+    ASTExpression *condition = (ASTExpression*)expect_node(ctx, (ParseFn)parse_expression,
+                                                           "expected condition expression");
+    expect_token(ctx, TOK_RPAREN);
+    
+    ASTBase *stmt_true = NULL;
+    ASTBase *stmt_false = NULL;
+    if (parse_statement(ctx, &stmt_true)) {
+        // TODO(bloggins): Solve dangling if-else problem
+        if (!IS_TOKEN_NONE(accept_token(ctx, TOK_KW_ELSE))) {
+            if (parse_statement(ctx, &stmt_false)) {
+                accept_token(ctx, TOK_SEMICOLON);
+            }
+        }
+    } else {
+        expect_token(ctx, TOK_SEMICOLON);
+    }
+    
+    SourceLocation sl = parsed_source_location(ctx, s);
+    act_on_stmt_if(sl, condition, stmt_true, stmt_false, result);
+    context_scope_pop(ctx);
+    return true;
 }
 
-bool parse_block(Context *ctx, ASTBlock **result) {
+bool parse_stmt_labeled(Context *ctx, ASTBase **result) {
+    return false;
+}
+
+bool parse_stmt_compound(Context *ctx, ASTBlock **result) {
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_LBRACE))) { return false; }
+    
     Context s = snapshot(ctx);
     List *stmts = NULL;
     
     context_scope_push(ctx);
     
-    Token t = accept_token(ctx, TOK_LBRACE);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
     ASTBase *stmt = NULL;
-    while (parse_block_stmt(ctx, &stmt)) {
+    while (parse_block_item(ctx, &stmt)) {
         list_append(&stmts, stmt);
     }
     
@@ -987,11 +1062,44 @@ bool parse_block(Context *ctx, ASTBlock **result) {
     act_on_block(parsed_source_location(ctx, s), stmts, result);
     context_scope_pop(ctx);
     return true;
-    
-fail_parse:
-    context_scope_pop(ctx);
-    restore(ctx, s);
+}
+
+bool parse_stmt_selection(Context *ctx, ASTBase **result) {
+    // SWITCH
+    return parse_stmt_if(ctx, (ASTStmtIf**)result);
+}
+
+bool parse_stmt_iteration(Context *ctx, ASTBase **result) {
     return false;
+}
+
+bool parse_stmt_jump(Context *ctx, ASTBase **result) {
+    // GOGO
+    // CONTINUE
+    // BREAK
+    return parse_stmt_return(ctx, (ASTStmtReturn**)result);
+}
+
+bool parse_statement(Context *ctx, ASTBase **result) {
+    // NOTE(bloggins): parse_stmt_declaration intentionally omitted.
+    // it is not actually a "statement" and will be removed.
+    return
+    parse_stmt_labeled(ctx, result) ||
+    parse_stmt_compound(ctx, (ASTBlock**)result) ||
+    parse_stmt_expression(ctx, (ASTStmtExpr**)result) ||
+    parse_stmt_selection(ctx, result) ||
+    parse_stmt_iteration(ctx, result) ||
+    parse_stmt_jump(ctx, result);
+}
+
+/* ====== Misc (Needs categorization) ====== */
+#pragma mark Misc
+
+bool parse_block_item(Context *ctx, ASTBase **result) {
+    return
+    parse_pp_directive(ctx, (ASTPPDirective**)result) ||
+    parse_stmt_declaration(ctx, (ASTStmtDecl**)result) ||
+    parse_statement(ctx, result);
 }
 
 bool parse_end(Context *ctx) {
@@ -1006,9 +1114,8 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     Scope *scope = context_scope_push(ctx);
     
     ASTBase *stmt = NULL;
-    while (parse_decl_fn(ctx, (ASTDeclFunc**)&stmt) ||
-           parse_stmt_declaration(ctx, (ASTStmtDecl**)&stmt) ||
-           parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
+    while (parse_pp_directive(ctx, (ASTPPDirective**)&stmt) ||
+           parse_decl_external(ctx, (ASTDeclaration**)&stmt)) {
         // Not every successful parse contributes an AST node
         if (stmt == NULL) {
             continue;
@@ -1118,13 +1225,8 @@ bool parse_pp_include(Context *ctx, ASTBase **result) {
         include_file = strdup(spelling_cstring(sp_chunk));
         system_include = true;
     } else {
-        ASTExprString *str = NULL;
-        if (!parse_expr_string(ctx, &str)) {
-            SourceLocation sl = parsed_source_location(ctx, s);
-            diag_printf(DIAG_ERROR, &sl, "syntax error after #include");
-            exit(ERR_PARSE);
-        }
-        
+        ASTExprString *str = (ASTExprString*)expect_node(ctx, (ParseFn)parse_expr_string,
+                                         "syntax error after #include");
         include_file = strdup(spelling_cstring(AST_BASE(str)->location.spelling));
         if (include_file == NULL || include_file[0] == 0) {
             diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
@@ -1144,12 +1246,8 @@ bool parse_pp_include(Context *ctx, ASTBase **result) {
 bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {
     Context s = snapshot(ctx);
     
-    ASTIdent *name = NULL;
-    if (!parse_ident(ctx, &name)) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "expected identifier after #define");
-        exit(ERR_PARSE);
-    }
+    ASTIdent *name = (ASTIdent*)expect_node(ctx, (ParseFn)parse_ident,
+                                            "expected identifier after #define");
     
     Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
     if (chunk.kind != TOK_CHUNK) {
@@ -1201,13 +1299,7 @@ bool parse_pp_if(Context *ctx, ASTPPIf **result) {
     
     accept_token(ctx, TOK_BANG);
     
-    ASTIdent *kw = NULL;
-    if (!parse_ident(ctx, &kw)) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "expected identifier (temporary restriction)");
-        exit(ERR_PARSE);
-    }
-    
+    ASTIdent *kw = (ASTIdent*)expect_node(ctx, (ParseFn)parse_ident, "expected identifier");
     if (!spelling_streq(kw->base.location.spelling, "defined")) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "expected 'defined' (temporary restriction)");
@@ -1216,12 +1308,7 @@ bool parse_pp_if(Context *ctx, ASTPPIf **result) {
     
     expect_token(ctx, TOK_LPAREN);
     
-    ASTIdent *ident = NULL;
-    if (!parse_ident(ctx, &ident)) {
-        SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "expected identifier after 'defined'");
-        exit(ERR_PARSE);
-    }
+    /*ASTIdent *ident = (ASTIdent*)*/expect_node(ctx, (ParseFn)parse_ident, "expected identifier after 'defined'");
     
     expect_token(ctx, TOK_RPAREN);
     

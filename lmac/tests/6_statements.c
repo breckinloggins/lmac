@@ -12,6 +12,17 @@ int main() {
     int b = 3;
     int a = b + 1;
     
+    if (b == 3) {
+        printf("b is 3\n");
+    }
+    
+    if (a == 5) {
+        printf("shouln't get here\n");
+    } else {
+        printf("a is not 5\n");
+    }
+    
+    
     printf("a = %d\n", a);
     return 0;
 }

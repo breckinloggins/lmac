@@ -236,6 +236,17 @@ AST_ACCEPT_FN(AST_STMT_DECL) {
     STANDARD_VISIT_POST()
 }
 
+AST_ACCEPT_FN(AST_STMT_IF) {
+    STANDARD_VISIT_PRE()
+    
+    ASTStmtIf *stmt_if = (ASTStmtIf*)node;
+    STANDARD_ACCEPT(stmt_if->condition);
+    STANDARD_ACCEPT(stmt_if->stmt_true);
+    STANDARD_ACCEPT(stmt_if->stmt_false);
+    
+    STANDARD_VISIT_POST()
+}
+
 AST_ACCEPT_FN(AST_STMT_END) {
     NEVER_VISIT()
 }

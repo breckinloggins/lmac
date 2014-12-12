@@ -27,6 +27,10 @@ bool token_streq(Token t, const char *str) {
     return spelling_streq(t.location.spelling, str);
 }
 
+bool token_spelling_is_equivalent(Token t, TokenKind kind) {
+    return spelling_streq(t.location.spelling, g_token_names[kind]);
+}
+
 void token_fprint(FILE *f, Token t) {
     fprintf(f, "{\n");
     fprintf(f, "\ttype: \"Token\",\n");

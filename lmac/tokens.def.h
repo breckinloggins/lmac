@@ -44,8 +44,12 @@ TOKEN(TOK_NUMBER, number)
 
 /* Language keywords */
 /* TODO(bloggins): Set a "bit" on these to indicate that they are keywords */
+TOKEN(TOK_KW_BEGIN, NULL)
 TOKEN(TOK_KW_RETURN, return)
 TOKEN(TOK_KW_CONST, const)
+TOKEN(TOK_KW_IF, if)
+TOKEN(TOK_KW_ELSE, else)
+TOKEN(TOK_KW_END, NULL)
 
 /* Tokens for "structural symbols" like '{' and ';' */
 TOKEN(TOK_COMMA, comma)

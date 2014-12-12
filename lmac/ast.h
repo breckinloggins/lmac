@@ -184,6 +184,14 @@ typedef struct {
     ASTDeclaration *declaration;
 } ASTStmtDecl;
 
+typedef struct {
+    ASTBase base;
+    
+    ASTExpression *condition;
+    ASTBase *stmt_true;
+    ASTBase *stmt_false;
+} ASTStmtIf;
+
 #pragma mark Misc AST
 
 typedef struct {

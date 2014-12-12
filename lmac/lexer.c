@@ -84,12 +84,11 @@ void lex_ident(Context *ctx) {
 }
 
 void maybe_lex_keyword(Context *ctx, Token *t) {
-    // TODO(bloggins): Do this in a more generic way when
-    //                  we have more metadata in the token db
-    if (token_streq(*t, "return")) {
-        t->kind = TOK_KW_RETURN;
-    } else if (token_streq(*t, "const")) {
-        t->kind = TOK_KW_CONST;
+    for (int i = TOK_KW_BEGIN + 1; i < TOK_KW_END; i++) {
+        if (token_spelling_is_equivalent(*t, /*(TokenKind)*/i)) {
+            t->kind = (TokenKind)i;
+            return;
+        }
     }
 }
 
