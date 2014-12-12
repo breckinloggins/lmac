@@ -15,13 +15,21 @@ AST(UNKNOWN, unknown, ASTBase)
 
 AST(TOPLEVEL, toplevel, ASTTopLevel)
 AST(BLOCK, block, ASTBlock)
-AST(DEFN_FUNC, defn_func, ASTDefnFunc)
-AST(DEFN_VAR, defn_var, ASTDefnVar)
 AST(IDENT, ident, ASTIdent)
 AST(OPERATOR, operator, ASTOperator)
 
+/* Statements */
+AST(STMT_BEGIN, stmt_begin, ASTBase)
 AST(STMT_RETURN, stmt_return, ASTStmtReturn)
+AST(STMT_DECL, stmt_decl, ASTStmtDecl)
 AST(STMT_EXPR, stmt_expr, ASTStmtExpr)
+AST(STMT_END, stmt_end, ASTBase)
+
+/* Declarations */
+AST(DECL_BEGIN, decl_begin, ASTBase)
+AST(DECL_FUNC, decl_func, ASTDeclFunc)
+AST(DECL_VAR, decl_var, ASTDeclVar)
+AST(DECL_END, decl_end, ASTBase)
 
 /* Expressions */
 AST(EXPR_BEGIN, expr_begin, ASTBase)

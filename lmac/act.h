@@ -34,14 +34,17 @@ void act_on_pp_ifndef(SourceLocation sl, ASTIdent *ident, ASTPPIf **result);
 
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts, ASTTopLevel **result);
 
-void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
-                     ASTIdent *name, ASTExpression *expr, ASTDefnVar **result);
+void act_on_decl_var(SourceLocation sl, Scope *scope, ASTTypeExpression *type, bool is_const,
+                     ASTIdent *name, ASTExpression *expr, ASTDeclVar **result);
 
-void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
-                     ASTIdent *name, ASTBlock *block, ASTDefnFunc **result);
+void act_on_decl_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
+                     ASTIdent *name, List *params, bool has_vararg_param,
+                    ASTBlock *block, ASTDeclFunc **result);
 
 void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
                             ASTStmtExpr **result);
+
+void act_on_stmt_declaration(SourceLocation sl, ASTDeclaration *decl, ASTStmtDecl **result);
 
 void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
                             ASTStmtReturn **result);

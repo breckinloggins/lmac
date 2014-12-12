@@ -45,6 +45,7 @@ TOKEN(TOK_NUMBER, number)
 /* Language keywords */
 /* TODO(bloggins): Set a "bit" on these to indicate that they are keywords */
 TOKEN(TOK_KW_RETURN, return)
+TOKEN(TOK_KW_CONST, const)
 
 /* Tokens for "structural symbols" like '{' and ';' */
 TOKEN(TOK_COMMA, comma)
@@ -56,6 +57,9 @@ TOKEN(TOK_RPAREN, rightparen)
 TOKEN(TOK_EQUALS, equals)
 TOKEN(TOK_DOUBLE_QUOTE, double_quote)
 TOKEN(TOK_QUOTE, quote)
+TOKEN(TOK_DOT, dot)
+TOKEN(TOK_DOT_DOT, dot_dot)
+TOKEN(TOK_ELLIPSIS, ellipsis)
 
 /* Math and logic symbols */
 /* NOTE(bloggins): These should be named by their lexical form and NOT their

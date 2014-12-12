@@ -17,6 +17,8 @@
 #include <limits.h>
 #include <ctype.h>
 
+bool parse_block(Context *ctx, ASTBlock **result);
+
 bool parse_expression(Context *ctx, ASTExpression **result);
 bool parse_expr_primary(Context *ctx, ASTExpression **result);
 bool parse_expr_postfix(Context *ctx, ASTExpression **result);
@@ -708,6 +710,10 @@ bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
                     bit_flags |= BIT_FLAG_CHAR;
                     bit_flags |= BIT_FLAG_SIGNED;
                 } break;
+                case 'i': {
+                    bit_flags |= BIT_FLAG_INT;
+                    bit_flags |= BIT_FLAG_SIGNED;
+                } break;
                 case 's': {
                     bit_flags |= BIT_FLAG_SIGNED;
                 } break;
@@ -760,37 +766,133 @@ fail_parse:
     return false;
 }
 
+/* ====== Declarations ====== */
+#pragma mark Declarations
 
-/* ====== Misc (Needs categorization) ====== */
-#pragma mark Misc
-
-bool parse_defn_var(Context *ctx, ASTDefnVar **result) {
+bool parse_decl_var(Context *ctx, ASTDeclVar **result) {
     // TODO(bloggins): Snapshotting works but can be slow (because we might
     //                  backtrack a long way). Should we left-factor instead?
     Context s = snapshot(ctx);
     
+    Token t = accept_token(ctx, TOK_KW_CONST);
+    bool is_const = !IS_TOKEN_NONE(t);
+    
     ASTTypeExpression *type = NULL;
-    if (!parse_type_expression(ctx, &type)) { goto fail_parse; }
+    if (!parse_type_expression(ctx, &type)) {
+        if (is_const) {
+            diag_printf(DIAG_ERROR, &t.location,
+                        "expected type name after '%s'",
+                        spelling_cstring(t.location.spelling));
+            exit(ERR_PARSE);
+        } else {
+            goto fail_parse;
+        }
+    }
     
     ASTIdent *name = NULL;
-    if (!parse_ident(ctx, &name)) { goto fail_parse; }
-    
-    Token t = accept_token(ctx, TOK_EQUALS);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    if (!parse_ident(ctx, &name)) {
+        if (is_const) {
+            diag_printf(DIAG_ERROR, &t.location,
+                        "expected variable name after '%s'",
+                        spelling_cstring(t.location.spelling));
+            exit(ERR_PARSE);
+        } else {
+            goto fail_parse;
+        }
+    }
     
     ASTExpression *expr = NULL;
-    if (!parse_expression(ctx, &expr)) { goto fail_parse; }
+    t = accept_token(ctx, TOK_EQUALS);
+    if (!IS_TOKEN_NONE(t)) {
+        if (!parse_expression(ctx, &expr)) {
+            diag_printf(DIAG_ERROR, &t.location, "expected expression after assignment");
+            exit(ERR_PARSE);
+        }
+    }
     
-    expect_token(ctx, TOK_SEMICOLON);
-
-    act_on_defn_var(parsed_source_location(ctx, s), ctx->active_scope,
-                    type, name, expr, result);
+    act_on_decl_var(parsed_source_location(ctx, s), ctx->active_scope,
+                    type, is_const, name, expr, result);
     return true;
     
 fail_parse:
     restore(ctx, s);
     return false;
 }
+
+bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
+    Context s = snapshot(ctx);
+    
+    context_scope_push(ctx);
+    
+    // TODO(bloggins): Factor this grammar into reusable chunks like
+    //                  "parse_begin_decl"
+    ASTTypeExpression *type = NULL;
+    if (!parse_type_expression(ctx, &type)) { goto fail_parse; }
+    
+    ASTIdent *name = NULL;
+    if (!parse_ident(ctx, &name)) { goto fail_parse; }
+    
+    Token t = accept_token(ctx, TOK_LPAREN);
+    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    
+    bool varargs_found = false;
+    List *params = NULL;
+    for (;;) {
+        // TODO(bloggins): Should accept nameless prototype as well
+        ASTDeclVar *decl = NULL;
+        if (!parse_decl_var(ctx, &decl)) {
+            if (!IS_TOKEN_NONE(accept_token(ctx, TOK_ELLIPSIS))) {
+                varargs_found = true;
+                // TODO: need to act on varargs decl and add AST node
+                break;
+            } else {
+                break;
+            }
+        }
+        
+        list_append(&params, decl);
+        
+        if (IS_TOKEN_NONE(accept_token(ctx, TOK_COMMA))) {
+            break;
+        }
+        
+        if (varargs_found) {
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "variable argument parameter "
+                        "must be the last parameter in a function");
+            exit(ERR_PARSE);
+        }
+    }
+    
+    expect_token(ctx, TOK_RPAREN);
+    
+    /* Optional block to define the function */
+    ASTBlock *block = NULL;
+    if (!parse_block(ctx, &block)) {
+        expect_token(ctx, TOK_SEMICOLON);
+    } else {
+        if (varargs_found) {
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "functions with variable arguments "
+                        "can be declared but can not currently be defined");
+            exit(ERR_PARSE);
+        }
+    }
+    
+    act_on_decl_fn(parsed_source_location(ctx, s), ctx->active_scope,
+                   type, name, params, varargs_found, block, result);
+    context_scope_pop(ctx);
+    return true;
+    
+fail_parse:
+    context_scope_pop(ctx);
+    restore(ctx, s);
+    return false;
+}
+
+
+/* ====== Misc (Needs categorization) ====== */
+#pragma mark Misc
 
 bool parse_stmt_return(Context *ctx, ASTStmtReturn **result) {
     Context s = snapshot(ctx);
@@ -812,6 +914,20 @@ bool parse_stmt_return(Context *ctx, ASTStmtReturn **result) {
 fail_parse:
     restore(ctx, s);
     return false;
+}
+
+bool parse_stmt_declaration(Context *ctx, ASTStmtDecl **result) {
+    Context s = snapshot(ctx);
+    
+    ASTDeclaration *decl = NULL;
+    if (!parse_decl_var(ctx, (ASTDeclVar**)&decl)) {
+        return false;
+    }
+    
+    expect_token(ctx, TOK_SEMICOLON);
+    
+    act_on_stmt_declaration(parsed_source_location(ctx, s), decl, result);
+    return true;
 }
 
 bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
@@ -847,7 +963,7 @@ bool parse_block_stmt(Context *ctx, ASTBase **result) {
     // TODO(bloggins): Support automatic semicolon insertion per go spec
     
     return
-        parse_defn_var(ctx, (ASTDefnVar**)result) ||
+        parse_stmt_declaration(ctx, (ASTStmtDecl**)result) ||
         parse_stmt_expression(ctx, (ASTStmtExpr**)result) ||
         parse_stmt_return(ctx, (ASTStmtReturn**)result);
 }
@@ -878,38 +994,6 @@ fail_parse:
     return false;
 }
 
-bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
-    Context s = snapshot(ctx);
-
-    // TODO(bloggins): Factor this grammar into reusable chunks like
-    //                  "parse_begin_decl"
-    ASTTypeExpression *type = NULL;
-    if (!parse_type_expression(ctx, &type)) { goto fail_parse; }
-    
-    ASTIdent *name = NULL;
-    if (!parse_ident(ctx, &name)) { goto fail_parse; }
-    
-    Token t = accept_token(ctx, TOK_LPAREN);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
-    t = accept_token(ctx, TOK_RPAREN);
-    if (IS_TOKEN_NONE(t)) { goto fail_parse; }
-    
-    /* Optional block to define the function */
-    ASTBlock *block = NULL;
-    if (!parse_block(ctx, &block)) {
-        expect_token(ctx, TOK_SEMICOLON);
-    }
-    
-    act_on_defn_fn(parsed_source_location(ctx, s), ctx->active_scope,
-                   type, name, block, result);
-    return true;
-    
-fail_parse:
-    restore(ctx, s);
-    return false;
-}
-
 bool parse_end(Context *ctx) {
     expect_token(ctx, TOK_END);
     return true;
@@ -922,8 +1006,8 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     Scope *scope = context_scope_push(ctx);
     
     ASTBase *stmt = NULL;
-    while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
-           parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
+    while (parse_decl_fn(ctx, (ASTDeclFunc**)&stmt) ||
+           parse_stmt_declaration(ctx, (ASTStmtDecl**)&stmt) ||
            parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
         // Not every successful parse contributes an AST node
         if (stmt == NULL) {
@@ -933,7 +1017,12 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
         if (AST_IS(stmt, AST_TOPLEVEL)) {
             // Probably from an include. Merge
             List_FOREACH(ASTBase *, node, ((ASTTopLevel*)stmt)->definitions, {
-                scope_declaration_add(scope, (ASTDeclaration*)node);
+                if (AST_IS(node, AST_STMT_DECL)) {
+                    scope_declaration_add(scope, ((ASTStmtDecl*)node)->declaration);
+                } else {
+                    scope_declaration_add(scope, (ASTDeclaration*)node);
+                }
+            
                 list_append(&stmts, node);
             })
         } else {

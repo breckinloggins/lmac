@@ -53,24 +53,19 @@ typedef struct ASTBase {
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
-struct ASTIdent;
-typedef struct ASTDeclaration {
-    ASTBase base;
-    
-    struct ASTIdent *name;
-} ASTDeclaration;
-
 typedef struct {
     ASTBase base;
     
     List *statements;
 } ASTBlock;
 
+
+struct ASTDeclaration;
 typedef struct ASTIdent {
     ASTBase base;
     
     /* Computed */
-    ASTDeclaration *declaration;
+    struct ASTDeclaration *declaration;
 } ASTIdent;
 
 typedef struct {
@@ -78,14 +73,6 @@ typedef struct {
     
     Token op;
 } ASTOperator;
-
-typedef struct {
-    ASTDeclaration base;
-    
-    struct ASTTypeExpression *type;
-    ASTBlock *block;
-    
-} ASTDefnFunc;
 
 #pragma mark Expressions AST
 
@@ -146,6 +133,37 @@ typedef struct {
     
 } ASTExprCall;
 
+#pragma mark Declarations AST
+
+typedef struct ASTDeclaration {
+    ASTBase base;
+    
+    struct ASTIdent *name;
+} ASTDeclaration;
+
+
+typedef struct {
+    ASTDeclaration base;
+    
+    struct ASTTypeExpression *type;
+    
+    List *params;
+    bool has_varargs;
+    
+    ASTBlock *block;
+    
+} ASTDeclFunc;
+
+typedef struct {
+    ASTDeclaration base;
+    
+    struct ASTTypeExpression *type;
+    bool is_const;
+    
+    ASTExpression *expression;
+    
+} ASTDeclVar;
+
 #pragma mark Statements AST
 
 typedef struct {
@@ -160,16 +178,13 @@ typedef struct {
     ASTExpression *expression;
 } ASTStmtExpr;
 
-#pragma mark Misc AST
-
 typedef struct {
-    ASTDeclaration base;
+    ASTBase base;
     
-    struct ASTTypeExpression *type;
-    
-    ASTExpression *expression;
-    
-} ASTDefnVar;
+    ASTDeclaration *declaration;
+} ASTStmtDecl;
+
+#pragma mark Misc AST
 
 typedef struct {
     ASTBase base;
@@ -229,6 +244,7 @@ typedef struct ASTTypeExpression {
 #define BIT_FLAG_NONE           0
 #define BIT_FLAG_FP             0x01
 #define BIT_FLAG_CHAR           0x02
+#define BIT_FLAG_INT            0x04
 #define BIT_FLAG_SIGNED         0x80
 
 typedef struct {

@@ -71,7 +71,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "tests/5_stdio.c"
+            argument = "tests/6_statements.c"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

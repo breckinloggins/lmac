@@ -92,7 +92,25 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                     break;
             }
             
+        } else if (node->bit_flags & BIT_FLAG_INT) {
+            if (!(node->bit_flags & BIT_FLAG_SIGNED)) CG("unsigned ");
+            
+            switch (node->bit_size) {
+                case 8: CG("int8_t"); break;
+                case 16: CG("short"); break;
+                case 32: CG("int"); break;
+                case 64: CG("long long"); break;
+                default:
+                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                                "Don't know how to make a %d-bit integer",
+                                node->bit_size);
+                    exit(ERR_CODEGEN);
+                    break;
+            }
+            
         } else {
+            // Use standard size-specific integer types for typeless sized
+            // constants
             if (!(node->bit_flags & BIT_FLAG_SIGNED)) CG("u");
             
             switch (node->bit_size) {
@@ -139,7 +157,9 @@ CG_VISIT_FN(AST_TOPLEVEL, ASTTopLevel) {
     return VISIT_OK;
 }
 
-CG_VISIT_FN(AST_DEFN_VAR, ASTDefnVar) {
+#pragma mark Declarations
+
+CG_VISIT_FN(AST_DECL_VAR, ASTDeclVar) {
     // type *node, VisitPhase phase, CGContext *ctx
     
     if (node->type->type_id & TYPE_FLAG_KIND) {
@@ -153,15 +173,15 @@ CG_VISIT_FN(AST_DEFN_VAR, ASTDefnVar) {
     }
     
     if (phase == VISIT_PRE) {
-    
-    } else {
-        CG(";"); CGNL();
+        if (node->is_const) {
+            CG("const ");
+        }
     }
     
     return VISIT_OK;
 }
 
-CG_VISIT_FN(AST_DEFN_FUNC, ASTDefnFunc) {
+CG_VISIT_FN(AST_DECL_FUNC, ASTDeclFunc) {
     // type *node, VisitPhase phase, CGContext *ctx
 
     // TODO(bloggins): Remove all of this when we properly handle the subparts
@@ -169,7 +189,22 @@ CG_VISIT_FN(AST_DEFN_FUNC, ASTDefnFunc) {
     if (phase == VISIT_PRE) {
         ast_visit((ASTBase*)node->type, cg_visitor, ctx);
         CGSPACE();
-        CGNODE(node->base.name); CG("() ");
+        CGNODE(node->base.name); CG("(");
+        
+        bool first_param = true;
+        List_FOREACH(ASTDeclaration *, param, node->params, {
+            if (!first_param) {
+                CG(", ");
+                first_param = false;
+            }
+            ast_visit((ASTBase*)param, cg_visitor, ctx);
+        });
+        
+        if (node->has_varargs) {
+            CG(", ...");
+        }
+        
+        CG(")");
         
         if (node->block != NULL) {
             ast_visit((ASTBase*)node->block, cg_visitor, ctx);
@@ -181,17 +216,7 @@ CG_VISIT_FN(AST_DEFN_FUNC, ASTDefnFunc) {
     return VISIT_HANDLED;
 }
 
-CG_VISIT_FN(AST_BLOCK, ASTBlock) {
-    // type *node, VisitPhase phase, CGContext *ctx
-    
-    if (phase == VISIT_PRE) {
-        CG("{"); CGNL();
-    } else {
-        CG("}"); CGNL();
-    }
-    
-    return VISIT_OK;
-}
+#pragma mark Others
 
 CG_VISIT_FN(AST_IDENT, ASTIdent) {
     // type *node, VisitPhase phase, CGContext *ctx
@@ -199,15 +224,18 @@ CG_VISIT_FN(AST_IDENT, ASTIdent) {
         return VISIT_OK;
     }
     
-    if (node->base.parent != NULL && node->base.parent->kind == AST_DEFN_VAR) {
+    // TODO(bloggins): Major hack. We only do this because we don't
+    // currently store the assignment operator in the AST
+    if (node->base.parent != NULL && node->base.parent->kind == AST_DECL_VAR) {
         if (!ast_node_is_type_definition(node->base.parent)) {
             CGSPACE();
             CGNODE(node);
             CGSPACE();
             
-            // TODO(bloggins): Major hack. We only do this because we don't
-            // currently store the assignment operator in the AST
-            CG("="); CGSPACE();
+            ASTDeclVar *decl = (ASTDeclVar*)node->base.parent;
+            if (decl->expression) {
+                CG("="); CGSPACE();
+            }
         }
     }
     
@@ -320,6 +348,20 @@ CG_VISIT_FN(AST_EXPR_CALL, ASTExprCall) {
     return VISIT_HANDLED;
 }
 
+#pragma mark Statements
+
+CG_VISIT_FN(AST_BLOCK, ASTBlock) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    
+    if (phase == VISIT_PRE) {
+        CG("{"); CGNL();
+    } else {
+        CG("}"); CGNL();
+    }
+    
+    return VISIT_OK;
+}
+
 CG_VISIT_FN(AST_STMT_RETURN, ASTStmtReturn) {
     // type *node, VisitPhase phase, CGContext *ctx
     
@@ -333,6 +375,18 @@ CG_VISIT_FN(AST_STMT_RETURN, ASTStmtReturn) {
 }
 
 CG_VISIT_FN(AST_STMT_EXPR, ASTStmtExpr) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    
+    if (phase == VISIT_PRE) {
+        return VISIT_OK;
+    } else {
+        CG(";"); CGNL();
+    }
+    
+    return VISIT_OK;
+}
+
+CG_VISIT_FN(AST_STMT_DECL, ASTStmtDecl) {
     // type *node, VisitPhase phase, CGContext *ctx
     
     if (phase == VISIT_PRE) {
@@ -380,14 +434,15 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
 
     CG_DISPATCH_BEGIN(node->kind)
         CG_DISPATCH(AST_TOPLEVEL, ASTTopLevel);
-        CG_DISPATCH(AST_DEFN_VAR, ASTDefnVar);
-        CG_DISPATCH(AST_DEFN_FUNC, ASTDefnFunc);
+        CG_DISPATCH(AST_DECL_VAR, ASTDeclVar);
+        CG_DISPATCH(AST_DECL_FUNC, ASTDeclFunc);
         CG_DISPATCH(AST_BLOCK, ASTBlock);
         CG_DISPATCH(AST_OPERATOR, ASTOperator);
         CG_DISPATCH(AST_IDENT, ASTIdent);
     
         CG_DISPATCH(AST_STMT_RETURN, ASTStmtReturn);
         CG_DISPATCH(AST_STMT_EXPR, ASTStmtExpr);
+        CG_DISPATCH(AST_STMT_DECL, ASTStmtDecl);
     
         CG_DISPATCH(AST_EXPR_BINARY, ASTExprBinary);
         CG_DISPATCH(AST_EXPR_IDENT, ASTExprIdent);

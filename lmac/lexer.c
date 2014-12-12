@@ -88,6 +88,8 @@ void maybe_lex_keyword(Context *ctx, Token *t) {
     //                  we have more metadata in the token db
     if (token_streq(*t, "return")) {
         t->kind = TOK_KW_RETURN;
+    } else if (token_streq(*t, "const")) {
+        t->kind = TOK_KW_CONST;
     }
 }
 
@@ -164,6 +166,17 @@ Token lexer_next_token_no_state(Context *ctx) {
             break;
         case ')':
             t.kind = TOK_RPAREN;
+            break;
+        case '.':
+            t.kind = TOK_DOT;
+            if ((char)*(ctx->pos+1) == '.') {
+                t.kind = TOK_DOT_DOT;
+                ctx->pos++;
+                if ((char)*(ctx->pos+1) == '.') {
+                    t.kind = TOK_ELLIPSIS;
+                    ctx->pos++;
+                }
+            }
             break;
         case '=':
             t.kind = TOK_EQUALS;

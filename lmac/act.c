@@ -171,47 +171,60 @@ void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts,
     *result = tl;
 }
 
-void act_on_defn_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type,
-                     ASTIdent *name, ASTExpression *expr, ASTDefnVar **result) {
+void act_on_decl_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type, bool is_const,
+                     ASTIdent *name, ASTExpression *expr, ASTDeclVar **result) {
     if (result == NULL) return;
     
-    ASTDefnVar *defn = ast_create_defn_var();
-    AST_BASE(defn)->location = sl;
-    AST_BASE(defn)->scope = scope;
-    AST_BASE(type)->parent = name->base.parent =
-        AST_BASE(expr)->parent = (ASTBase*)defn;
+    ASTDeclVar *decl = ast_create_decl_var();
+    AST_BASE(decl)->location = sl;
+    AST_BASE(decl)->scope = scope;
+    AST_BASE(type)->parent = name->base.parent = (ASTBase*)decl;
     
-    defn->type = type;
-    defn->base.name = name;
-    defn->expression = expr;
+    if (expr != NULL) {
+        AST_BASE(expr)->parent = (ASTBase*)decl;
+    }
+    
+    decl->type = type;
+    decl->is_const = is_const;
+    decl->base.name = name;
+    decl->expression = expr;
     
     if (scope != NULL) {
-        scope_declaration_add(scope, (ASTDeclaration*)defn);
+        scope_declaration_add(scope, (ASTDeclaration*)decl);
     }
-    *result = defn;
+    *result = decl;
 }
 
-void act_on_defn_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
-                    ASTIdent *name, ASTBlock *block, ASTDefnFunc **result) {
+void act_on_decl_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
+                    ASTIdent *name, List *params, bool has_vararg_param,
+                    ASTBlock *block, ASTDeclFunc **result) {
     if (result == NULL) return;
     
-    ASTDefnFunc *defn = ast_create_defn_func();
-    AST_BASE(defn)->location = sl;
-    AST_BASE(defn)->scope = scope;
-    AST_BASE(type)->parent = name->base.parent = (ASTBase*)defn;
+    ASTDeclFunc *decl = ast_create_decl_func();
+    AST_BASE(decl)->location = sl;
+    AST_BASE(decl)->scope = scope;
+    AST_BASE(type)->parent = name->base.parent = (ASTBase*)decl;
+    
+    if (params != NULL) {
+        List_FOREACH(ASTDeclaration *, param, params, {
+            AST_BASE(param)->parent = (ASTBase*)decl;
+        });
+    }
     
     if (block != NULL) {
-        block->base.parent = (ASTBase*)defn;
+        block->base.parent = (ASTBase*)decl;
     }
     
-    defn->type = type;
-    defn->base.name = name;
-    defn->block = block;
+    decl->type = type;
+    decl->base.name = name;
+    decl->params = params;
+    decl->has_varargs = has_vararg_param;
+    decl->block = block;
     
     if (scope != NULL) {
-        scope_declaration_add(scope, (ASTDeclaration*)defn);
+        scope_declaration_add(scope, (ASTDeclaration*)decl);
     }
-    *result = defn;
+    *result = decl;
 }
 
 void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
@@ -230,6 +243,22 @@ void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
     stmt->expression = expr;
     
     *result = stmt;
+}
+
+void act_on_stmt_declaration(SourceLocation sl, ASTDeclaration *decl,
+                             ASTStmtDecl **result) {
+    if (result == NULL) return;
+    
+    assert(decl && "must have valid declaration");
+    
+    ASTStmtDecl *stmt = ast_create_stmt_decl();
+    AST_BASE(decl)->parent = (ASTBase*)stmt;
+    
+    AST_BASE(stmt)->location = sl;
+    stmt->declaration = decl;
+    
+    *result = stmt;
+ 
 }
 
 void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
@@ -354,6 +383,13 @@ void act_on_expr_call(SourceLocation sl, ASTExpression *callable, List *args,
     if (callable != NULL) {
         AST_BASE(callable)->parent = (ASTBase*)call;
     }
+    
+    List_FOREACH(ASTExpression*, arg, args, {
+        AST_BASE(arg)->parent = (ASTBase*)call;
+        
+        // TODO(bloggins): Should we pass scope in?
+        AST_BASE(arg)->scope = sl.ctx->active_scope;
+    })
     
     AST_BASE(call)->location = sl;
     call->callable = callable;

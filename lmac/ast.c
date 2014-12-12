@@ -62,12 +62,14 @@ ASTBase *ast_create(ASTKind kind, size_t size) {
         }                                                                   \
     }
 
+#define NEVER_VISIT() assert(!"this node type should never appear in the AST");
+
 AST_ACCEPT_FN(AST_UNKNOWN) {
-    STANDARD_VISIT()
+    NEVER_VISIT()
 }
 
 AST_ACCEPT_FN(AST_BASE) {
-    STANDARD_VISIT()
+    NEVER_VISIT()
 }
 
 AST_ACCEPT_FN(AST_LAST) {
@@ -83,7 +85,7 @@ AST_ACCEPT_FN(AST_OPERATOR) {
 }
 
 AST_ACCEPT_FN(AST_EXPR_BEGIN) {
-    assert(false && "we should never have one of these");
+    NEVER_VISIT()
 }
 
 AST_ACCEPT_FN(AST_EXPR_EMPTY) {
@@ -151,41 +153,63 @@ AST_ACCEPT_FN(AST_EXPR_CALL) {
 }
 
 AST_ACCEPT_FN(AST_EXPR_END) {
-    assert(false && "we should never have one of these");
+    NEVER_VISIT()
 }
 
-AST_ACCEPT_FN(AST_DEFN_FUNC) {
+
+#pragma mark Declarations
+
+AST_ACCEPT_FN(AST_DECL_BEGIN) {
+    NEVER_VISIT()
+}
+
+AST_ACCEPT_FN(AST_DECL_FUNC) {
     STANDARD_VISIT_PRE()
-    ASTDefnFunc *defn = (ASTDefnFunc*)node;
+    ASTDeclFunc *decl = (ASTDeclFunc*)node;
     
-    STANDARD_ACCEPT(defn->type)
-    STANDARD_ACCEPT(defn->base.name)
-    STANDARD_ACCEPT(defn->block)
+    STANDARD_ACCEPT(decl->type)
+    STANDARD_ACCEPT(decl->base.name)
+    
+    List_FOREACH(ASTDeclaration*, param, decl->params, {
+        STANDARD_ACCEPT(param)
+    });
+    
+    STANDARD_ACCEPT(decl->block)
     
     STANDARD_VISIT_POST()
 }
 
-AST_ACCEPT_FN(AST_DEFN_VAR) {
+AST_ACCEPT_FN(AST_DECL_VAR) {
     STANDARD_VISIT_PRE()
-    ASTDefnVar *defn = (ASTDefnVar*)node;
+    ASTDeclVar *decl = (ASTDeclVar*)node;
     
-    STANDARD_ACCEPT(defn->type)
-    STANDARD_ACCEPT(defn->base.name)
-    STANDARD_ACCEPT(defn->expression)
+    STANDARD_ACCEPT(decl->type)
+    STANDARD_ACCEPT(decl->base.name)
+    STANDARD_ACCEPT(decl->expression)
     
     STANDARD_VISIT_POST()
 }
+
+AST_ACCEPT_FN(AST_DECL_END) {
+    NEVER_VISIT()
+}
+
+#pragma mark Statements
 
 AST_ACCEPT_FN(AST_BLOCK) {
     STANDARD_VISIT_PRE()
     
     ASTBlock *b = (ASTBlock*)node;
     
-    List_FOREACH(ASTBase*, defn, b->statements, {
-        STANDARD_ACCEPT(defn)
+    List_FOREACH(ASTBase*, decl, b->statements, {
+        STANDARD_ACCEPT(decl)
     })
     
     STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_BEGIN) {
+    NEVER_VISIT()
 }
 
 AST_ACCEPT_FN(AST_STMT_RETURN) {
@@ -204,13 +228,27 @@ AST_ACCEPT_FN(AST_STMT_EXPR) {
     STANDARD_VISIT_POST()
 }
 
+AST_ACCEPT_FN(AST_STMT_DECL) {
+    STANDARD_VISIT_PRE()
+    
+    STANDARD_ACCEPT(((ASTStmtDecl*)node)->declaration);
+    
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_END) {
+    NEVER_VISIT()
+}
+
+#pragma mark Top Level
+
 AST_ACCEPT_FN(AST_TOPLEVEL) {
     STANDARD_VISIT_PRE()
     
     ASTTopLevel *tl = (ASTTopLevel*)node;
 
-    List_FOREACH(ASTBase*, defn, tl->definitions, {
-        STANDARD_ACCEPT(defn)
+    List_FOREACH(ASTBase*, decl, tl->definitions, {
+        STANDARD_ACCEPT(decl)
     })
     
     STANDARD_VISIT_POST()
@@ -308,7 +346,7 @@ void ast_fprint(FILE *f, ASTBase *node, int indent_level) {
     indent[indent_level] = 0;
     
     fprintf(f, "%s%d:%s", indent, node->location.line, ast_get_kind_name(node->kind));
-    if (AST_IS(node, AST_DEFN_VAR) || AST_IS(node, AST_IDENT)) {
+    if (AST_IS(node, AST_DECL_VAR) || AST_IS(node, AST_IDENT)) {
         size_t content_size = node->location.range_end - node->location.range_start;
         char content[content_size + 1];
         char *pc = (char *)node->location.range_start;
@@ -361,17 +399,17 @@ ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node
     
     do {
         List_FOREACH(ASTBase*, scope_node, scope->declarations, {
-            ASTIdent *defn_ident = NULL;
-            if (AST_IS(scope_node, AST_DEFN_FUNC)) {
-                defn_ident = ((ASTDefnFunc*)scope_node)->base.name;
-            } else if (AST_IS(scope_node, AST_DEFN_VAR)) {
-                defn_ident = ((ASTDefnVar*)scope_node)->base.name;
+            ASTIdent *decl_ident = NULL;
+            if (AST_IS(scope_node, AST_DECL_FUNC)) {
+                decl_ident = ((ASTDeclFunc*)scope_node)->base.name;
+            } else if (AST_IS(scope_node, AST_DECL_VAR)) {
+                decl_ident = ((ASTDeclVar*)scope_node)->base.name;
             } else {
                 continue;
             }
             
-            assert(defn_ident && "definitions should always be named");
-            if (spelling_equal(spelling, defn_ident->base.location.spelling)) {
+            assert(decl_ident && "definitions should always be named");
+            if (spelling_equal(spelling, decl_ident->base.location.spelling)) {
                 return (ASTDeclaration*)scope_node;
             }
         })
@@ -393,11 +431,11 @@ bool ast_node_is_type_expression(ASTBase *node) {
 }
 
 bool ast_node_is_type_definition(ASTBase *node) {
-    if (!AST_IS(node, AST_DEFN_VAR)) {
+    if (!AST_IS(node, AST_DECL_VAR)) {
         return false;
     }
     
-    ASTDefnVar *var = (ASTDefnVar*)node;
+    ASTDeclVar *var = (ASTDeclVar*)node;
     return (var->type != NULL && (var->type->type_id & TYPE_FLAG_KIND));
 }
 
@@ -437,12 +475,12 @@ ASTTypeExpression *ast_typename_resolve(ASTTypeName *name) {
         // getting the type of any AST node, because right now this
         // has incestuous knowledge of the implementation of
         // ast_node_is_type_definition!
-        ASTDefnVar *defn = (ASTDefnVar*)type_decl;
-        assert(defn->expression && "claimed to resolve a type but didn't");
+        ASTDeclVar *decl = (ASTDeclVar*)type_decl;
+        assert(decl->expression && "claimed to resolve a type but didn't");
         
         // Is there any reason to NOT cache it?
-        name->resolved_type = (ASTTypeExpression*)defn->expression;
-        return (ASTTypeExpression*)defn->expression;
+        name->resolved_type = (ASTTypeExpression*)decl->expression;
+        return (ASTTypeExpression*)decl->expression;
     }
     
     return NULL;

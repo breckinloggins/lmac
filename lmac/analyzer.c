@@ -19,7 +19,7 @@ typedef struct {
 void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
     bool is_void_type = spelling_streq(sp_type, "void");
     
-    if (is_void_type && AST_IS(loc_node, AST_DEFN_VAR)) {
+    if (is_void_type && AST_IS(loc_node, AST_DECL_VAR)) {
         ANALYZE_ERROR(&(loc_node->location),
                       "variables cannot be defined as type 'void'");
     }
@@ -34,20 +34,20 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     if (AST_IS(node, AST_EXPR_IDENT)) {
         list_append(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
-    } else if (AST_IS(node, AST_DEFN_FUNC)) {
-        ASTDefnFunc *func = (ASTDefnFunc*)node;
+    } else if (AST_IS(node, AST_DECL_FUNC)) {
+        ASTDeclFunc *func = (ASTDeclFunc*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(func->type);
         Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);
         
         if (spelling_streq(func->base.name->base.location.spelling, "main") &&
-            !spelling_streq(sp_type, "$32")) {
+            !spelling_streq(sp_type, "$i32")) {
             // TODO(bloggins): This is temporary and wrong
-            ANALYZE_ERROR(&(AST_BASE(func)->location), "function main() must have return type '$32'");
+            ANALYZE_ERROR(&(AST_BASE(func)->location), "function main() must have return type '$i32'");
         }
         
-    } else if (AST_IS(node, AST_DEFN_VAR)) {
-        ASTDefnVar *var = (ASTDefnVar*)node;
+    } else if (AST_IS(node, AST_DECL_VAR)) {
+        ASTDeclVar *var = (ASTDeclVar*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(var->type);
         Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
         check_supported_type(node, sp_type);

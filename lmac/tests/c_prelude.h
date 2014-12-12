@@ -6,4 +6,9 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-$$() int = $32;
+$$() char = $c8;
+$$() int = $i32;
+
+// TODO: should be able to parse
+// int printf(const char *, ...);
+int printf(const char * fmt, ...);
