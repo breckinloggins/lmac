@@ -142,6 +142,7 @@ typedef struct {
     ASTExpression base;
     
     ASTExpression *callable;
+    List *args;
     
 } ASTExprCall;
 
@@ -186,11 +187,30 @@ typedef struct {
     ASTPPDirective base;
     
     /* Only very simple pragmas of the form
-     * #pragma CLITE arg
+     * #pragma CLITE arg [optional stuff]
      * are supported right now
      */
     ASTIdent *arg;
+    Spelling rest;
 } ASTPPPragma;
+
+typedef struct {
+    ASTPPDirective base;
+    
+    ASTIdent *name;
+    Spelling value;
+} ASTPPDefinition;
+
+typedef enum {
+    PP_IF_UNKNOWN,
+    PP_IF_IFNDEF,
+} PPIfKind;
+
+typedef struct {
+    ASTPPDirective base;
+    
+    PPIfKind kind;
+} ASTPPIf;
 
 /*
  * Type Expression AST

@@ -487,13 +487,25 @@ bool parse_expr_postfix(Context *ctx, ASTExpression **result) {
             // Assume we have a callable
             next_token(ctx);  // gobble gobble
             
-            // TODO: ARGS
+            List *args = NULL;
+            for (;;) {
+                ASTExpression *expr = NULL;
+                if (!parse_expression(ctx, &expr)) {
+                    break;
+                }
+                
+                list_append(&args, expr);
+                
+                if (IS_TOKEN_NONE(accept_token(ctx, TOK_COMMA))) {
+                    break;
+                }
+            }
             
             expect_token(ctx, TOK_RPAREN);
             
             if (result != NULL) {
                 ASTExpression *callable = *result;
-                act_on_expr_call(t.location, callable, (ASTExprCall**)result);
+                act_on_expr_call(t.location, callable, args, (ASTExprCall**)result);
             }
         } else {
             break;
@@ -883,8 +895,11 @@ bool parse_defn_fn(Context *ctx, ASTDefnFunc **result) {
     t = accept_token(ctx, TOK_RPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
+    /* Optional block to define the function */
     ASTBlock *block = NULL;
-    if (!parse_block(ctx, &block)) { goto fail_parse; }
+    if (!parse_block(ctx, &block)) {
+        expect_token(ctx, TOK_SEMICOLON);
+    }
     
     act_on_defn_fn(parsed_source_location(ctx, s), ctx->active_scope,
                    type, name, block, result);
@@ -910,7 +925,20 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     while (parse_defn_var(ctx, (ASTDefnVar**)&stmt) ||
            parse_defn_fn(ctx, (ASTDefnFunc**)&stmt) ||
            parse_pp_directive(ctx, (ASTPPDirective**)&stmt)) {
-        list_append(&stmts, stmt);
+        // Not every successful parse contributes an AST node
+        if (stmt == NULL) {
+            continue;
+        }
+        
+        if (AST_IS(stmt, AST_TOPLEVEL)) {
+            // Probably from an include. Merge
+            List_FOREACH(ASTBase *, node, ((ASTTopLevel*)stmt)->definitions, {
+                scope_declaration_add(scope, (ASTDeclaration*)node);
+                list_append(&stmts, node);
+            })
+        } else {
+            list_append(&stmts, stmt);
+        }
     }
     
     if (!parse_end(ctx)) {
@@ -965,7 +993,11 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
         exit(ERR_PARSE);
     }
     
-    act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2,
+    // Anything after the 2nd argument will have to be taken care of by the
+    // action
+    Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
+    
+    act_on_pp_pragma(parsed_source_location(ctx, s), arg1, arg2, chunk,
                      (ASTPPPragma**)result);
     return true;
 }
@@ -977,7 +1009,166 @@ bool parse_pp_run(Context *ctx, ASTBase **result) {
         exit(ERR_PARSE);
     }
     
-    act_on_pp_run(chunk.location, ctx, chunk, '\\', parse_expression, result);
+    act_on_pp_run(chunk.location, ctx, chunk, '\\', (ParseFn)parse_expression, result);
+    return true;
+}
+
+bool parse_pp_include(Context *ctx, ASTBase **result) {
+    Context s = snapshot(ctx);
+    
+    bool system_include = false;
+    const char *include_file = NULL;
+    if (!IS_TOKEN_NONE(accept_token(ctx, TOK_LANGLE))) {
+        Token chunk = lexer_lex_chunk(ctx, '>', 0);
+        if (chunk.kind != TOK_CHUNK) {
+            diag_printf(DIAG_ERROR, &chunk.location, "syntax error after #include");
+            exit(ERR_PARSE);
+        }
+        Spelling sp_chunk = chunk.location.spelling;
+        sp_chunk.end--; // Get rid of the '>'
+        include_file = strdup(spelling_cstring(sp_chunk));
+        system_include = true;
+    } else {
+        ASTExprString *str = NULL;
+        if (!parse_expr_string(ctx, &str)) {
+            SourceLocation sl = parsed_source_location(ctx, s);
+            diag_printf(DIAG_ERROR, &sl, "syntax error after #include");
+            exit(ERR_PARSE);
+        }
+        
+        include_file = strdup(spelling_cstring(AST_BASE(str)->location.spelling));
+        if (include_file == NULL || include_file[0] == 0) {
+            diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
+                        "include directive must name a file");
+            exit(ERR_PARSE);
+        }
+    }
+    
+    include_file = strdup(include_file);
+    SourceLocation sl = parsed_source_location(ctx, s);
+    act_on_pp_include(sl, include_file, system_include,
+                      ctx->active_scope, result);
+    
+    return true;
+}
+
+bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *name = NULL;
+    if (!parse_ident(ctx, &name)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier after #define");
+        exit(ERR_PARSE);
+    }
+    
+    Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
+    if (chunk.kind != TOK_CHUNK) {
+        diag_printf(DIAG_FATAL, &chunk.location, "parse error parsing run directive");
+        exit(ERR_PARSE);
+    }
+    
+    act_on_pp_define(parsed_source_location(ctx, s), name, chunk.location.spelling,
+                     result);
+    return true;
+}
+
+bool parse_pp_ifdef(Context *ctx, ASTPPIf **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) { goto fail_parse; }
+    
+    // TODO(bloggins): action
+    //act_on_pp_ifndef(parsed_source_location(ctx, s), ident, result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+
+}
+
+bool parse_pp_ifndef(Context *ctx, ASTPPIf **result) {
+    Context s = snapshot(ctx);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) { goto fail_parse; }
+    
+    act_on_pp_ifndef(parsed_source_location(ctx, s), ident, result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
+    return false;
+}
+
+bool parse_pp_if(Context *ctx, ASTPPIf **result) {
+    Context s = snapshot(ctx);
+    
+    //
+    // TODO(bloggins): just parse an expression and interpret it
+    //
+    
+    accept_token(ctx, TOK_BANG);
+    
+    ASTIdent *kw = NULL;
+    if (!parse_ident(ctx, &kw)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier (temporary restriction)");
+        exit(ERR_PARSE);
+    }
+    
+    if (!spelling_streq(kw->base.location.spelling, "defined")) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected 'defined' (temporary restriction)");
+        exit(ERR_PARSE);
+    }
+    
+    expect_token(ctx, TOK_LPAREN);
+    
+    ASTIdent *ident = NULL;
+    if (!parse_ident(ctx, &ident)) {
+        SourceLocation sl = parsed_source_location(ctx, s);
+        diag_printf(DIAG_ERROR, &sl, "expected identifier after 'defined'");
+        exit(ERR_PARSE);
+    }
+    
+    expect_token(ctx, TOK_RPAREN);
+    
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_else(Context *ctx, ASTPPIf **result) {
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_endif(Context *ctx, ASTPPIf **result) {
+    lexer_lex_chunk(ctx, '\n', 0);
+    
+    // TODO(bloggins): action
+    return true;
+}
+
+bool parse_pp_warning(Context *ctx, ASTPPDirective **result) {
+    Context s = snapshot(ctx);
+    
+    Token t = lexer_lex_chunk(ctx, '\n', '\\');
+    SourceLocation sl = parsed_source_location(ctx, s);
+    sl.spelling.start = 0;
+    sl.spelling.end = 0;
+    
+    // TODO(bloggins): move to action
+    diag_printf(DIAG_WARNING, &sl, "%s", t.kind == TOK_CHUNK ?
+                spelling_cstring(t.location.spelling) : "");
+    
     return true;
 }
 
@@ -997,6 +1188,22 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         parse_fn = (PPParseFn*)parse_pp_pragma;
     } else if (spelling_streq(directive_sp, "run")) {
         parse_fn = (PPParseFn*)parse_pp_run;
+    } else if (spelling_streq(directive_sp, "include")) {
+        parse_fn = (PPParseFn*)parse_pp_include;
+    } else if (spelling_streq(directive_sp, "if")) {
+        parse_fn = (PPParseFn*)parse_pp_if;
+    } else if (spelling_streq(directive_sp, "ifdef")) {
+        parse_fn = (PPParseFn*)parse_pp_ifdef;
+    } else if (spelling_streq(directive_sp, "ifndef")) {
+        parse_fn = (PPParseFn*)parse_pp_ifndef;
+    } else if (spelling_streq(directive_sp, "define")) {
+        parse_fn = (PPParseFn*)parse_pp_define;
+    } else if (spelling_streq(directive_sp, "else")) {
+        parse_fn = (PPParseFn*)parse_pp_else;
+    } else if (spelling_streq(directive_sp, "endif")) {
+        parse_fn = (PPParseFn*)parse_pp_endif;
+    } else if (spelling_streq(directive_sp, "warning")) {
+        parse_fn = (PPParseFn*)parse_pp_warning;
     }
     
     if (parse_fn == NULL) {

@@ -170,7 +170,12 @@ CG_VISIT_FN(AST_DEFN_FUNC, ASTDefnFunc) {
         ast_visit((ASTBase*)node->type, cg_visitor, ctx);
         CGSPACE();
         CGNODE(node->base.name); CG("() ");
-        ast_visit((ASTBase*)node->block, cg_visitor, ctx);
+        
+        if (node->block != NULL) {
+            ast_visit((ASTBase*)node->block, cg_visitor, ctx);
+        } else {
+            CG(";"); CGNL();
+        }
     }
     
     return VISIT_HANDLED;
@@ -295,14 +300,24 @@ CG_VISIT_FN(AST_EXPR_BINARY, ASTExprBinary) {
 
 CG_VISIT_FN(AST_EXPR_CALL, ASTExprCall) {
     // type *node, VisitPhase phase, CGContext *ctx
+    assert(phase != VISIT_POST);
     
-    if (phase == VISIT_PRE) {
-        return VISIT_OK;
-    }
+    ast_visit((ASTBase*)node->callable, cg_visitor, ctx);
+    CG("(");
     
-    CG("("); CG(")");
+    bool first = true;
+    List_FOREACH(ASTExpression*, arg, node->args, {
+        if (!first) {
+            CG(", ");
+        }
+        
+        ast_visit((ASTBase*)arg, cg_visitor, ctx);
+        first = false;
+    })
     
-    return VISIT_OK;
+    CG(")");
+    
+    return VISIT_HANDLED;
 }
 
 CG_VISIT_FN(AST_STMT_RETURN, ASTStmtReturn) {

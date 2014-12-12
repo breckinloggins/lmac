@@ -124,7 +124,7 @@ Token lexer_peek_token(Context *ctx) {
     return t;
 }
 
-Token lexer_next_token(Context *ctx) {
+Token lexer_next_token_no_state(Context *ctx) {
     Token t = {};
     t.kind = TOK_UNKOWN;
     t.location.file = ctx->file;
@@ -146,6 +146,9 @@ Token lexer_next_token(Context *ctx) {
             break;
         case '$':
             t.kind = TOK_DOLLAR;
+            break;
+        case ',':
+            t.kind = TOK_COMMA;
             break;
         case ';':
             t.kind = TOK_SEMICOLON;
@@ -276,6 +279,22 @@ finish:
     }
     
     return t;
+}
+
+Token lexer_next_token(Context *ctx) {
+    return lexer_next_token_no_state(ctx);
+#if 0
+    if (ctx->lex_mode == LEX_NORMAL) {
+        return lexer_next_token_no_state(ctx);
+    }
+    
+    for (;;) {
+        Token t = lexer_next_token_no_state(ctx);
+        if (t.kind == TOK_HASH || t.kind == TOK_END) {
+            return t;
+        }
+    }
+#endif
 }
 
 void lexer_put_back(Context *ctx, Token token) {

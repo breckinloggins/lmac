@@ -143,6 +143,10 @@ AST_ACCEPT_FN(AST_EXPR_CALL) {
     ASTExprCall *call = (ASTExprCall*)node;
     STANDARD_ACCEPT(call->callable);
     
+    List_FOREACH(ASTExpression*, arg, call->args, {
+        STANDARD_ACCEPT(arg)
+    })
+    
     STANDARD_VISIT_POST()
 }
 
@@ -224,6 +228,17 @@ AST_ACCEPT_FN(AST_PP_PRAGMA) {
     
     STANDARD_VISIT_POST()
 }
+
+AST_ACCEPT_FN(AST_PP_DEFINITION) {
+    STANDARD_VISIT()
+}
+
+AST_ACCEPT_FN(AST_PP_IF) {
+    STANDARD_VISIT_PRE()
+    
+    STANDARD_VISIT_POST()
+}
+
 
 //
 // Type Expression Visitor

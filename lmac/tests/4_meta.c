@@ -24,7 +24,9 @@ $32 a = #run 42
 // parser, but we should be able to remove it with automatic semicolon insertion
 ;
 
+$32 printf();
 
 $32 main() {
+    printf("Hello, World!\n");
     return a;
 }

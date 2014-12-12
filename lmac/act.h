@@ -21,8 +21,16 @@ typedef bool (*ParseFn)(Context *ctx, ASTBase **result);
 void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_escape,
                    ParseFn parser, ASTBase **result);
 
-void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2,
+void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2, Token rest,
                       ASTPPPragma **result);
+
+void act_on_pp_include(SourceLocation sl, const char *include_file, bool system_include,
+                       Scope *scope, ASTBase **result);
+
+void act_on_pp_define(SourceLocation sl, ASTIdent *name, Spelling value,
+                      ASTPPDefinition **result);
+
+void act_on_pp_ifndef(SourceLocation sl, ASTIdent *ident, ASTPPIf **result);
 
 void act_on_toplevel(SourceLocation sl, Scope *scope, List *stmts, ASTTopLevel **result);
 
@@ -58,7 +66,7 @@ void act_on_expr_string(SourceLocation sl, ASTExprString **result);
 void act_on_expr_paren(SourceLocation sl, ASTExpression *inner,
                        ASTExprParen **result);
 
-void act_on_expr_call(SourceLocation sl, ASTExpression *callable,
+void act_on_expr_call(SourceLocation sl, ASTExpression *callable, List *args,
                       ASTExprCall **result);
 
 void act_on_expr_cast(SourceLocation sl, ASTTypeExpression *type,

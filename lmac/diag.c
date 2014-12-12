@@ -20,6 +20,55 @@ const char *diag_get_name(DiagKind kind) {
     return g_diag_kind_names[kind];
 }
 
+void diag_fprint_line(FILE *f, SourceLocation *loc) {
+    if (loc->range_start == NULL || loc->range_end == NULL) {
+        return;
+    }
+    
+    const char *buf = (const char *)loc->ctx->buf;
+    
+    const char *line_begin = (const char *)loc->range_end;
+    const char *line_end = (const char *)loc->range_end;
+    
+    if (*line_begin == '\n') {
+        --line_begin;
+    }
+    
+    while (*line_begin != '\n') {
+        if (--line_begin <= buf) {
+            line_begin = buf;
+            break;
+        }
+    }
+    
+    while (*line_end != '\n') {
+        if (++line_end >= (buf + loc->ctx->buf_size)) {
+            line_end = buf + loc->ctx->buf_size - 1;
+            break;
+        }
+    }
+    
+    if (*line_begin == '\n') ++line_begin;
+    if (*line_end == '\n') --line_end;
+    assert(line_end >= line_begin);
+    
+    // TODO(bloggins): Slow
+    for (const char *ch = line_begin; ch <= line_end; ch++) {
+        fputc(*ch, f);
+    }
+    fprintf(f, "\n");
+    
+    for (const char *ch = line_begin; ch <= line_end; ch++) {
+        if (ch == (const char *)loc->range_end) {
+            fputc('^', f);
+            break;
+        } else {
+            fputc('~', f);
+        }
+    }
+    fprintf(f, "\n");
+}
+
 void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...) {
     va_list ap;
     
@@ -40,6 +89,12 @@ void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...) {
     fprintf(f, "\n");
     
     va_end(ap);
+    
+    fprintf(f, "\n");
+    
+    if (loc != NULL) {
+        diag_fprint_line(f, loc);
+    }
     
     diag_errno = (int)kind;
 }
