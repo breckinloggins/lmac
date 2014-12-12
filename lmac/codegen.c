@@ -29,6 +29,29 @@ typedef struct {
 #define CGSP(spelling) fprintf(ctx->f, "%s", spelling_cstring((spelling)))
 #define CGNODE(node) fprintf(ctx->f, "%s", spelling_cstring(((ASTBase*)(node))->location.spelling))
 
+void cg_emit_srcline(CGContext *ctx, ASTBase *node) {
+    if (node == NULL) {
+        return;
+    }
+    
+    // TODO(bloggins): sometimes line numbers are off (probably a problem
+    // with parsed_source_location or other SourceLocation operations)
+    uint32_t line = node->location.line;
+    const char *filename = (node->location.ctx && node->location.ctx->file) ?
+        node->location.ctx->file : NULL;
+    
+    if (filename[0] == 0 || filename[0] == '\n') {
+        // TODO(bloggins): It's a bug that we have to worry about this
+        filename = NULL;
+    }
+    
+    fprintf(ctx->f, "\n#line %d", line);
+    if (filename != NULL) {
+        fprintf(ctx->f, " \"%s\"", filename);
+    }
+    fprintf(ctx->f, "\n");
+}
+
 #pragma mark Type Expressions
 
 CG_VISIT_FN(AST_TYPE_NAME, ASTTypeName) {
@@ -187,6 +210,7 @@ CG_VISIT_FN(AST_DECL_FUNC, ASTDeclFunc) {
     // TODO(bloggins): Remove all of this when we properly handle the subparts
     // of a function definition
     if (phase == VISIT_PRE) {
+        cg_emit_srcline(ctx, AST_BASE(node));
         ast_visit((ASTBase*)node->type, cg_visitor, ctx);
         CGSPACE();
         CGNODE(node->base.name); CG("(");
@@ -364,8 +388,8 @@ CG_VISIT_FN(AST_BLOCK, ASTBlock) {
 
 CG_VISIT_FN(AST_STMT_RETURN, ASTStmtReturn) {
     // type *node, VisitPhase phase, CGContext *ctx
-    
     if (phase == VISIT_PRE) {
+        cg_emit_srcline(ctx, (ASTBase*)node);
         CG("return ");
     } else {
         CG(";"); CGNL();
@@ -376,8 +400,8 @@ CG_VISIT_FN(AST_STMT_RETURN, ASTStmtReturn) {
 
 CG_VISIT_FN(AST_STMT_EXPR, ASTStmtExpr) {
     // type *node, VisitPhase phase, CGContext *ctx
-    
     if (phase == VISIT_PRE) {
+        cg_emit_srcline(ctx, (ASTBase*)node);
         return VISIT_OK;
     } else {
         CG(";"); CGNL();
@@ -388,8 +412,8 @@ CG_VISIT_FN(AST_STMT_EXPR, ASTStmtExpr) {
 
 CG_VISIT_FN(AST_STMT_DECL, ASTStmtDecl) {
     // type *node, VisitPhase phase, CGContext *ctx
-    
     if (phase == VISIT_PRE) {
+        cg_emit_srcline(ctx, (ASTBase*)node);
         return VISIT_OK;
     } else {
         CG(";"); CGNL();

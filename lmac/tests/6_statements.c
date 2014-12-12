@@ -9,9 +9,9 @@
 #include "tests/c_prelude.h"
 
 int main() {
-    int a = 0;
+    int b = 3;
+    int a = b + 1;
     
     printf("a = %d\n", a);
-    
     return 0;
 }

@@ -23,7 +23,10 @@ int run_cmd(const char *action, const char *fmt, ...) {
     assert(cmd && "cmd must not be null");
     va_end(ap);
     
-    fprintf(stderr, "[%s] %s\n", action, cmd);
+    bool show_cmd = false;
+    if (show_cmd) {
+        fprintf(stderr, "[%s] %s\n", action, cmd);
+    }
     ret = system(cmd);
     free(cmd);
     
