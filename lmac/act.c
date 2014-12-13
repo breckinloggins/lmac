@@ -320,6 +320,24 @@ void act_on_stmt_if(SourceLocation sl, ASTExpression *condition,
     *result = stmt_if;
 }
 
+void act_on_stmt_jump(SourceLocation sl, Token keyword, ASTIdent *label,
+                      ASTStmtJump **result) {
+    if (result == NULL) return;
+    
+    ASTStmtJump *stmt_jump = ast_create_stmt_jump();
+    AST_BASE(stmt_jump)->location = sl;
+    
+    if (label != NULL) {
+        AST_BASE(label)->parent = (ASTBase*)stmt_jump;
+        AST_BASE(label)->scope = sl.ctx->active_scope;
+    }
+    
+    stmt_jump->keyword = keyword;
+    stmt_jump->label = label;
+    
+    *result = stmt_jump;
+}
+
 #pragma mark Type Expressions
 
 void act_on_type_constant(SourceLocation sl,

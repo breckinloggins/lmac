@@ -1074,10 +1074,18 @@ bool parse_stmt_iteration(Context *ctx, ASTBase **result) {
 }
 
 bool parse_stmt_jump(Context *ctx, ASTBase **result) {
-    // GOGO
-    // CONTINUE
-    // BREAK
-    return parse_stmt_return(ctx, (ASTStmtReturn**)result);
+    Token t = accept_token(ctx, TOK_KW_GOTO);
+    if (IS_TOKEN_NONE(t)) t = accept_token(ctx, TOK_KW_CONTINUE);
+    if (IS_TOKEN_NONE(t)) t = accept_token(ctx, TOK_KW_BREAK);
+    if (IS_TOKEN_NONE(t)) return parse_stmt_return(ctx, (ASTStmtReturn**)result);
+    
+    // Statement keyword was one of [GOTO | CONTINUE | BREAK]
+    ASTIdent *label = NULL;
+    parse_ident(ctx, &label);
+    expect_token(ctx, TOK_SEMICOLON);
+    
+    act_on_stmt_jump(t.location, t, label, (ASTStmtJump**)result);
+    return true;
 }
 
 bool parse_statement(Context *ctx, ASTBase **result) {

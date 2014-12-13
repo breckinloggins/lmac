@@ -62,6 +62,9 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
 void act_on_stmt_if(SourceLocation sl, ASTExpression *condition,
                     ASTBase *stmt_true, ASTBase *stmt_false, ASTStmtIf **result);
 
+void act_on_stmt_jump(SourceLocation sl, Token keyword, ASTIdent *label,
+                      ASTStmtJump **result);
+
 #pragma mark Type Expressions
 
 void act_on_type_constant(SourceLocation sl,

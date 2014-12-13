@@ -32,6 +32,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     AnalyzeCtx *actx = (AnalyzeCtx*)ctx;
     
+    // TODO(bloggins): It's about time to break this up into a dispatch structure
     if (AST_IS(node, AST_EXPR_IDENT)) {
         list_append(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
     } else if (AST_IS(node, AST_DECL_FUNC)) {
@@ -58,6 +59,27 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
             // This is just a placeholder so we can catch types we can't codegen yet
             Spelling sp_t = node->location.spelling;
             ANALYZE_ERROR(&node->location, "invalid type '%s' (not supported)", spelling_cstring(sp_t));
+        }
+    } else if (AST_IS(node, AST_STMT_JUMP)) {
+        ASTStmtJump *stmt_jump = (ASTStmtJump*)node;
+        if (stmt_jump->label != NULL) {
+            list_append(&actx->identifiers, stmt_jump->label);
+        }
+        switch (stmt_jump->keyword.kind) {
+            case TOK_KW_CONTINUE:
+            case TOK_KW_BREAK:
+                if (stmt_jump->label != NULL) {
+                    ANALYZE_ERROR(&node->location, "nonlocal '%s' is not supported",
+                                  spelling_cstring(stmt_jump->keyword.location.spelling));
+                }
+                break;
+            case TOK_KW_GOTO:
+                if (stmt_jump->label == NULL) {
+                    ANALYZE_ERROR(&node->location, "goto where? (goto requires a destination label)");
+                }
+                break;
+            default:
+                assert(false && "Unhandled case");
         }
     }
     

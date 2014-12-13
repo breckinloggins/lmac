@@ -22,6 +22,7 @@ int main() {
         printf("a is not 5\n");
     }
     
+    // TODO(bloggins): test goto when we have labels
     
     printf("a = %d\n", a);
     return 0;

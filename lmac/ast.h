@@ -192,6 +192,13 @@ typedef struct {
     ASTBase *stmt_false;
 } ASTStmtIf;
 
+typedef struct {
+    ASTBase base;
+    
+    Token keyword;
+    ASTIdent *label;
+} ASTStmtJump;
+
 #pragma mark Misc AST
 
 typedef struct {
