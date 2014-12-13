@@ -41,6 +41,26 @@ void scope_declaration_add(Scope *scope, ASTDeclaration *decl) {
     list_append(&scope->declarations, decl);
 }
 
+void scope_label_add(Scope *scope, ASTBase *labeled_node) {
+    assert(scope && "scope should not be null");
+    assert(labeled_node && "label should not be null");
+    assert(AST_IS(labeled_node, AST_STMT_LABELED) && "only ASTStmtLabeled type supported");
+    
+    ASTStmtLabeled *labeled = (ASTStmtLabeled*)labeled_node;
+    List_FOREACH(ASTStmtLabeled*, l, scope->labels, {
+        if (spelling_equal(AST_BASE(l->label)->location.spelling,
+                           labeled->label->base.location.spelling)) {
+            SourceLocation *sl = &(AST_BASE(labeled)->location);
+            Spelling sp = labeled->label->base.location.spelling;
+            diag_printf(DIAG_ERROR, sl, "another label named '%s' was "
+                        "already declared in this scope", spelling_cstring(sp));
+            exit(ERR_ANALYZE);
+        }
+    })
+    
+    list_append(&scope->labels, labeled);
+}
+
 void scope_dump(Scope *scope) {
     scope_fdump(stderr, scope);
 }

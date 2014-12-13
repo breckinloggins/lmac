@@ -81,7 +81,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
             default:
                 assert(false && "Unhandled case");
         }
-    }
+    } 
     
     return VISIT_OK;
 }
@@ -92,6 +92,12 @@ void analyzer_analyze(ASTBase *ast) {
 
     List_FOREACH(ASTIdent*, ident, ctx.identifiers, {
         if (ast_nearest_spelling_definition(ident->base.location.spelling, (ASTBase*)ident) == NULL) {
+            if (ast_ident_find_label(ident)) {
+                if (AST_IS(AST_BASE(ident)->parent, AST_STMT_JUMP)) {
+                    continue;
+                }
+            }
+            
             ANALYZE_ERROR(&ident->base.location, "I don't know what '%s' is", spelling_cstring(ident->base.location.spelling));
         }
     })

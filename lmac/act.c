@@ -289,7 +289,7 @@ void act_on_stmt_return(SourceLocation sl, ASTExpression *expr,
     if (result == NULL) return;
     
     ASTStmtReturn *stmt = ast_create_stmt_return();
-    stmt->base.location = sl;
+    AST_BASE(stmt)->location = sl;
     AST_BASE(expr)->parent = (ASTBase *)stmt;
     stmt->expression = expr;
     
@@ -336,6 +336,23 @@ void act_on_stmt_jump(SourceLocation sl, Token keyword, ASTIdent *label,
     stmt_jump->label = label;
     
     *result = stmt_jump;
+}
+
+void act_on_stmt_labeled(SourceLocation sl, ASTIdent *label, ASTStatement *stmt, ASTStmtLabeled **result) {
+    if (result == NULL) return;
+    
+    ASTStmtLabeled *stmt_l = ast_create_stmt_labeled();
+    AST_BASE(stmt_l)->location = sl;
+    AST_BASE(label)->parent = (ASTBase*)stmt_l;
+    AST_BASE(stmt)->parent = (ASTBase*)stmt_l;
+    
+    stmt_l->label = label;
+    stmt_l->stmt = stmt;
+    if (sl.ctx && sl.ctx->active_scope) {
+        scope_label_add(sl.ctx->active_scope, (ASTBase*)stmt_l);
+    }
+    
+    *result = stmt_l;
 }
 
 #pragma mark Type Expressions

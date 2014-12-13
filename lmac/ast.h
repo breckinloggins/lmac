@@ -168,24 +168,28 @@ typedef struct {
 
 typedef struct {
     ASTBase base;
+} ASTStatement;
+
+typedef struct {
+    ASTStatement base;
     
     ASTExpression *expression;
 } ASTStmtReturn;
 
 typedef struct {
-    ASTBase base;
+    ASTStatement base;
     
     ASTExpression *expression;
 } ASTStmtExpr;
 
 typedef struct {
-    ASTBase base;
+    ASTStatement base;
     
     ASTDeclaration *declaration;
 } ASTStmtDecl;
 
 typedef struct {
-    ASTBase base;
+    ASTStatement base;
     
     ASTExpression *condition;
     ASTBase *stmt_true;
@@ -193,11 +197,18 @@ typedef struct {
 } ASTStmtIf;
 
 typedef struct {
-    ASTBase base;
+    ASTStatement base;
     
     Token keyword;
     ASTIdent *label;
 } ASTStmtJump;
+
+typedef struct {
+    ASTStatement base;
+    
+    ASTIdent *label;
+    ASTStatement *stmt;
+} ASTStmtLabeled;
 
 #pragma mark Misc AST
 
@@ -304,6 +315,7 @@ bool ast_node_is_expression(ASTBase *node);
 bool ast_node_is_type_definition(ASTBase *node);
 bool ast_node_is_type_expression(ASTBase *node);
 ASTDeclaration* ast_ident_find_declaration(ASTIdent *ident);
+ASTBase *ast_ident_find_label(ASTIdent *name);
 bool ast_ident_is_type_name(ASTIdent *name);
 ASTTypeExpression *ast_typename_resolve(ASTTypeName *name);
 ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type);

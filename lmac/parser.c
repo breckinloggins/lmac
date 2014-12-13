@@ -1041,6 +1041,19 @@ bool parse_stmt_if(Context *ctx, ASTStmtIf **result) {
 }
 
 bool parse_stmt_labeled(Context *ctx, ASTBase **result) {
+    Context s = snapshot(ctx);
+    ASTIdent *label = NULL;
+    if (!parse_ident(ctx, &label)) { return false; }
+    
+    if (IS_TOKEN_NONE(accept_token(ctx, TOK_COLON))) { goto fail_parse; }
+    
+    ASTStatement *stmt = (ASTStatement*)expect_node(ctx, (ParseFn)parse_statement,
+                                                    "expected statement after label");
+    act_on_stmt_labeled(parsed_source_location(ctx, s), label, stmt, (ASTStmtLabeled**)result);
+    return true;
+    
+fail_parse:
+    restore(ctx, s);
     return false;
 }
 

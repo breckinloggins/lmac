@@ -56,6 +56,7 @@ TOKEN(TOK_KW_END, NULL)
 
 /* Tokens for "structural symbols" like '{' and ';' */
 TOKEN(TOK_COMMA, comma)
+TOKEN(TOK_COLON, colon)
 TOKEN(TOK_SEMICOLON, semicolon)
 TOKEN(TOK_LBRACE, leftbrace)
 TOKEN(TOK_RBRACE, rightbrace)

@@ -151,6 +151,9 @@ Token lexer_next_token_no_state(Context *ctx) {
         case ',':
             t.kind = TOK_COMMA;
             break;
+        case ':':
+            t.kind = TOK_COLON;
+            break;
         case ';':
             t.kind = TOK_SEMICOLON;
             break;

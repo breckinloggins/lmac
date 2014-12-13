@@ -464,6 +464,18 @@ CG_VISIT_FN(AST_STMT_JUMP, ASTStmtJump) {
     return VISIT_HANDLED;
 }
 
+CG_VISIT_FN(AST_STMT_LABELED, ASTStmtLabeled) {
+    // type *node, VisitPhase phase, CGContext *ctx
+    cg_emit_srcline(ctx, (ASTBase*)node);
+    
+    CGNODE(node->label);
+    CG(":");
+    CGNL();
+    CGVISIT(node->stmt);
+    
+    return VISIT_HANDLED;
+}
+
 #pragma mark Preprocessor
 
 CG_VISIT_FN(AST_PP_PRAGMA, ASTPPPragma) {
@@ -511,6 +523,7 @@ int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
         CG_DISPATCH(AST_STMT_DECL, ASTStmtDecl);
         CG_DISPATCH(AST_STMT_IF, ASTStmtIf);
         CG_DISPATCH(AST_STMT_JUMP, ASTStmtJump);
+        CG_DISPATCH(AST_STMT_LABELED, ASTStmtLabeled);
     
         CG_DISPATCH(AST_EXPR_BINARY, ASTExprBinary);
         CG_DISPATCH(AST_EXPR_IDENT, ASTExprIdent);

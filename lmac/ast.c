@@ -247,14 +247,21 @@ AST_ACCEPT_FN(AST_STMT_IF) {
     STANDARD_VISIT_POST()
 }
 
-AST_ACCEPT_FN(AST_STMT_END) {
-    NEVER_VISIT()
-}
-
 AST_ACCEPT_FN(AST_STMT_JUMP) {
     STANDARD_VISIT_PRE()
     STANDARD_ACCEPT(((ASTStmtJump*)node)->label);
     STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_LABELED) {
+    STANDARD_VISIT_PRE()
+    STANDARD_ACCEPT(((ASTStmtLabeled*)node)->label);
+    STANDARD_ACCEPT(((ASTStmtLabeled*)node)->stmt);
+    STANDARD_VISIT_POST()
+}
+
+AST_ACCEPT_FN(AST_STMT_END) {
+    NEVER_VISIT()
 }
 
 #pragma mark Top Level
@@ -448,6 +455,13 @@ bool ast_node_is_type_expression(ASTBase *node) {
 }
 
 bool ast_node_is_type_definition(ASTBase *node) {
+    if (node == NULL) {
+        // Type declarations must be declared before use. Nodes can be NULL here
+        // because some parts of the grammar (like labels) CAN be referenced
+        // before use
+        return false;
+    }
+    
     if (!AST_IS(node, AST_DECL_VAR)) {
         return false;
     }
@@ -467,14 +481,29 @@ ASTDeclaration* ast_ident_find_declaration(ASTIdent *ident) {
     return ident->declaration; // May still be null
 }
 
+ASTBase *ast_ident_find_label(ASTIdent *name) {
+    assert(name);
+    
+    Scope *scope = ast_nearest_scope((ASTBase*)name);
+    assert(scope);
+    
+    List_FOREACH(ASTStmtLabeled*, stmt, scope->labels, {
+        if (spelling_equal(AST_BASE(name)->location.spelling,
+                           AST_BASE(stmt->label)->location.spelling)) {
+            return (ASTBase*)stmt;
+        }
+    });
+    
+    return NULL;
+}
+
 bool ast_ident_is_type_name(ASTIdent *name) {
     ASTDeclaration *type_decl = ast_ident_find_declaration(name);
-    if (type_decl == NULL) {
-        diag_printf(ERR_ANALYZE, &name->base.location,
-                    "I don't know what '%s' is",
-                    spelling_cstring(name->base.location.spelling));
-        exit(ERR_ANALYZE);
+    if (ast_ident_find_label(name) != NULL) {
+        // Labels are never types
+        return false;
     }
+    
     return ast_node_is_type_definition((ASTBase*)type_decl);
     
 }

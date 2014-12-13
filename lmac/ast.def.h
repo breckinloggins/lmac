@@ -25,6 +25,7 @@ AST(STMT_DECL, stmt_decl, ASTStmtDecl)
 AST(STMT_EXPR, stmt_expr, ASTStmtExpr)
 AST(STMT_IF, stmt_if, ASTStmtIf)
 AST(STMT_JUMP, stmt_jump, ASTStmtJump)
+AST(STMT_LABELED, stmt_labeled, ASTStmtLabeled)
 AST(STMT_END, stmt_end, ASTBase)
 
 /* Declarations */
