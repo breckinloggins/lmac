@@ -6,11 +6,17 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
+// Compile-time Code Interpreter (CI)
+
 #include "clite.h"
 
-#define INTERP_ERROR(sl, ...)                                              \
+#define CI_ERROR(sl, ...)                                              \
 diag_printf(DIAG_ERROR, sl, __VA_ARGS__);                               \
 exit(ERR_INTERPRET);
+
+typedef struct CIContext {
+    ASTBase *result;
+} CIContext;
 
 typedef struct InterpNodeData {
     VisitFn visit;
@@ -22,17 +28,36 @@ static bool interp_data_initialized = false;
 int default_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     assert(node && "node must be valid");
     SourceLocation sl = node->location;
-    INTERP_ERROR(&sl, "cannot interpret node kind %s", ast_get_kind_name(node->kind));
+    CI_ERROR(&sl, "cannot interpret node kind %s", ast_get_kind_name(node->kind));
 }
 
 int dispatch_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     return interp_data[node->kind].visit(node, phase, ctx);
 }
 
+#pragma mark Interpreter Functions
+
+#define CI_VISIT_FN(kind, type) int ci_visit_##kind(type *node, VisitPhase phase, CIContext *ctx)
+
+CI_VISIT_FN(AST_EXPR_NUMBER, ASTExprNumber) {
+    
+    ctx->result = (ASTBase*)node;
+    
+    return VISIT_HANDLED;
+}
+
+
+#pragma mark Interpreter API
+
 void initialize_interp_data() {
     for (int i = 0; i < (int)AST_LAST; i++) {
         interp_data[i].visit = default_visitor;
     }
+    
+#   define CI_DATA(kind) interp_data[(kind)].visit = (VisitFn)ci_visit_##kind
+    
+    CI_DATA(AST_EXPR_NUMBER);
+    
 }
 
 bool interp_interpret(ASTBase *node, ASTBase **result) {
@@ -42,5 +67,12 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
         interp_data_initialized = true;
     }
     
-    return ast_visit(node, dispatch_visitor, NULL);
+    CIContext ctx;
+    ast_visit(node, dispatch_visitor, &ctx);
+    
+    if (result != NULL) {
+        *result = ctx.result;
+    }
+    return true;
 }
+

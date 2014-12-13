@@ -48,8 +48,15 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
         analyzer_analyze(run_ctx.ast);
     }
     
-    *result = run_ctx.ast;
+    /*
+    ASTBase *run_result = NULL;
+    interp_interpret(run_ctx.ast, &run_result);
     
+    *result = run_result;
+    */
+    
+    *result = run_c.ast;
+     
     free(chunk_processed);
 }
 
