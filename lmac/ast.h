@@ -29,8 +29,6 @@ typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 #define AST_BASE(node) ((ASTBase*)(node))
 #define AST_IS(node, node_kind) (AST_BASE((node))->kind == (node_kind))
 
-#define AST_MAGIC 0xA0B0C0D0
-
 struct ASTTypeExpression;
 
 typedef struct ASTBase {

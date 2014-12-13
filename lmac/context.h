@@ -16,6 +16,9 @@
  * Compiler Context
  */
 typedef struct Context {
+    /* must be first in struct */
+    int magic;
+    
     const char *file;
     List *system_header_paths;
     

@@ -17,6 +17,9 @@
 #include <string.h>
 #include <assert.h>
 
+/* Must be the first program header */
+#include "ct.h"
+
 #include "list.h"
 #include "token.h"
 #include "ast.h"
@@ -40,11 +43,15 @@
 #define ERR_RUN                 9
 #define ERR_INTERPRET           10
 #define ERR_TYPECHECK           11
+#define ERR_CT                  12
 #define ERR_42                  42
 
 /*
  * Public Interface
  */
+
+/* dump description of any compiler object to stderr. defined in debug.c */
+void dump(void *obj);
 
 const char *diag_get_name(DiagKind kind);
 void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...);

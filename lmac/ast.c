@@ -28,7 +28,7 @@ const char *ast_get_kind_name(ASTKind kind) {
 
 ASTBase *ast_create(ASTKind kind, size_t size) {
     ASTBase *node = (ASTBase *)calloc(1, size);
-    node->magic = AST_MAGIC;
+    node->magic = 0;//AST_MAGIC;
     node->kind = kind;
     
     return node;

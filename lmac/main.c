@@ -48,6 +48,8 @@ int main(int argc, const char * argv[]) {
         return ERR_USAGE;
     }
     
+    ct_init();
+    
     const int ACTION_BUILD = 0;
     const int ACTION_RUN = 1;
     

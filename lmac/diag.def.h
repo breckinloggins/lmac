@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
-#ifndef DIAG_KIND(kind, name)
+#ifndef DIAG_KIND
 #define DIAG_KIND(kind, name)
 #endif
 

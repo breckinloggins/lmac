@@ -1408,6 +1408,7 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         // TODO(bloggins): in release mode, do something different
         // like yield to an environment-defined break routine
         asm("int $3");
+        goto done;
     }
     
     if (parse_fn == NULL) {
@@ -1422,7 +1423,8 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
         exit(ERR_PARSE);
     }
-    
+
+done:
     ctx->lex_mode.lex_keywords_as_identifiers = saved_lex_mode;
     return true;
     
