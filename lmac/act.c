@@ -55,7 +55,7 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     *result = run_result;
     */
     
-    *result = run_c.ast;
+    *result = run_ctx.ast;
      
     free(chunk_processed);
 }

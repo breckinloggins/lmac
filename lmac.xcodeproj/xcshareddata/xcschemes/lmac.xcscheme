@@ -68,11 +68,11 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "tests/4_meta.c"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-             argument = "tests/5_stdio.c"
-             isEnabled = "NO">
+            argument = "tests/5_stdio.c"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "tests/6_statements.c"
