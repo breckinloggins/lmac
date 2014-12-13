@@ -31,6 +31,10 @@ bool token_spelling_is_equivalent(Token t, TokenKind kind) {
     return spelling_streq(t.location.spelling, g_token_names[kind]);
 }
 
+bool token_is_keyword(Token t) {
+    return t.kind > TOK_KW_BEGIN && t.kind < TOK_KW_END;
+}
+
 void token_fprint(FILE *f, Token t) {
     fprintf(f, "{\n");
     fprintf(f, "\ttype: \"Token\",\n");

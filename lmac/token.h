@@ -64,6 +64,7 @@ const char *token_get_name(TokenKind kind);
 size_t token_strlen(Token t);
 bool token_streq(Token t, const char *str);
 bool token_spelling_is_equivalent(Token t, TokenKind kind);
+bool token_is_keyword(Token t);
 void token_fprint(FILE *f, Token t);
 
 /* NOTE: pass TOK_LAST at the end! */
