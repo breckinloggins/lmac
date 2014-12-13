@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Breckin Loggins. All rights reserved.
 //
 
+$$() void = $();
 $$() char = $c8;
 $$() int = $i32;
 

@@ -1,15 +1,13 @@
 // Test of expression types
 #pragma CLITE fcg_explicit_parens  /* make the code generator group all expressions explicitly */
 
-// TODO(bloggins): Move this into the prelude
-$$() int = $32;
-$$() char = $c8;
-$$() void = $();
+#include "tests/c_prelude.h"
 
 int a = 1;
 int b = 2;
 int c = 4;
 
+#break /* for some reason, this foo isn't visible in main */
 void foo() { }
 
 int main() {

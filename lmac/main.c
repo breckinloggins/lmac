@@ -68,7 +68,6 @@ int main(int argc, const char * argv[]) {
     atexit(exit_handler);
     
     Context ctx = {0};
-    ctx.lex_mode = LEX_NORMAL;
     ctx.file = file;
     
     return run_compile(&ctx, action == ACTION_RUN);

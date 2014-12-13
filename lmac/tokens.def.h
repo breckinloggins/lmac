@@ -75,7 +75,9 @@ TOKEN(TOK_ELLIPSIS, ellipsis)
  * front-end
  */
 TOKEN(TOK_PLUS, plus)
+TOKEN(TOK_PLUS_PLUS, plus_plus)
 TOKEN(TOK_MINUS, minus)
+TOKEN(TOK_MINUS_MINUS, minus_minus)
 TOKEN(TOK_STAR, star)
 TOKEN(TOK_FORWARDSLASH, forwardslash)
 TOKEN(TOK_PERCENT, percent)

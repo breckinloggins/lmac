@@ -1376,6 +1376,9 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     if (IS_TOKEN_NONE(accept_token(ctx, TOK_HASH))) { goto fail_parse; }
     
+    bool saved_lex_mode = ctx->lex_mode.lex_keywords_as_identifiers;
+    ctx->lex_mode.lex_keywords_as_identifiers = true;
+    
     ASTIdent *directive = NULL;
     if (!parse_ident(ctx, &directive)) { goto fail_parse; }
     
@@ -1401,6 +1404,10 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         parse_fn = (PPParseFn*)parse_pp_endif;
     } else if (spelling_streq(directive_sp, "warning")) {
         parse_fn = (PPParseFn*)parse_pp_warning;
+    } else if (spelling_streq(directive_sp, "break")) {
+        // TODO(bloggins): in release mode, do something different
+        // like yield to an environment-defined break routine
+        asm("int $3");
     }
     
     if (parse_fn == NULL) {
@@ -1414,11 +1421,14 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
         SourceLocation sl = parsed_source_location(ctx, s);
         diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
         exit(ERR_PARSE);
-    }    
+    }
+    
+    ctx->lex_mode.lex_keywords_as_identifiers = saved_lex_mode;
     return true;
     
 fail_parse:
     restore(ctx, s);
+    ctx->lex_mode.lex_keywords_as_identifiers = saved_lex_mode;
     return false;
 }
 

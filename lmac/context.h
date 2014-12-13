@@ -12,11 +12,6 @@
 #include "ast.h"
 #include "scope.h"
 
-typedef enum {
-    LEX_NORMAL,
-    LEX_PP_ONLY,
-} LexMode;
-
 /*
  * Compiler Context
  */
@@ -32,11 +27,14 @@ typedef struct Context {
     uint8_t *pos;
     uint32_t line;
     
+    struct {
+        bool lex_keywords_as_identifiers;
+    } lex_mode;
+    
     /* TODO(bloggins): Turn this into a list and control error termination
      * better */
     int last_error;
     
-    LexMode lex_mode;
     Scope *active_scope;
     List *pp_defines;
     

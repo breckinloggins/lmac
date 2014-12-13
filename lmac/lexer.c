@@ -289,7 +289,7 @@ finish:
     
     // NOTE(bloggins): We do this here because we need the token to have
     // a complete SourceLocation for proper spelling
-    if (t.kind == TOK_IDENT) {
+    if (!ctx->lex_mode.lex_keywords_as_identifiers && t.kind == TOK_IDENT) {
         maybe_lex_keyword(ctx, &t);
     }
     
