@@ -26,8 +26,12 @@ void scope_child_add(Scope *scope, Scope *child) {
 void scope_declaration_add(Scope *scope, ASTDeclaration *decl) {
     assert(scope && "scope should not be null");
     assert(decl && "declaration should not be null");
+    assert(decl->name && "declaration must have a name");
+    assert(AST_BASE(decl)->kind > AST_DECL_BEGIN && AST_BASE(decl)->kind < AST_DECL_END &&
+           "not a declaration");
     
     List_FOREACH(ASTDeclaration*, d, scope->declarations, {
+        assert(d->name && "declaration must have a name");
         if (spelling_equal(d->name->base.location.spelling,
                            decl->name->base.location.spelling)) {
             SourceLocation *sl = &(AST_BASE(decl)->location);

@@ -23,6 +23,7 @@
 #include "act.h"
 #include "scope.h"
 #include "context.h"
+#include "type.h"
 
 // Makes these easier to search for an minimize / eliminate later
 #define global_variable static
@@ -38,6 +39,7 @@
 #define ERR_CC                  8
 #define ERR_RUN                 9
 #define ERR_INTERPRET           10
+#define ERR_TYPECHECK           11
 #define ERR_42                  42
 
 /*

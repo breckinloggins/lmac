@@ -28,6 +28,7 @@ const char *ast_get_kind_name(ASTKind kind) {
 
 ASTBase *ast_create(ASTKind kind, size_t size) {
     ASTBase *node = (ASTBase *)calloc(1, size);
+    node->magic = AST_MAGIC;
     node->kind = kind;
     
     return node;
@@ -338,7 +339,6 @@ AST_ACCEPT_FN(AST_TYPE_END) {
 #define AST(kind, name, type)                               \
 type *ast_create_##name() {                                 \
     type *node = (type *)ast_create(AST_##kind,             \
-                                    sizeof(ASTBase) +       \
                                     sizeof(type));          \
     ((ASTBase*)node)->accept = accept_AST_##kind;           \
     return node;                                            \
@@ -425,9 +425,9 @@ ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node
         List_FOREACH(ASTBase*, scope_node, scope->declarations, {
             ASTIdent *decl_ident = NULL;
             if (AST_IS(scope_node, AST_DECL_FUNC)) {
-                decl_ident = ((ASTDeclFunc*)scope_node)->base.name;
+                decl_ident = ((ASTDeclaration*)scope_node)->name;
             } else if (AST_IS(scope_node, AST_DECL_VAR)) {
-                decl_ident = ((ASTDeclVar*)scope_node)->base.name;
+                decl_ident = ((ASTDeclaration*)scope_node)->name;
             } else {
                 continue;
             }
@@ -521,6 +521,7 @@ ASTTypeExpression *ast_typename_resolve(ASTTypeName *name) {
         // getting the type of any AST node, because right now this
         // has incestuous knowledge of the implementation of
         // ast_node_is_type_definition!
+        assert(AST_IS(type_decl, AST_DECL_VAR));
         ASTDeclVar *decl = (ASTDeclVar*)type_decl;
         assert(decl->expression && "claimed to resolve a type but didn't");
         

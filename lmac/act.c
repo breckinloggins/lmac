@@ -198,6 +198,7 @@ void act_on_decl_var(SourceLocation sl, Scope *scope, ASTTypeExpression*type, bo
     if (scope != NULL) {
         scope_declaration_add(scope, (ASTDeclaration*)decl);
     }
+    
     *result = decl;
 }
 
@@ -218,7 +219,7 @@ void act_on_decl_fn(SourceLocation sl, Scope *scope, ASTTypeExpression *type,
     }
     
     if (block != NULL) {
-        block->base.parent = (ASTBase*)decl;
+        AST_BASE(block)->parent = (ASTBase*)decl;
     }
     
     decl->type = type;
@@ -239,7 +240,7 @@ void act_on_block(SourceLocation sl, List *stmts, ASTBlock **result) {
     if (result == NULL) return;
     
     ASTBlock *b = ast_create_block();
-    b->base.location = sl;
+    AST_BASE(b)->location = sl;
     
     List_FOREACH(ASTBase*, stmt, stmts, {
         stmt->parent = (ASTBase*)b;

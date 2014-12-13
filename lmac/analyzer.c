@@ -27,6 +27,7 @@ void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
 
 int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     if (phase == VISIT_PRE) {
+        assert(node->magic == AST_MAGIC);
         return VISIT_OK;
     }
     
@@ -50,8 +51,10 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     } else if (AST_IS(node, AST_DECL_VAR)) {
         ASTDeclVar *var = (ASTDeclVar*)node;
         ASTTypeExpression *canonical_type = ast_type_get_canonical_type(var->type);
-        Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
-        check_supported_type(node, sp_type);
+        if (canonical_type != NULL) {
+            Spelling sp_type = AST_BASE(canonical_type)->location.spelling;
+            check_supported_type(node, sp_type);
+        }
     } else if (ast_node_is_type_definition(node)) {
         if (AST_IS(node, AST_TYPE_NAME)) {
             // Don't need to do anything right now, just don't want to fall to below
@@ -81,7 +84,11 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
             default:
                 assert(false && "Unhandled case");
         }
-    } 
+    }
+    
+    assert(node);
+    assert(node->magic == AST_MAGIC);
+    assert(node->kind > AST_UNKNOWN && node->kind < AST_LAST);
     
     return VISIT_OK;
 }

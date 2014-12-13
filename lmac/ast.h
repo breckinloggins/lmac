@@ -29,15 +29,24 @@ typedef int (*VisitFn)(struct ASTBase *node, VisitPhase phase, void *ctx);
 #define AST_BASE(node) ((ASTBase*)(node))
 #define AST_IS(node, node_kind) (AST_BASE((node))->kind == (node_kind))
 
+#define AST_MAGIC 0xA0B0C0D0
+
 struct ASTTypeExpression;
 
 typedef struct ASTBase {
+    /* Leave this as the first member. It will be set to an invalid memory area
+     so any attempts to read or write to it will fail */
+    int magic;
+    
     ASTKind kind;
     SourceLocation location;
     struct ASTBase *parent;
     
     /* Either set in parse or calculated on demand */
     struct Scope *scope;
+    
+    /* Computed */
+    struct ASTTypeExpression *inferred_type;
     
     /* Arbitrary data that visitors can attach to the node. All visit data
      * must be cleaned with ast_visit_data_clean() after each
@@ -53,14 +62,9 @@ typedef struct ASTBase {
     int (*accept)(struct ASTBase *node, VisitFn visitor, void *ctx);
 } ASTBase;
 
-typedef struct {
-    ASTBase base;
-    
-    List *statements;
-} ASTBlock;
-
-
 struct ASTDeclaration;
+struct ASTBlock;
+
 typedef struct ASTIdent {
     ASTBase base;
     
@@ -78,12 +82,10 @@ typedef struct {
 
 typedef struct {
     ASTBase base;
-    
-    // TODO(bloggins): store inferred type
 } ASTExpression;
 
 typedef struct {
-    ASTBase base;
+    ASTExpression base;
 } ASTExprEmpty;
 
 typedef struct {
@@ -150,7 +152,7 @@ typedef struct {
     List *params;
     bool has_varargs;
     
-    ASTBlock *block;
+    struct ASTBlock *block;
     
 } ASTDeclFunc;
 
@@ -169,6 +171,12 @@ typedef struct {
 typedef struct {
     ASTBase base;
 } ASTStatement;
+
+typedef struct ASTBlock {
+    ASTStatement base;
+    
+    List *statements;
+} ASTBlock;
 
 typedef struct {
     ASTStatement base;
