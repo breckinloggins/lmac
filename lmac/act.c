@@ -107,9 +107,10 @@ void act_on_pp_include(SourceLocation sl, const char *include_file, bool system_
                        Scope *scope, ASTBase **result) {
     if (result == NULL) return;
     
-    Context ctx = *sl.ctx;
-    ctx.file = NULL;
-    ctx.active_scope = NULL;
+    Context *ctx = (Context *)calloc(1, sizeof(Context));
+    *ctx = *sl.ctx;
+    ctx->file = NULL;
+    ctx->active_scope = NULL;
     
     char *full_path = NULL;
     if (system_include && include_file[0] != '/') {
@@ -125,15 +126,15 @@ void act_on_pp_include(SourceLocation sl, const char *include_file, bool system_
     }
     
     if (full_path != NULL) {
-        context_load_file(&ctx, full_path);
+        context_load_file(ctx, full_path);
     } else {
-        context_load_file(&ctx, include_file);
+        context_load_file(ctx, include_file);
     }
     
-    context_scope_push(&ctx);
-    parser_parse(&ctx);
+    context_scope_push(ctx);
+    parser_parse(ctx);
     
-    *result = ctx.ast;
+    *result = ctx->ast;
 }
 
 void act_on_pp_define(SourceLocation sl, ASTIdent *name, Spelling value,

@@ -41,6 +41,7 @@ void context_load_file(Context *ctx, const char *filename) {
     }
     
     // TODO(bloggins): this is probably not the most memory efficient thing we could do
+    //                  (mmap it)
     FILE *fp = fopen(filename, "rb");
     fseek(fp, 0, SEEK_END);
     long fsize = ftell(fp);
