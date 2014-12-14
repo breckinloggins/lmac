@@ -27,17 +27,20 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f,
 
 #pragma mark Static Registry
 
-size_t CT_BASE_SIZES[0xFF] = {};
-CTRuntimeClass *CT_RUNTIME_CLASS[0xFF] = {};
+size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED] = {};
+CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED] = {};
 
 CTTypeInfo CT_TYPE_INFO[] = {
-#   define CT_TYPE(type_id, supertype_id, type_name, runtime_class)     \
+#   define CT_TYPE(type_id, supertype_id, type_name)     \
     { type_id, #type_id, supertype_id, #supertype_id, #type_name, 0, NULL },
 #   include "ct_types.def.h"
 };
 
 CTRuntimeClass RTC_Invalid = { CT_MAGIC | CT_TYPE_ID_INVALID, 0, NULL };
 CTRuntimeClass RTC_Default = { CT_MAGIC , 0, NULL };
+
+#define CT_TYPE(type_id, supertype_id, type_name) CTRuntimeClass _RTC__##type_name = {0};
+#   include "ct_types.def.h"
 
 #define CTI_MAGIC 0xfafb0102
 
@@ -252,10 +255,26 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f,
             (unsigned int)obj, CT_INSTANCE(obj)->refcount);
 }
 
+#pragma Overridable Functions
+
+// TODO(bloggins): Have macros that defined the default implementation of
+// <type>_dump, etc. These will have __attribute__((weak)) and just call default_
+//
+// If a type defines it as non-weak, then it will override this implementation
+
+/*
+int __attribute__((weak)) MyFoo() {
+    return 3;
+}
+*/
+
+//#define CT_TYPE(type_id, supertype_id, type_name)                               \
+//#   include "ct_types.def.h"
+
 #pragma Public API
 
 void ct_init(void) {
-    
+    //fprintf(stderr, "MYFOO = %d\n", MyFoo());
     for (int i = 0; i < CT_LAST; i++) {
         CTTypeInfo *type_info = &CT_TYPE_INFO[i];
         assert(type_info);
@@ -307,7 +326,7 @@ void ct_release(void *obj) {
     instance->runtime_class->release_fn(instance->type_info, instance->runtime_class, obj);
 }
 
-void ct_autorelease() {
+void ct_autorelease() {    
     CTInstancePool *pool = global_pool;
     assert(pool);
     assert(!pool->instance);    // null instance is how we signal the start

@@ -12,6 +12,10 @@
 
 #include "clite.h"
 
+void mydump_fn(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f, ASTBase *node) {
+    fprintf(f, "NOOO!");
+}
+
 // NOTE(bloggins): We're doing lots of small allocations here. It might
 //                  be worth it to use a pool allocator or other optimization
 //                  later.

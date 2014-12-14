@@ -31,9 +31,13 @@ typedef enum {
 #   include "ct_types.def.h"
 } CTTypeID;
 
-typedef void CTNone;
-
 struct CTRuntimeClass;
+
+#define CT_TYPE(type_id, supertype_id, type_name) extern struct CTRuntimeClass _RTC__##type_name;
+#   include "ct_types.def.h"
+
+typedef void CTNone;
+typedef void CTLast;
 struct CTTypeInfo;
 
 /*                          */
@@ -93,12 +97,11 @@ typedef struct CTTypeInfo {
     CTRuntimeClass *runtime_class;
 } CTTypeInfo;
 
-extern size_t CT_BASE_SIZES[0xFF];
-extern CTTypeInfo CT_TYPE_INFO[0xFF];
+//extern int MyFoo();
 
-extern CTRuntimeClass RTC_Invalid;
-extern CTRuntimeClass RTC_Default;
-extern CTRuntimeClass *CT_RUNTIME_CLASS[0xFF];
+extern size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED];
+extern CTTypeInfo CT_TYPE_INFO[CT_TYPE_ID_RESERVED];
+extern CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED];
 
 /* called by including ct_init.c. Do not call manually */
 void ct_init(void);

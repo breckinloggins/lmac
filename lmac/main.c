@@ -74,6 +74,7 @@ int main(int argc, const char * argv[]) {
     
     int res = run_compile(ctx, action == ACTION_RUN);
     
+    ct_dump(ctx->ast);
     ct_autorelease();
     return res;
 }
