@@ -9,6 +9,8 @@
 #ifndef lmac_ast_h
 #define lmac_ast_h
 
+extern struct CTRuntimeClass RTC_ASTBase;
+
 typedef enum {
 #   define AST(kind, ...) AST_##kind,
 #   include "ast.def.h"

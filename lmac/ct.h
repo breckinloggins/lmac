@@ -31,6 +31,8 @@ typedef enum {
 #   include "ct_types.def.h"
 } CTTypeID;
 
+typedef void CTNone;
+
 struct CTRuntimeClass;
 struct CTTypeInfo;
 
@@ -42,7 +44,7 @@ struct CTTypeInfo;
 typedef void (*CTRTInitFn)(struct CTTypeInfo *type_info, struct CTRuntimeClass *runtime_class);
 
 /* called when a new CT object is needed (default allocator is calloc(3) */
-typedef void * (*CTAllocFn)(struct CTTypeInfo *type_info, struct CTRuntimeClass *runtime_class);
+typedef void * (*CTAllocFn)(struct CTTypeInfo *type_info, struct CTRuntimeClass *runtime_class, size_t extra_bytes);
 
 /* called when a CT object needs to be deallocated */
 typedef void (*CTDeallocFn)(struct CTTypeInfo *type_info, struct CTRuntimeClass *runtime_class, void *obj);
@@ -91,11 +93,15 @@ typedef struct CTTypeInfo {
     CTRuntimeClass *runtime_class;
 } CTTypeInfo;
 
+extern size_t CT_BASE_SIZES[0xFF];
 extern CTTypeInfo CT_TYPE_INFO[0xFF];
 
 extern CTRuntimeClass RTCInvalid;
 extern CTRuntimeClass *CT_RUNTIME_CLASS[0xFF];
 
+/* called by including ct_init.c. Do not call manually */
 void ct_init(void);
+
+void *ct_create(CTTypeID type, size_t extra_bytes);
 
 #endif

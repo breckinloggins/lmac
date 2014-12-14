@@ -18,7 +18,7 @@
 #pragma mark Default VTABLE prototypes
 
 void default_rtinit(CTTypeInfo *type_info, CTRuntimeClass *runtime_class);
-void *default_alloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class);
+void *default_alloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, size_t extra_bytes);
 void default_dealloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *obj);
 void default_init(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *obj);
 void default_retain(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *obj);
@@ -27,13 +27,12 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f,
 
 #pragma mark Static Registry
 
-typedef struct {
-    /* leave empty */
-} CTNone;
+size_t CT_BASE_SIZES[0xFF] = {};
+CTRuntimeClass *CT_RUNTIME_CLASS[0xFF] = {};
 
 CTTypeInfo CT_TYPE_INFO[] = {
 #   define CT_TYPE(type_id, supertype_id, type_name, runtime_class)     \
-    { type_id, #type_id, supertype_id, #supertype_id, #type_name, sizeof(type_name), &runtime_class },
+    { type_id, #type_id, supertype_id, #supertype_id, #type_name, 0, NULL },
 #   include "ct_types.def.h"
 };
 
@@ -97,14 +96,16 @@ void default_rtinit(CTTypeInfo *type_info, CTRuntimeClass *runtime_class) {
     }
 }
 
-void *default_alloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class) {
+void *default_alloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, size_t extra_bytes) {
     assert(type_info);
     assert(runtime_class);
     assert(type_info->type_base_size);
     
-    size_t instance_size = type_info->type_base_size + runtime_class->extra_size;
+    size_t instance_size = type_info->type_base_size + runtime_class->extra_size + extra_bytes;
     
     CTInstance *instance = (CTInstance *)calloc(1, sizeof(CTInstance) + instance_size);
+    instance->type_info = type_info;
+    instance->runtime_class = runtime_class;
     instance->instance_size = instance_size;
     
     void *obj = (instance + sizeof(CTInstance));
@@ -143,10 +144,10 @@ void default_retain(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *
     assert(obj);
     
     CTInstance *inst = CT_INSTANCE(obj);
-    assert(inst->refcount > 0);
     assert(inst->instance_size > 0);
     
     ++inst->refcount;
+    assert(inst->refcount > 0);
 }
 
 void default_release(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *obj) {
@@ -176,6 +177,11 @@ void ct_init(void) {
         assert(type_info);
         assert(type_info->type_id == i);
         
+        type_info->type_base_size = CT_BASE_SIZES[i];
+        assert(type_info->type_base_size > 0);
+        
+        type_info->runtime_class = CT_RUNTIME_CLASS[i];
+        
         CTRuntimeClass *runtime_class = type_info->runtime_class;
         assert(runtime_class);
         
@@ -185,6 +191,12 @@ void ct_init(void) {
         
         runtime_class->rtinit_fn(type_info, runtime_class);
     }
+}
+
+void *ct_create(CTTypeID type, size_t extra_bytes) {
+    CTTypeInfo *type_info = &CT_TYPE_INFO[type];
+    
+    return type_info->runtime_class->alloc_fn(type_info, type_info->runtime_class, extra_bytes);
 }
 
 

@@ -12,6 +12,8 @@
 
 #include "clite.h"
 
+CTRuntimeClass RTC_ASTBase = {0};
+
 // NOTE(bloggins): We're doing lots of small allocations here. It might
 //                  be worth it to use a pool allocator or other optimization
 //                  later.
@@ -27,7 +29,7 @@ const char *ast_get_kind_name(ASTKind kind) {
 
 
 ASTBase *ast_create(ASTKind kind, size_t size) {
-    ASTBase *node = (ASTBase *)calloc(1, size);
+    ASTBase *node = (ASTBase *)ct_create(CT_AST_BASE, size - sizeof(ASTBase));
     node->magic = 0;//AST_MAGIC;
     node->kind = kind;
     

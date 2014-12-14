@@ -48,6 +48,7 @@ int main(int argc, const char * argv[]) {
         return ERR_USAGE;
     }
     
+#   include "ct_init.c"
     ct_init();
     
     const int ACTION_BUILD = 0;

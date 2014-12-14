@@ -17,9 +17,6 @@
 #include <string.h>
 #include <assert.h>
 
-/* Must be the first program header */
-#include "ct.h"
-
 #include "list.h"
 #include "token.h"
 #include "ast.h"
@@ -27,6 +24,9 @@
 #include "scope.h"
 #include "context.h"
 #include "type.h"
+
+/* Must be the last program header */
+#include "ct.h"
 
 // Makes these easier to search for an minimize / eliminate later
 #define global_variable static

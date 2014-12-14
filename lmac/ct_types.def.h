@@ -14,9 +14,9 @@
 #define CT_TYPE(type_constant, super_type, type_name, runtime_class)
 #endif
 
-//      Type Constant       Super Type      TypeName            Runtime Class
+//      Type Constant       Super Type      TypeName            Runtime Class Instance
 CT_TYPE(CT_NONE,            CT_NONE,        CTNone,             RTCInvalid)
-//CT_TYPE(CT_AST_BASE,        CT_NONE,        ASTBase,            RTCASTBase)
+CT_TYPE(CT_AST_BASE,        CT_NONE,        ASTBase,            RTC_ASTBase)
 // TODO(bloggins): other AST types
 //CT_TYPE(CT_TOKEN,           CT_NONE,        Token,              RTCToken)
 //CT_TYPE(CT_SOURCE_LOCATION, CT_NONE,        SourceLocation,     RTCSourceLocation)
