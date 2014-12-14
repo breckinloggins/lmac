@@ -31,15 +31,15 @@ size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED] = {};
 CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED] = {};
 
 CTTypeInfo CT_TYPE_INFO[] = {
-#   define CT_TYPE(type_id, supertype_id, type_name)     \
-    { type_id, #type_id, supertype_id, #supertype_id, #type_name, 0, NULL },
+#   define CT_TYPE(type_name)     \
+    { CT_TYPE_ID(type_name), #type_name, 0, NULL },
 #   include "ct_types.def.h"
 };
 
-CTRuntimeClass RTC_Invalid = { CT_MAGIC | CT_TYPE_ID_INVALID, 0, NULL };
-CTRuntimeClass RTC_Default = { CT_MAGIC , 0, NULL };
+CTRuntimeClass RTC_Invalid = { 0, 0, NULL };
+CTRuntimeClass RTC_Default = { 0, 0, NULL };
 
-#define CT_TYPE(type_id, supertype_id, type_name) CTRuntimeClass _RTC__##type_name = {0};
+#define CT_TYPE(type_name) CTRuntimeClass _RTC__##type_name = {0};
 #   include "ct_types.def.h"
 
 #define CTI_MAGIC 0xfafb0102
@@ -275,7 +275,7 @@ int __attribute__((weak)) MyFoo() {
 
 void ct_init(void) {
     //fprintf(stderr, "MYFOO = %d\n", MyFoo());
-    for (int i = 0; i < CT_LAST; i++) {
+    for (int i = 0; i < CT_TYPE_CTLast; i++) {
         CTTypeInfo *type_info = &CT_TYPE_INFO[i];
         assert(type_info);
         assert(type_info->type_id == i);

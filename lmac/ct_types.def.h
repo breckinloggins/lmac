@@ -11,15 +11,14 @@
 // pretty printing, lifetime management, and so forth
 
 #ifndef CT_TYPE
-#define CT_TYPE(type_constant, super_type, type_name)
+#define CT_TYPE(type_name)
 #endif
 
 //      Type Constant       Super Type      TypeName
-CT_TYPE(CT_NONE,            CT_NONE,        CTNone)
-CT_TYPE(CT_AST_BASE,        CT_NONE,        ASTBase)
+CT_TYPE(ASTBase)
 // TODO(bloggins): other AST types
-CT_TYPE(CT_CONTEXT,         CT_NONE,        Context)
+CT_TYPE(Context)
 
 /* must be last */
-CT_TYPE(CT_LAST,            CT_NONE,        CTLast)
+CT_TYPE(CTLast)
 #undef CT_TYPE

@@ -13,12 +13,6 @@
 
 #include <stdint.h>
 
-/* magics to determine if a type is a registered CT type */
-#define CT_MAGIC_1          0xC1
-#define CT_MAGIC_2          0x1C
-#define CT_MAGIC_3          0xAA
-#define CT_MAGIC            ((CT_MAGIC_1 << (8*3)) | (CT_MAGIC_2 << (8*2)) | (CT_MAGIC_3 << (8*2)))
-
 /* The "none" type or "invalid" type, used to catch errors */
 #define CT_TYPE_ID_INVALID  0x00
 
@@ -26,14 +20,16 @@
  * compile time types */
 #define CT_TYPE_ID_RESERVED 0xFF
 
+#define CT_TYPE_ID(type_name) CT_TYPE_##type_name
+
 typedef enum {
-#   define CT_TYPE(type_id, ...)    type_id,
+#   define CT_TYPE(type_name, ...)    CT_TYPE_ID(type_name),
 #   include "ct_types.def.h"
 } CTTypeID;
 
 struct CTRuntimeClass;
 
-#define CT_TYPE(type_id, supertype_id, type_name) extern struct CTRuntimeClass _RTC__##type_name;
+#define CT_TYPE(type_name) extern struct CTRuntimeClass _RTC__##type_name;
 #   include "ct_types.def.h"
 
 typedef void CTNone;
@@ -86,10 +82,6 @@ typedef struct CTRuntimeClass {
 
 typedef struct CTTypeInfo {
     uint64_t type_id;
-    const char *type_id_name;
-    
-    uint64_t supertype_id;
-    const char *supertype_id_name;
     
     const char *type_name;
     size_t type_base_size;

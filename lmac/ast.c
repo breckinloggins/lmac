@@ -31,7 +31,7 @@ const char *ast_get_kind_name(ASTKind kind) {
 
 
 ASTBase *ast_create(ASTKind kind, size_t size) {
-    ASTBase *node = (ASTBase *)ct_create(CT_AST_BASE, size - sizeof(ASTBase));
+    ASTBase *node = (ASTBase *)ct_create(CT_TYPE_ASTBase, size - sizeof(ASTBase));
     node->magic = 0;//AST_MAGIC;
     node->kind = kind;
     

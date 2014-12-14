@@ -8,9 +8,9 @@
 
 // #include this file in a function somewhere to initialize the compile-time system
 
-#   define CT_TYPE(type_id, supertype_id, type_name) \
-    CT_BASE_SIZES[type_id] = sizeof(type_name); \
-    CT_RUNTIME_CLASS[type_id] = &(_RTC__##type_name);
+#   define CT_TYPE(type_name) \
+    CT_BASE_SIZES[CT_TYPE_ID(type_name)] = sizeof(type_name); \
+    CT_RUNTIME_CLASS[CT_TYPE_ID(type_name)] = &(_RTC__##type_name);
 #include "ct_types.def.h"
 
 ct_init();
