@@ -40,11 +40,14 @@ CTRuntimeClass RTCInvalid = { CT_MAGIC | CT_TYPE_ID_INVALID, 0, NULL };
 
 #define CTI_MAGIC 0xfafb0102
 
+struct CTInstancePool;
+
 typedef struct CTInstance {
     int magic;
     
     CTTypeInfo *type_info;
     CTRuntimeClass *runtime_class;
+    struct CTInstancePool *pool;
     
     uint64_t refcount;
     
@@ -59,6 +62,65 @@ typedef struct CTInstance {
 } CTInstance;
 
 #define CT_INSTANCE(obj) ((CTInstance*)((obj) - sizeof(CTInstance)))
+#define CT_OBJ(instance) ((void *)(((uint8_t*)instance) + sizeof(CTInstance)))
+
+#pragma mark Instance Pools
+
+typedef struct CTInstancePool {
+    struct CTInstancePool *prev;
+    struct CTInstancePool *next;
+    
+    // TODO(bloggins): lock access to these if we have threads
+    
+    CTInstance *instance;
+} CTInstancePool;
+
+static CTInstancePool *global_pool = NULL;
+
+CTInstancePool *ct_pool_create(CTInstance *instance) {
+    // TODO(bloggins): create chunks of space for this at a time
+    CTInstancePool *pool = (CTInstancePool*)calloc(1, sizeof(CTInstancePool));
+    pool->instance = instance;
+    pool->next = NULL;
+    pool->prev = NULL;
+    
+    if (instance) {
+        assert(!instance->pool);
+        instance->pool = pool;
+    }
+    
+    return pool;
+}
+
+void ct_pool_insert(CTInstancePool *last, CTInstancePool *pool) {
+    assert(last);
+    assert(pool);
+    assert(!pool->next);
+    assert(!pool->prev);
+    
+    CTInstancePool *first = last->next;
+    last->next = pool;
+    pool->next = first;
+    pool->prev = last;
+}
+
+void ct_pool_remove(CTInstance *instance) {
+    assert(instance);
+    assert(instance->pool);
+    
+    CTInstancePool *pool = instance->pool;
+    
+    CTInstancePool *prev = pool->prev;
+    CTInstancePool *next = pool->next;
+    
+    // Slice
+    prev->next = next;
+    next->prev = prev;
+    
+    instance->pool = NULL;
+    free(pool);
+}
+
 
 #pragma mark Default CTRuntimeClass VTABLE
 
@@ -104,11 +166,22 @@ void *default_alloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, size_t
     size_t instance_size = type_info->type_base_size + runtime_class->extra_size + extra_bytes;
     
     CTInstance *instance = (CTInstance *)calloc(1, sizeof(CTInstance) + instance_size);
+    instance->magic = CTI_MAGIC;
     instance->type_info = type_info;
     instance->runtime_class = runtime_class;
     instance->instance_size = instance_size;
     
-    void *obj = (instance + sizeof(CTInstance));
+    // TODO(bloggins): alloc different instance pools?
+    if (global_pool == NULL) {
+        global_pool = ct_pool_create(NULL); /* null will mark the start of the pool */
+        global_pool->next = global_pool;
+        global_pool->prev = global_pool;
+    }
+    
+    CTInstancePool *pool = ct_pool_create(instance);
+    ct_pool_insert(global_pool->prev, pool);
+    
+    void *obj = ((uint8_t*)instance + sizeof(CTInstance));
     runtime_class->retain_fn(type_info, runtime_class, obj);
     
     return obj;
@@ -120,7 +193,12 @@ void default_dealloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void 
     assert(obj);
     
     CTInstance *inst = CT_INSTANCE(obj);
-    assert(inst->refcount == 0);
+    assert(inst->magic == CTI_MAGIC);
+    assert(inst->refcount > 0);
+    
+    if (inst->pool) {
+        ct_pool_remove(inst);
+    }
     
     free(inst);
 }
@@ -131,6 +209,7 @@ void default_init(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *ob
     assert(obj);
     
     CTInstance *inst = CT_INSTANCE(obj);
+    assert(inst->magic == CTI_MAGIC);
     assert(inst->refcount > 0);
     assert(inst->instance_size > 0);
     
@@ -144,6 +223,7 @@ void default_retain(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *
     assert(obj);
     
     CTInstance *inst = CT_INSTANCE(obj);
+    assert(inst->magic == CTI_MAGIC);
     assert(inst->instance_size > 0);
     
     ++inst->refcount;
@@ -156,6 +236,7 @@ void default_release(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void 
     assert(obj);
     
     CTInstance *inst = CT_INSTANCE(obj);
+    assert(inst->magic == CTI_MAGIC);
     assert(inst->refcount > 0);
     assert(inst->instance_size > 0);
     
@@ -172,6 +253,7 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f,
 #pragma Public API
 
 void ct_init(void) {
+    
     for (int i = 0; i < CT_LAST; i++) {
         CTTypeInfo *type_info = &CT_TYPE_INFO[i];
         assert(type_info);
@@ -197,6 +279,28 @@ void *ct_create(CTTypeID type, size_t extra_bytes) {
     CTTypeInfo *type_info = &CT_TYPE_INFO[type];
     
     return type_info->runtime_class->alloc_fn(type_info, type_info->runtime_class, extra_bytes);
+}
+
+void ct_autorelease() {
+    CTInstancePool *pool = global_pool;
+    assert(pool);
+    assert(!pool->instance);    // null instance is how we signal the start
+    while (true) {
+        if (!pool->instance) {
+            break;
+        }
+        
+        CTInstance *instance = pool->instance;
+        if (instance->refcount > 1) {
+            fprintf(stderr, "Leaked object: <%s 0x%x> refcount: %llu\n",
+                    instance->type_info->type_name, (unsigned int)instance, instance->refcount);
+        }
+        
+        CTInstancePool *next = pool->next;
+        instance->runtime_class->dealloc_fn(instance->type_info, instance->runtime_class, CT_OBJ(instance));
+        
+        pool = next;
+    }
 }
 
 

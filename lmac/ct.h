@@ -103,5 +103,6 @@ extern CTRuntimeClass *CT_RUNTIME_CLASS[0xFF];
 void ct_init(void);
 
 void *ct_create(CTTypeID type, size_t extra_bytes);
+void ct_autorelease(void /* multiple pools in the future? */);
 
 #endif

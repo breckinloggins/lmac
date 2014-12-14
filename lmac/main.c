@@ -49,7 +49,6 @@ int main(int argc, const char * argv[]) {
     }
     
 #   include "ct_init.c"
-    ct_init();
     
     const int ACTION_BUILD = 0;
     const int ACTION_RUN = 1;
@@ -73,5 +72,8 @@ int main(int argc, const char * argv[]) {
     Context ctx = {0};
     ctx.file = file;
     
-    return run_compile(&ctx, action == ACTION_RUN);
+    int res = run_compile(&ctx, action == ACTION_RUN);
+    
+    ct_autorelease();
+    return res;
 }

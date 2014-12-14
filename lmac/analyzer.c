@@ -27,7 +27,7 @@ void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
 
 int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     if (phase == VISIT_PRE) {
-        assert(node->magic == 1/*AST_MAGIC*/);
+        assert(node->magic == 0/*AST_MAGIC*/);
         return VISIT_OK;
     }
     
@@ -87,7 +87,7 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     }
     
     assert(node);
-    assert(node->magic == 1/*AST_MAGIC*/);
+    assert(node->magic == 0/*AST_MAGIC*/);
     assert(node->kind > AST_UNKNOWN && node->kind < AST_LAST);
     
     return VISIT_OK;
