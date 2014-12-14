@@ -12,8 +12,6 @@
 
 #include "clite.h"
 
-CTRuntimeClass RTC_ASTBase = {0};
-
 // NOTE(bloggins): We're doing lots of small allocations here. It might
 //                  be worth it to use a pool allocator or other optimization
 //                  later.

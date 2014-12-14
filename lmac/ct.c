@@ -36,7 +36,8 @@ CTTypeInfo CT_TYPE_INFO[] = {
 #   include "ct_types.def.h"
 };
 
-CTRuntimeClass RTCInvalid = { CT_MAGIC | CT_TYPE_ID_INVALID, 0, NULL };
+CTRuntimeClass RTC_Invalid = { CT_MAGIC | CT_TYPE_ID_INVALID, 0, NULL };
+CTRuntimeClass RTC_Default = { CT_MAGIC , 0, NULL };
 
 #define CTI_MAGIC 0xfafb0102
 
@@ -247,7 +248,8 @@ void default_release(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void 
 }
 
 void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f, void *obj) {
-    fprintf(f, "<%s 0x%x>", type_info->type_name, (unsigned int)obj);
+    fprintf(f, "<%s 0x%x (refcount: %llu)>", type_info->type_name,
+            (unsigned int)obj, CT_INSTANCE(obj)->refcount);
 }
 
 #pragma Public API
@@ -301,6 +303,17 @@ void ct_autorelease() {
         
         pool = next;
     }
+}
+
+void ct_dump(void *obj) {
+    assert(obj);
+    
+    CTInstance *instance = CT_INSTANCE(obj);
+    assert(instance->magic == CTI_MAGIC);
+    
+    assert(instance->runtime_class);
+    assert(instance->runtime_class->dump_fn);
+    instance->runtime_class->dump_fn(instance->type_info, instance->runtime_class, stderr, obj);
 }
 
 

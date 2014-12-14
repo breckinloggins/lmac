@@ -96,7 +96,8 @@ typedef struct CTTypeInfo {
 extern size_t CT_BASE_SIZES[0xFF];
 extern CTTypeInfo CT_TYPE_INFO[0xFF];
 
-extern CTRuntimeClass RTCInvalid;
+extern CTRuntimeClass RTC_Invalid;
+extern CTRuntimeClass RTC_Default;
 extern CTRuntimeClass *CT_RUNTIME_CLASS[0xFF];
 
 /* called by including ct_init.c. Do not call manually */
@@ -104,5 +105,5 @@ void ct_init(void);
 
 void *ct_create(CTTypeID type, size_t extra_bytes);
 void ct_autorelease(void /* multiple pools in the future? */);
-
+void ct_dump(void *obj);
 #endif
