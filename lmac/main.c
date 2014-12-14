@@ -69,10 +69,10 @@ int main(int argc, const char * argv[]) {
     
     atexit(exit_handler);
     
-    Context ctx = {0};
-    ctx.file = file;
+    Context *ctx = context_create();
+    ctx->file = file;
     
-    int res = run_compile(&ctx, action == ACTION_RUN);
+    int res = run_compile(ctx, action == ACTION_RUN);
     
     ct_autorelease();
     return res;

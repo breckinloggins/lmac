@@ -38,14 +38,14 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     chunk_processed[idx] = 0;
     
     // TODO(bloggins): Fork/join here
-    Context run_ctx = *ctx;
-    run_ctx.ast = NULL;
-    run_ctx.buf = (uint8_t*)chunk_processed;
-    run_ctx.buf_size = idx;
-    run_ctx.pos = run_ctx.buf;
+    Context *run_ctx = context_create();
+    run_ctx->ast = NULL;
+    run_ctx->buf = (uint8_t*)chunk_processed;
+    run_ctx->buf_size = idx;
+    run_ctx->pos = run_ctx->buf;
     
-    if (parser(&run_ctx, &(run_ctx.ast))) {
-        analyzer_analyze(run_ctx.ast);
+    if (parser(run_ctx, &(run_ctx->ast))) {
+        analyzer_analyze(run_ctx->ast);
     }
     
     /*
@@ -55,8 +55,8 @@ void act_on_pp_run(SourceLocation sl, Context *ctx, Token chunk, char chunk_esca
     *result = run_result;
     */
     
-    *result = run_ctx.ast;
-     
+    *result = run_ctx->ast;
+    ct_release(run_ctx);
     free(chunk_processed);
 }
 

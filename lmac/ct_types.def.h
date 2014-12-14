@@ -18,9 +18,7 @@
 CT_TYPE(CT_NONE,            CT_NONE,        CTNone,             RTC_Invalid)
 CT_TYPE(CT_AST_BASE,        CT_NONE,        ASTBase,            RTC_Default)
 // TODO(bloggins): other AST types
-//CT_TYPE(CT_TOKEN,           CT_NONE,        Token,              RTCToken)
-//CT_TYPE(CT_SOURCE_LOCATION, CT_NONE,        SourceLocation,     RTCSourceLocation)
-//CT_TYPE(CT_SPELLING,        CT_NONE,        Spelling,           RTCSpelling)
+CT_TYPE(CT_CONTEXT,         CT_NONE,        Context,            RTC_Default)
 
 /* must be last */
 CT_TYPE(CT_LAST,            CT_NONE,        CTNone,             RTC_Invalid)

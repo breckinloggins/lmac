@@ -45,6 +45,7 @@ typedef struct Context {
     ASTBase *ast;
 } Context;
 
+Context *context_create();
 Scope *context_scope_push(Context *ctx);
 Scope *context_scope_pop(Context *ctx);
 void context_load_file(Context *ctx, const char *filename);

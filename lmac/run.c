@@ -68,6 +68,7 @@ const char *lookup_cmd(const char *cmd) {
 
 int run_compile(Context *ctx, bool run_program) {
     assert(ctx && "must have a valid context");
+    ct_retain(ctx);
     
     // TODO(bloggins): Extract to a driver struct
     const char *cc_path = lookup_cmd("cc");
@@ -116,6 +117,7 @@ int run_compile(Context *ctx, bool run_program) {
         res = run_cmd("run", "./%s", obj_file);
     }
     
+    ct_release(ctx);
     return res;
 }
 

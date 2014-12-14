@@ -9,6 +9,10 @@
 #include "clite.h"
 #include <unistd.h>
 
+Context *context_create() {
+    return ct_create(CT_CONTEXT, 0);
+}
+
 Scope *context_scope_push(Context *ctx) {
     Scope *s = scope_create();
     

@@ -195,7 +195,7 @@ void default_dealloc(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void 
     
     CTInstance *inst = CT_INSTANCE(obj);
     assert(inst->magic == CTI_MAGIC);
-    assert(inst->refcount > 0);
+    assert(inst->refcount == 0);
     
     if (inst->pool) {
         ct_pool_remove(inst);
@@ -283,10 +283,35 @@ void *ct_create(CTTypeID type, size_t extra_bytes) {
     return type_info->runtime_class->alloc_fn(type_info, type_info->runtime_class, extra_bytes);
 }
 
+void ct_retain(void *obj) {
+    assert(obj);
+    
+    CTInstance *instance = CT_INSTANCE(obj);
+    assert(instance);
+    assert(instance->magic = CTI_MAGIC);
+    assert(instance->runtime_class);
+    assert(instance->runtime_class->retain_fn);
+    
+    instance->runtime_class->retain_fn(instance->type_info, instance->runtime_class, obj);
+}
+
+void ct_release(void *obj) {
+    assert(obj);
+    
+    CTInstance *instance = CT_INSTANCE(obj);
+    assert(instance);
+    assert(instance->magic = CTI_MAGIC);
+    assert(instance->runtime_class);
+    assert(instance->runtime_class->release_fn);
+    
+    instance->runtime_class->release_fn(instance->type_info, instance->runtime_class, obj);
+}
+
 void ct_autorelease() {
     CTInstancePool *pool = global_pool;
     assert(pool);
     assert(!pool->instance);    // null instance is how we signal the start
+    pool = pool->next;
     while (true) {
         if (!pool->instance) {
             break;
@@ -294,7 +319,7 @@ void ct_autorelease() {
         
         CTInstance *instance = pool->instance;
         if (instance->refcount > 1) {
-            fprintf(stderr, "Leaked object: <%s 0x%x> refcount: %llu\n",
+            fprintf(stderr, "[over-retain] <%s 0x%x> refcount: %llu\n",
                     instance->type_info->type_name, (unsigned int)instance, instance->refcount);
         }
         
