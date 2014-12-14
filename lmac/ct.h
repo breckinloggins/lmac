@@ -95,8 +95,16 @@ extern size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED];
 extern CTTypeInfo CT_TYPE_INFO[CT_TYPE_ID_RESERVED];
 extern CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED];
 
-/* called by including ct_init.c. Do not call manually */
-void ct_init(void);
+#ifndef CT_INIT_IMPLEMENTATION
+__attribute__((constructor(1)))
+static void __ct_initialize_base_sizes() {
+    #   define CT_TYPE(type_name) \
+    CT_BASE_SIZES[CT_TYPE_ID(type_name)] = sizeof(type_name);
+    #include "ct_types.def.h"
+}
+#endif
+
+#pragma mark Public API
 
 void *ct_create(CTTypeID type, size_t extra_bytes);
 void ct_retain(void *obj);

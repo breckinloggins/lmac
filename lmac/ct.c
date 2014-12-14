@@ -8,6 +8,7 @@
 
 // "compile time" infrastructure
 
+#define CT_INIT_IMPLEMENTATION
 #include "ct.h"
 
 #include <stdio.h>
@@ -360,4 +361,12 @@ void ct_dump(void *obj) {
     instance->runtime_class->dump_fn(instance->type_info, instance->runtime_class, stderr, obj);
 }
 
+__attribute__((constructor(2)))
+static void __ct_initialize() {
+    #   define CT_TYPE(type_name) \
+    CT_RUNTIME_CLASS[CT_TYPE_ID(type_name)] = &(_RTC__##type_name);
+    #include "ct_types.def.h"
+    
+    ct_init();
+}
 
