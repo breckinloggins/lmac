@@ -297,7 +297,7 @@ void ct_autorelease() {
         }
         
         CTInstancePool *next = pool->next;
-        instance->runtime_class->dealloc_fn(instance->type_info, instance->runtime_class, CT_OBJ(instance));
+        instance->runtime_class->release_fn(instance->type_info, instance->runtime_class, CT_OBJ(instance));
         
         pool = next;
     }
