@@ -23,8 +23,9 @@ Scope *scope_create();
 void scope_child_add(Scope *scope, Scope *child);
 void scope_declaration_add(Scope *scope, ASTDeclaration *decl);
 void scope_label_add(Scope *scope, ASTBase *label);
-void scope_dump(Scope *scope);
+ASTDeclaration *scope_lookup_declaration(Scope *scope, Spelling name, bool search_parents);
 
+void scope_dump(Scope *scope);
 void scope_fdump(FILE *f, Scope *scope);
 
 #endif

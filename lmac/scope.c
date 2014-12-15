@@ -74,6 +74,25 @@ void scope_label_add(Scope *scope, ASTBase *labeled_node) {
     list_append(&scope->labels, labeled);
 }
 
+ASTDeclaration *scope_lookup_declaration(Scope *scope, Spelling name, bool search_parents) {
+    while(scope != NULL) {
+        List_FOREACH(ASTDeclaration *, decl, scope->declarations, {
+            if (spelling_equal(name, decl->name->base.location.spelling)) {
+                assert(decl->name && "declarations should be named");
+                return decl;
+            }
+        })
+    
+        if (search_parents) {
+            scope = scope->parent;
+        } else {
+            break;
+        }
+    }
+    
+    return NULL;
+}
+
 void scope_dump(Scope *scope) {
     scope_fdump(stderr, scope);
 }

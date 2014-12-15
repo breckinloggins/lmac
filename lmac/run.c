@@ -112,7 +112,7 @@ int run_compile(Context *ctx, bool run_program) {
     // NOTE(bloggins): We aren't freeing anything in the global context. There's no point
     // since the OS does that for us anyway and we don't want to take any longer to exit
     // than we need to.
-    int res = run_cmd("c-compile", "%s -o %s %s", cc_path, obj_file, out_file);
+    int res = run_cmd("c-compile", "%s -std=c11 -o %s %s", cc_path, obj_file, out_file);
     if (res == 0 && run_program) {
         res = run_cmd("run", "./%s", obj_file);
     }

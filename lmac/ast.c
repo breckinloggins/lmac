@@ -425,28 +425,7 @@ Scope *ast_nearest_scope(ASTBase *node) {
 
 ASTDeclaration* ast_nearest_spelling_definition(Spelling spelling, ASTBase* node) {
     Scope *scope = ast_nearest_scope(node);
-    
-    do {
-        List_FOREACH(ASTBase*, scope_node, scope->declarations, {
-            ASTIdent *decl_ident = NULL;
-            if (AST_IS(scope_node, AST_DECL_FUNC)) {
-                decl_ident = ((ASTDeclaration*)scope_node)->name;
-            } else if (AST_IS(scope_node, AST_DECL_VAR)) {
-                decl_ident = ((ASTDeclaration*)scope_node)->name;
-            } else {
-                continue;
-            }
-            
-            assert(decl_ident && "definitions should always be named");
-            if (spelling_equal(spelling, decl_ident->base.location.spelling)) {
-                return (ASTDeclaration*)scope_node;
-            }
-        })
-        
-        scope = scope->parent;
-    } while (scope != NULL);
-    
-    return NULL;
+    return scope_lookup_declaration(scope, spelling, true);
 }
 
 

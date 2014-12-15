@@ -861,8 +861,6 @@ fail_parse:
 bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
     Context s = snapshot(ctx);
     
-    context_scope_push(ctx);
-    
     // TODO(bloggins): Factor this grammar into reusable chunks like
     //                  "parse_begin_decl"
     ASTTypeExpression *type = NULL;
@@ -873,6 +871,10 @@ bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
     
     Token t = accept_token(ctx, TOK_LPAREN);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
+    
+    // NOTE(bloggins): Params and optional definition will go in their own
+    // sub-scope
+    context_scope_push(ctx);
     
     bool varargs_found = false;
     List *params = NULL;
@@ -918,9 +920,10 @@ bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
         }
     }
     
+    context_scope_pop(ctx);
     act_on_decl_fn(parsed_source_location(ctx, s), ctx->active_scope,
                    type, name, params, varargs_found, block, result);
-    context_scope_pop(ctx);
+    
     return true;
     
 fail_parse:
@@ -936,8 +939,10 @@ bool parse_decl_external(Context *ctx, ASTDeclaration **result) {
         return true;
     }
     
-    if (parse_declaration(ctx, result)) {
+    ASTDeclaration *decl = NULL;
+    if (parse_declaration(ctx, &decl)) {
         expect_token(ctx, TOK_SEMICOLON);
+        act_on_stmt_declaration(decl->base.location, decl, (ASTStmtDecl**)result);
         return true;
     }
     

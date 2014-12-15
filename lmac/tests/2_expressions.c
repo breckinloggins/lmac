@@ -3,12 +3,12 @@
 
 #include "tests/c_prelude.h"
 
+//#break
+void foo() {}
+
 int a = 1;
 int b = 2;
 int c = 4;
-
-#break /* for some reason, this foo isn't visible in main */
-void foo() { }
 
 int main() {
 
