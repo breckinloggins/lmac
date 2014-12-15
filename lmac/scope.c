@@ -8,8 +8,17 @@
 
 #include "clite.h"
 
+#pragma mark CT VTABLE Overrides
+
+void Scope_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f, Scope *scope) {
+    scope_fdump(f, scope);
+}
+
+#pragma mark normal functions
+
+
 Scope *scope_create() {
-    Scope *s = (Scope*)calloc(1, sizeof(Scope));
+    Scope *s = ct_create(CT_TYPE_Scope, 0);
     
     return s;
 }

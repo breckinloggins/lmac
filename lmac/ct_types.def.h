@@ -18,6 +18,7 @@
 CT_TYPE(ASTBase)
 // TODO(bloggins): other AST types
 CT_TYPE(Context)
+CT_TYPE(Scope)
 
 /* must be last */
 CT_TYPE(CTLast)
