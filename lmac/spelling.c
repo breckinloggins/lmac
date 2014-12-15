@@ -75,6 +75,55 @@ void spelling_fprint(FILE *f, Spelling spelling) {
     }
 }
 
+void spelling_line_fprint(FILE *f, Spelling spelling) {
+    if (spelling.start == NULL || spelling.end == NULL) {
+        return;
+    }
+    
+    const char *buf = (const char *)spelling.ctx->buf;
+    
+    const char *line_begin = (const char *)spelling.end;
+    const char *line_end = (const char *)spelling.end;
+    
+    if (*line_begin == '\n') {
+        --line_begin;
+    }
+    
+    while (*line_begin != '\n') {
+        if (--line_begin <= buf) {
+            line_begin = buf;
+            break;
+        }
+    }
+    
+    while (*line_end != '\n') {
+        if (++line_end >= (buf + spelling.ctx->buf_size)) {
+            line_end = buf + spelling.ctx->buf_size - 1;
+            break;
+        }
+    }
+    
+    if (*line_begin == '\n') ++line_begin;
+    if (*line_end == '\n') --line_end;
+    assert(line_end >= line_begin);
+    
+    // TODO(bloggins): Slow
+    for (const char *ch = line_begin; ch <= line_end; ch++) {
+        fputc(*ch, f);
+    }
+    fprintf(f, "\n");
+    
+    for (const char *ch = line_begin; ch <= line_end; ch++) {
+        if (ch == (const char *)spelling.end) {
+            fputc('^', f);
+            break;
+        } else {
+            fputc('~', f);
+        }
+    }
+    fprintf(f, "\n");
+}
+
 const char *spelling_cstring(Spelling spelling) {
     // TODO(bloggins): This is not thread safe!
     static char *cstr = NULL;

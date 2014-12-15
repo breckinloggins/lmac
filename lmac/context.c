@@ -9,6 +9,29 @@
 #include "clite.h"
 #include <unistd.h>
 
+#pragma mark CT VTABLE Overrides
+
+void Context_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f, Context *ctx) {
+    fprintf(f, "<Context 0x%x>\n", (unsigned int)ctx);
+    const char *indent = "    ";
+    fprintf(f, "%sFile: %s\n", indent, ctx->file);
+    if (ctx->pos < (ctx->buf + ctx->buf_size - 1)) {
+        fprintf(f, "%sLine: %d\n", indent, ctx->line);
+        fprintf(f, "%sAround:\n", indent);
+    
+        Spelling sp_ctx = {};
+        sp_ctx.ctx = ctx;
+        sp_ctx.start = ctx->pos;
+        sp_ctx.end = ctx->pos;
+        
+        spelling_line_fprint(f, sp_ctx);
+    } else {
+        fprintf(f, "%sAT END\n", indent);
+    }
+}
+
+#pragma mark normal functions
+
 Context *context_create() {
     return ct_create(CT_TYPE_Context, 0);
 }

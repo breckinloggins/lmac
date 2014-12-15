@@ -53,6 +53,7 @@ size_t spelling_strlen(Spelling spelling);
 bool spelling_streq(Spelling spelling, const char *str);
 bool spelling_equal(Spelling spelling1, Spelling spelling2);
 void spelling_fprint(FILE *f, Spelling spelling);
+void spelling_line_fprint(FILE *f, Spelling spelling);
 
 /* spelling_cstring returns a shared pointer to a string that will be
  * overwritten the next time spelling_cstring is called. Be sure to duplicate

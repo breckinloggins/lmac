@@ -8,6 +8,8 @@
 
 // "compile time" infrastructure
 
+// Inspiration (emulating a thiscall): https://gist.github.com/kwaters/1516195
+
 #define CT_INIT_IMPLEMENTATION
 #include "ct.h"
 

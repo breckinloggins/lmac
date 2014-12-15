@@ -12,9 +12,14 @@
 
 #include "clite.h"
 
+#pragma mark CT VTABLE Overrides
+
 void ASTBase_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f, ASTBase *node) {
-    fprintf(f, "NOOO!");
+    ast_fprint(f, node, 0);
+    fprintf(f, "%s", "\n");
 }
+
+#pragma mark normal functions
 
 global_variable const char *g_ast_names[] = {
 #   define AST(kind, ...) "AST_"#kind ,
