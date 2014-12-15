@@ -89,8 +89,6 @@ typedef struct CTTypeInfo {
     CTRuntimeClass *runtime_class;
 } CTTypeInfo;
 
-//extern int MyFoo();
-
 extern size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED];
 extern CTTypeInfo CT_TYPE_INFO[CT_TYPE_ID_RESERVED];
 extern CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED];

@@ -16,16 +16,17 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define VT_PARAM(type, name)    type name
+#define VT_STDARGS  CTTypeInfo *type_info, CTRuntimeClass *runtime_class
+#define VT_STDCALL type_info, runtime_class
 
-#define VTABLE_FNS(ct_type_name)                                              \
-VTABLE_FN(ct_type_name, void, rtinit)                                         \
-VTABLE_FN(ct_type_name, void*, alloc, VT_PARAM(size_t, extra_bytes))          \
-VTABLE_FN(ct_type_name, void, dealloc, VT_PARAM(void *, obj))                 \
-VTABLE_FN(ct_type_name, void, init, VT_PARAM(void *, obj))                    \
-VTABLE_FN(ct_type_name, void, retain, VT_PARAM(void *, obj))                  \
-VTABLE_FN(ct_type_name, void, release, VT_PARAM(void *, obj))                 \
-VTABLE_FN(ct_type_name, void, dump, void *f, void *obj)
+#define VTABLE_FNS(ct_type_name)                                                \
+VTABLE_FN(ct_type_name, void, rtinit, (VT_STDCALL))\
+VTABLE_FN(ct_type_name, void*, alloc, (VT_STDCALL, extra_bytes), size_t extra_bytes)\
+VTABLE_FN(ct_type_name, void, dealloc, (VT_STDCALL, obj), void * obj)\
+VTABLE_FN(ct_type_name, void, init, (VT_STDCALL, obj), void * obj)\
+VTABLE_FN(ct_type_name, void, retain, (VT_STDCALL, obj), void * obj)\
+VTABLE_FN(ct_type_name, void, release, (VT_STDCALL, obj), void * obj)\
+VTABLE_FN(ct_type_name, void, dump, (VT_STDCALL, f, obj), void *f, void *obj)
 
 #pragma mark Default VTABLE prototypes
 
@@ -33,13 +34,12 @@ VTABLE_FN(ct_type_name, void, dump, void *f, void *obj)
 #define _VT_PASTER(x, y) x ## _ ## y
 #define VT_MANGLE(prefix, name) _VT_PASTER(prefix, name)
 
-#define VT_STDARGS  CTTypeInfo *type_info, CTRuntimeClass *runtime_class
 #define VT_SIGNATURE(prefix, fn_attr, ret_type, name, ...)               \
     ret_type fn_attr VT_MANGLE(prefix, name) (VT_STDARGS, ##__VA_ARGS__)
 #define VT_PROTOTYPE(prefix, fn_attr, ret_type, name, ...)               \
     VT_SIGNATURE(prefix, fn_attr, ret_type, name, ##__VA_ARGS__);
 
-#define VTABLE_FN(ct_type_name, ret_type, name, ...) VT_PROTOTYPE(ct_type_name, VT_API, ret_type, name, ##__VA_ARGS__)
+#define VTABLE_FN(ct_type_name, ret_type, name, call_args, ...) VT_PROTOTYPE(ct_type_name, VT_API, ret_type, name, ##__VA_ARGS__)
 
 VTABLE_FNS(default)
 
@@ -278,17 +278,17 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *f,
 
 #pragma Overridable Functions
 
-// TODO(bloggins): Have macros that defined the default implementation of
-// <type>_dump, etc. These will have __attribute__((weak)) and just call default_
+// NOTE(bloggins): These define the default implementation of
+// <type>_dump, etc. They will have __attribute__((weak)) and just call default_
 //
 // If a type defines it as non-weak, then it will override this implementation
 
 #define VT_PARAM(type, name)    type name
 
-
-#define VTABLE_FN(ct_type_name, ret_type, name, ...)    \
-    static VT_SIGNATURE(ct_type_name, __attribute__((weakref("default_" #name))), ret_type, name, ##__VA_ARGS__) ;
-
+#define VTABLE_FN(ct_type_name, ret_type, name, call_args, ...)    \
+    VT_SIGNATURE(ct_type_name, __attribute__((weak)), ret_type, name, ##__VA_ARGS__) {\
+        return default_##name call_args;    \
+    }
 
 #define CT_TYPE(type_name) VTABLE_FNS(type_name)
 #include "ct_types.def.h"
@@ -300,7 +300,6 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *f,
 #pragma Public API
 
 void ct_init(void) {
-    //fprintf(stderr, "MYFOO = %d\n", MyFoo());
 
 #   define VTABLE_FN(ct_type_name, ret_type, name, ...)                     \
     if (rtc_##ct_type_name-> VT_MANGLE(name, fn) == NULL) {                       \
