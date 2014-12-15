@@ -54,6 +54,7 @@ size_t CT_BASE_SIZES[CT_TYPE_ID_RESERVED] = {};
 CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED] = {};
 
 CTTypeInfo CT_TYPE_INFO[] = {
+    { 0 },
 #   define CT_TYPE(type_name)     \
     { CT_TYPE_ID(type_name), #type_name, 0, NULL },
 #   include "ct_types.def.h"
@@ -295,6 +296,12 @@ void default_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, void *f,
 #define CT_TYPE(type_name) VTABLE_FNS(type_name)
 #include "ct_types.def.h"
 
+// Define the default type initializer function. This doesn't do anything by
+// default but can be overriden by CT Types to obtain their own type id (and
+// do any other initialization they need)
+#define CT_TYPE(type_name) void __attribute__((weak)) VT_MANGLE(type_name, type_init) (CTTypeID type_id) {}
+#include "ct_types.def.h"
+
 #undef CT_TYPE
 #undef VTABLE_FN
 #undef VT_PARAM
@@ -311,12 +318,15 @@ void ct_init(void) {
 #   define CT_TYPE(type_name)                                               \
     CTRuntimeClass *rtc_##type_name = CT_RUNTIME_CLASS[CT_TYPE_##type_name]; \
     VTABLE_FNS(type_name)
-
 #   include "ct_types.def.h"
+    
+#   define CT_TYPE(type_name) VT_MANGLE(type_name, type_init) (CT_TYPE_ID(type_name));
+#   include "ct_types.def.h"
+    
 #   undef CT_TYPE
 #   undef VTABLE_FN
     
-    for (int i = 0; i < CT_TYPE_CTLast; i++) {
+    for (int i = CT_TYPE_ID_INVALID + 1; i < CT_TYPE_CTLast; i++) {
         CTTypeInfo *type_info = &CT_TYPE_INFO[i];
         assert(type_info);
         assert(type_info->type_id == i);
@@ -338,7 +348,10 @@ void ct_init(void) {
 }
 
 void *ct_create(CTTypeID type, size_t extra_bytes) {
+    assert(type > CT_TYPE_ID_INVALID && type < CT_TYPE_ID_RESERVED);
     CTTypeInfo *type_info = &CT_TYPE_INFO[type];
+    assert(type_info);
+    assert(type_info->type_id == type);
     
     return type_info->runtime_class->alloc_fn(type_info, type_info->runtime_class, extra_bytes);
 }

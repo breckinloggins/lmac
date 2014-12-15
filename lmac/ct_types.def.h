@@ -15,6 +15,7 @@
 #endif
 
 //      Type Constant       Super Type      TypeName
+CT_TYPE(List)
 CT_TYPE(ASTBase)
 // TODO(bloggins): other AST types
 CT_TYPE(Context)

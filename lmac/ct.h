@@ -11,6 +11,8 @@
 #ifndef lmac_ct_h
 #define lmac_ct_h
 
+#include "ct_api.h"
+
 #include <stdint.h>
 
 /* The "none" type or "invalid" type, used to catch errors */
@@ -20,12 +22,11 @@
  * compile time types */
 #define CT_TYPE_ID_RESERVED 0xFF
 
-#define CT_TYPE_ID(type_name) CT_TYPE_##type_name
-
-typedef enum {
+typedef enum CTTypeIDEnum {
+    CT_TYPE_Invalid,
 #   define CT_TYPE(type_name, ...)    CT_TYPE_ID(type_name),
 #   include "ct_types.def.h"
-} CTTypeID;
+} CTTypeIDEnum;
 
 struct CTRuntimeClass;
 
@@ -96,17 +97,12 @@ extern CTRuntimeClass *CT_RUNTIME_CLASS[CT_TYPE_ID_RESERVED];
 #ifndef CT_INIT_IMPLEMENTATION
 __attribute__((constructor(1)))
 static void __ct_initialize_base_sizes() {
+    CT_BASE_SIZES[0] = 0;
+    
     #   define CT_TYPE(type_name) \
     CT_BASE_SIZES[CT_TYPE_ID(type_name)] = sizeof(type_name);
     #include "ct_types.def.h"
 }
 #endif
 
-#pragma mark Public API
-
-void *ct_create(CTTypeID type, size_t extra_bytes);
-void ct_retain(void *obj);
-void ct_release(void *obj);
-void ct_autorelease(void /* multiple pools in the future? */);
-void ct_dump(void *obj);
 #endif

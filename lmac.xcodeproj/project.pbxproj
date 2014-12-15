@@ -68,6 +68,7 @@
 		F877935B1A33C3BD0035D3C0 /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = list.c; sourceTree = "<group>"; };
 		F877935E1A360F360035D3C0 /* run.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = run.c; sourceTree = "<group>"; };
 		F87793611A36EC140035D3C0 /* interp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = interp.c; sourceTree = "<group>"; };
+		F8AA69791A3F44FC007BA89C /* ct_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ct_api.h; sourceTree = "<group>"; };
 		F8E3D3271A32506C0044FBBA /* ast.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ast.h; sourceTree = "<group>"; };
 		F8E3D32A1A32514E0044FBBA /* token.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = token.h; sourceTree = "<group>"; };
 		F8E3D32B1A32524C0044FBBA /* act.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = act.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -134,6 +135,7 @@
 			children = (
 				F84A7AE81A2D88480051862A /* clite.h */,
 				F828AE161A3CDA9D003C1F8F /* ct.h */,
+				F8AA69791A3F44FC007BA89C /* ct_api.h */,
 				F87793591A33BEE80035D3C0 /* list.h */,
 				F8E3D32B1A32524C0044FBBA /* act.h */,
 				F8E3D3271A32506C0044FBBA /* ast.h */,
