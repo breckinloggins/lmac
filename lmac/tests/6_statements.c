@@ -33,8 +33,6 @@ here1:
         printf("a is not 5\n");
     }
     
-    
-    
 exit_here:
     printf("a = %d\n", a);
     return 0;

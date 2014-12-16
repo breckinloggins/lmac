@@ -230,7 +230,31 @@ bool parse_expression(Context *ctx, ASTExpression **result) {
 	| unary_expression assignment_operator assignment_expression
  */
 bool parse_expr_assignment(Context *ctx, ASTExpression **result) {
-    return parse_expr_conditional(ctx, result);
+    Context s = snapshot(ctx);
+    
+    // TODO(bloggins): This isn't exactly right, but parse_expr_conditional
+    // includes parsing a unitary expression so what we should really be doing
+    // is checking for something like is_unary and only proceeding further below
+    // if that's indeed the case. Otherwise, we're going to have to do the checking
+    // farther up in the semantic analyzer and test whether what we just parsed
+    // is a valid lvalue
+    ASTExpression *left = NULL;
+    if (!parse_expr_conditional(ctx, &left)) { return false; }
+    
+    Token t = accept_token(ctx, TOK_EQUALS);
+    if (IS_TOKEN_NONE(t)) {
+        if (result != NULL) {
+            *result = left;
+        }
+        return true;
+    }
+    
+    // We have an equals so we must be an assignment expression. Keep going
+    ASTExpression *right = (ASTExpression*)expect_node(ctx, (ParseFn)parse_expr_assignment, "expected expression after assignment");
+    act_on_expr_binary(parsed_source_location(ctx, s), left, right, t, (ASTExprBinary**)result);
+    
+    return true;
+    
 }
 
 /*
