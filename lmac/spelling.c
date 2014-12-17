@@ -89,7 +89,7 @@ void spelling_line_fprint(FILE *f, Spelling spelling) {
         --line_begin;
     }
     
-    while (*line_begin != '\n') {
+    while (line_begin != buf && *line_begin != '\n') {
         if (--line_begin <= buf) {
             line_begin = buf;
             break;

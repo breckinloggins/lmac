@@ -63,14 +63,18 @@ int do_repl() {
         fprintf(f_out, "> ");
         char *user_input = NULL;
         size_t input_size = 0;
-        size_t chars_read = 0;
         
-        if ((chars_read = getline(&user_input, &input_size, f_in)) == -1) {
+        size_t chars_read = getline(&user_input, &input_size, f_in);
+        if (chars_read == -1) {
             break;
+        } else if (chars_read == 0 || chars_read == 1) {
+            // Just a newline. Nothing to do here
+            free(user_input);
+            continue;
         }
         
         // Be nice to them
-        user_input[chars_read] = ';';
+        user_input[chars_read-1] = ';';
         
         Context *ctx = context_create();
         ctx->active_scope = outer_scope;
@@ -79,6 +83,7 @@ int do_repl() {
         
         ctx->line = 1;
         ctx->buf = (uint8_t*)user_input;
+        ctx->buf_size = chars_read;
         ctx->pos = ctx->buf;
         
         // TODO: use setjmp/longjmp so we can quickly error after parsing problems
@@ -191,6 +196,7 @@ int main(int argc, const char * argv[]) {
     }
 
 finish:
+    ct_dump(ctx->ast);
     ct_autorelease();
     return res;
 }

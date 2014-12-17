@@ -140,8 +140,8 @@ typedef enum {
     CIV_INTEGER_LITERAL,
     CIV_STRING_LITERAL,
     
-    /* data structures */
-    CIV_ARRAY,
+    /* compiled code */
+    CIV_CODE,
     
     CIV_IDENTIFIER,
     CIV_BINDING,
@@ -170,6 +170,12 @@ typedef struct CIValue {
         } simple_value;
         
         ValueTableIndex ref_id;
+        
+        struct {
+            IdentifierIndex name_index;
+            ByteStream code;
+        } code_value;
+        
         IdentifierIndex identifier_id;
         
         struct {
@@ -351,25 +357,6 @@ CI_VISITOR(AST_STMT_EXPR, ASTStmtExpr) {
 }
 
 CI_VISITOR(AST_BLOCK, ASTBlock) {
-    if (phase == VISIT_PRE) {
-        // Insert a block guard stub so that we jump around the block unless
-        // explicitly told to jump to the block entry point
-        
-        // Will be freed after visit
-        AST_BASE(node)->visit_data = calloc(1, sizeof(off_t));
-        *(off_t*)(AST_BASE(node)->visit_data) = stream->current_offset + 1; // past the opcode
-        
-        asm_push_u64(stream, 0);
-        asm_single_op(stream, CIO_JUMP);
-    } else {
-        // Now that we have the location after the block, put that in the
-        // jump guard
-        off_t guard_ins_ptr = *(off_t*)(AST_BASE(node)->visit_data);
-        off_t saved_stream_ptr = stream->current_offset;
-        stream->current_offset = guard_ins_ptr;
-        asm_push_u64(stream, saved_stream_ptr);
-        stream->current_offset = saved_stream_ptr;
-    }
     return VISIT_OK;
 }
 

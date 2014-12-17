@@ -18,7 +18,7 @@ void ASTBase_dump(CTTypeInfo *type_info, CTRuntimeClass *runtime_class, FILE *f,
     ast_fprint(f, node, 0);
     fprintf(f, "%s", "\n");
 }
-
+ 
 #pragma mark normal functions
 
 global_variable const char *g_ast_names[] = {

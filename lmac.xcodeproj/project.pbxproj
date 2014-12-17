@@ -90,6 +90,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F819C6641A41FE1E00DCA7A1 /* utility */ = {
+			isa = PBXGroup;
+			children = (
+				F87793591A33BEE80035D3C0 /* list.h */,
+				F877935B1A33C3BD0035D3C0 /* list.c */,
+			);
+			name = utility;
+			sourceTree = "<group>";
+		};
 		F84DD9231A2D2C9C00ED052E = {
 			isa = PBXGroup;
 			children = (
@@ -111,9 +120,9 @@
 			children = (
 				F84DD93A1A2D316700ED052E /* tests */,
 				F8E3D3291A3250840044FBBA /* defs */,
+				F819C6641A41FE1E00DCA7A1 /* utility */,
 				F8E3D3281A3250750044FBBA /* headers */,
 				F828AE131A3CD70A003C1F8F /* ct.c */,
-				F877935B1A33C3BD0035D3C0 /* list.c */,
 				F84A7AE51A2D87D10051862A /* lexer.c */,
 				F84A7AE91A2D88DA0051862A /* token.c */,
 				F84DD93D1A2E3D0800ED052E /* parser.c */,
@@ -140,7 +149,6 @@
 				F84A7AE81A2D88480051862A /* clite.h */,
 				F828AE161A3CDA9D003C1F8F /* ct.h */,
 				F8AA69791A3F44FC007BA89C /* ct_api.h */,
-				F87793591A33BEE80035D3C0 /* list.h */,
 				F8E3D32B1A32524C0044FBBA /* act.h */,
 				F8E3D3271A32506C0044FBBA /* ast.h */,
 				F8E3D32A1A32514E0044FBBA /* token.h */,
