@@ -46,6 +46,7 @@ void list_append(List **list, void *item) {
     } else {
         l = *list;
         while (l->next != NULL) {
+            assert(l != l->next);
             l = l->next;
         }
         

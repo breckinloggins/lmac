@@ -200,6 +200,52 @@ typedef struct CIValue {
     };
 } CIValue;
 
+void ci_value_fprint(FILE *f, Context *ctx, CIValue *value) {
+    const CIValue *v = value;
+    switch (v->kind) {
+        case CIV_VOID: break;
+        case CIV_CHAR_LITERAL: fprintf(f, "%c", v->simple_value.char_value); break;
+        case CIV_INTEGER_LITERAL: fprintf(f, "%llu", v->simple_value.int_value); break;
+        case CIV_STRING_LITERAL: fprintf(f, "%s", v->simple_value.str_value); break;
+        case CIV_BINDING: {
+            fprintf(f, "(constraint: %llu, name: %llu, value: %llu)",
+                    v->binding_value.constraint_index,
+                    v->binding_value.name_index,
+                    v->binding_value.value_index);
+        } break;
+        case CIV_BINOP: {
+            fprintf(f, "(lhs: %llu, op: %llu, rhs: %llu)",
+                    v->binop_value.lhs_index,
+                    v->binop_value.op_index,
+                    v->binop_value.rhs_index);
+        } break;
+        case CIV_IDENTIFIER: {
+            fprintf(f, "id: %llu", v->identifier_id);
+        } break;
+        case CIV_AST_NODE: {
+            fprintf(f, "(ast_kind: %s, source: ", ast_get_kind_name(v->ast_node_value.kind));
+            // TODO(bloggins): We need to serialize this in the FR data as a source constant!
+            
+            int print_count = 0;
+            for (uint64_t idx = v->ast_node_value.start; idx < v->ast_node_value.end; idx++) {
+                char c = ctx->buf[idx];
+                if (c == '\n' || c == '\r') {
+                    c = '$';
+                }
+                
+                fprintf(f, "%c", c);
+                if (++print_count == 30) {
+                    // That's enough to get the gist
+                    fprintf(f, " // ...");
+                    break;
+                }
+                
+                fprintf(f, ")");
+            }
+        } break;
+        default: assert(false && "unrecognized value kind");
+    }
+}
 
 typedef struct {
     /* low number so we run into it sooner rather than later and are forced
@@ -470,12 +516,14 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
     
     asm_single_op(stream, CIO_HALT);
     
+#   if 0
     fprintf(stderr, "OPCODES: [");
     for (size_t idx = 0; idx < stream->current_offset; idx++) {
         fprintf(stderr, "0x%X, ", stream->data[idx]);
     }
     fprintf(stderr, "]\n");
-    
+#   endif
+
     // "VM"
     uint64_t stack[256] = {};
     uint16_t sp = 1; // 0th is a stack underflow
@@ -494,11 +542,7 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
     
     // Interpreter
     // TODO(bloggins): Direct thread this with computed gotos
-    int indent = 0;
     while (*ip != CIO_HALT) {
-        for (int i = 0; i < indent; i++) {
-            fputc(' ', stderr);
-        }
         switch (*ip) {
             case CIO_HALT: assert(false && "how did we get here?");
             case CIO_DECLARE_FR_VERSION: {
@@ -514,18 +558,12 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
                 PUSH(value);
             } break;
             case CIO_PUSH_NODE: {
-                ASTKind kind = *++ip;
-                fprintf(stderr, "<%d: %s> {\n", kind, ast_get_kind_name(kind));
-                ++indent;
-                
+                /* ASTKind kind = * */ ++ip;
                 POP();  // Node index from push node
                 
                 ++ip;
             } break;
             case CIO_POP_NODE: {
-                --indent;
-                fprintf(stderr, "}\n");
-                
                 ++ip;
             } break;
             case CIO_BINOP: {
@@ -688,6 +726,7 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
     }
     
     // DEBUG - Print value table
+    /*
     for (size_t i = 0; i < value_table.count; i++) {
         CIValue *v = &value_table.values[i];
         
@@ -706,52 +745,14 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
         
         fprintf(stderr, "%zu: <%s> ", i, type_name);
         
-        switch (v->kind) {
-            case CIV_VOID: break;
-            case CIV_CHAR_LITERAL: fprintf(stderr, "%c", v->simple_value.char_value); break;
-            case CIV_INTEGER_LITERAL: fprintf(stderr, "%llu", v->simple_value.int_value); break;
-            case CIV_STRING_LITERAL: fprintf(stderr, "%s", v->simple_value.str_value); break;
-            case CIV_BINDING: {
-                fprintf(stderr, "(constraint: %llu, name: %llu, value: %llu)",
-                        v->binding_value.constraint_index,
-                        v->binding_value.name_index,
-                        v->binding_value.value_index);
-            } break;
-            case CIV_BINOP: {
-                fprintf(stderr, "(lhs: %llu, op: %llu, rhs: %llu)",
-                        v->binop_value.lhs_index,
-                        v->binop_value.op_index,
-                        v->binop_value.rhs_index);
-            } break;
-            case CIV_IDENTIFIER: {
-                fprintf(stderr, "id: %llu", v->identifier_id);
-            } break;
-            case CIV_AST_NODE: {
-                fprintf(stderr, "kind: %s, source: ", ast_get_kind_name(v->ast_node_value.kind));
-                // TODO(bloggins): We need to serialize this in the FR data as a source constant!
-                
-                Context *ctx = node->location.ctx;
-                int print_count = 0;
-                for (uint64_t idx = v->ast_node_value.start; idx < v->ast_node_value.end; idx++) {
-                    char c = ctx->buf[idx];
-                    if (c == '\n' || c == '\r') {
-                        c = '$';
-                    }
-                    
-                    fprintf(stderr, "%c", c);
-                    if (++print_count == 30) {
-                        // That's enough to get the gist
-                        fprintf(stderr, " // ...");
-                        break;
-                    }
-                    
-                }
-            } break;
-            default: assert(false && "unrecognized value kind");
-        }
-        
+        ci_value_fprint(stderr, node->location.ctx, v);
         fprintf(stderr, "\n");
     }
+    */
+    
+    // Hopefully the last value will be main result of the interpretation
+    ci_value_fprint(stderr, node->location.ctx, &value_table.values[value_table.count - 1]);
+    fprintf(stderr, "\n");
     
     return true;
 }

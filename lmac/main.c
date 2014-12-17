@@ -76,6 +76,8 @@ int do_repl() {
         // TODO: use setjmp/longjmp so we can quickly error after parsing problems
         // but not quit the repl
         // http://en.wikipedia.org/wiki/Setjmp.h
+        
+
         parser_parse(ctx);
         
         ASTBase *result = NULL;
