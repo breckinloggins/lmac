@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F828AE141A3CD70B003C1F8F /* ct.c in Sources */ = {isa = PBXBuildFile; fileRef = F828AE131A3CD70A003C1F8F /* ct.c */; };
+		F84172161A40B28D0017DD36 /* interp_default.c in Sources */ = {isa = PBXBuildFile; fileRef = F84172151A40B28D0017DD36 /* interp_default.c */; };
 		F84A7AE71A2D87D10051862A /* lexer.c in Sources */ = {isa = PBXBuildFile; fileRef = F84A7AE51A2D87D10051862A /* lexer.c */; };
 		F84A7AEB1A2D88DA0051862A /* token.c in Sources */ = {isa = PBXBuildFile; fileRef = F84A7AE91A2D88DA0051862A /* token.c */; };
 		F84DD9301A2D2C9C00ED052E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F84DD92F1A2D2C9C00ED052E /* main.c */; };
@@ -44,6 +45,9 @@
 		F828AE131A3CD70A003C1F8F /* ct.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ct.c; sourceTree = "<group>"; };
 		F828AE151A3CD75D003C1F8F /* ct_types.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ct_types.def.h; sourceTree = "<group>"; };
 		F828AE161A3CDA9D003C1F8F /* ct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ct.h; sourceTree = "<group>"; };
+		F84172151A40B28D0017DD36 /* interp_default.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = interp_default.c; sourceTree = "<group>"; };
+		F84172171A40BBF60017DD36 /* 7_interpret.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = 7_interpret.c; path = lmac/tests/7_interpret.c; sourceTree = "<group>"; };
+		F84172181A40F6A50017DD36 /* ci_opcodes.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ci_opcodes.def.h; sourceTree = "<group>"; };
 		F84A7AE51A2D87D10051862A /* lexer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = lexer.c; sourceTree = "<group>"; };
 		F84A7AE81A2D88480051862A /* clite.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = clite.h; sourceTree = "<group>"; };
 		F84A7AE91A2D88DA0051862A /* token.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = token.c; sourceTree = "<group>"; };
@@ -90,6 +94,7 @@
 		F84DD9231A2D2C9C00ED052E = {
 			isa = PBXGroup;
 			children = (
+				F84172171A40BBF60017DD36 /* 7_interpret.c */,
 				F84DD92E1A2D2C9C00ED052E /* lmac */,
 				F84DD92D1A2D2C9C00ED052E /* Products */,
 			);
@@ -125,6 +130,7 @@
 				F87793571A33BBF50035D3C0 /* context.c */,
 				F877935E1A360F360035D3C0 /* run.c */,
 				F87793611A36EC140035D3C0 /* interp.c */,
+				F84172151A40B28D0017DD36 /* interp_default.c */,
 				F84DD92F1A2D2C9C00ED052E /* main.c */,
 			);
 			path = lmac;
@@ -154,6 +160,7 @@
 				F84DD9411A2E50CB00ED052E /* ast.def.h */,
 				F8597E2D1A2FC8A600383FCF /* diag.def.h */,
 				F828AE151A3CD75D003C1F8F /* ct_types.def.h */,
+				F84172181A40F6A50017DD36 /* ci_opcodes.def.h */,
 			);
 			name = defs;
 			sourceTree = "<group>";
@@ -229,6 +236,7 @@
 				F87793621A36EC140035D3C0 /* interp.c in Sources */,
 				F8597E2A1A2FBDD900383FCF /* spelling.c in Sources */,
 				F84DD9301A2D2C9C00ED052E /* main.c in Sources */,
+				F84172161A40B28D0017DD36 /* interp_default.c in Sources */,
 				F8597E281A2FAE4400383FCF /* analyzer.c in Sources */,
 				F877935F1A360F360035D3C0 /* run.c in Sources */,
 			);

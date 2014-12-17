@@ -182,6 +182,7 @@ bool parse_ident(Context *ctx, ASTIdent **result) {
     Token t = accept_token(ctx, TOK_IDENT);
     if (IS_TOKEN_NONE(t)) { goto fail_parse; }
     
+    assert(t.location.ctx);
     act_on_ident(t.location, result);
     return true;
     
@@ -630,6 +631,7 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
     
     Token t = accept_token(ctx, TOK_IDENT);
     if (!IS_TOKEN_NONE(t)) {
+        assert(t.location.ctx);
         act_on_expr_ident(t.location, (ASTExprIdent**)result);
     } else if (!parse_expr_string(ctx, (ASTExprString**)result)) {
         t = accept_token(ctx, TOK_NUMBER);
@@ -1018,7 +1020,7 @@ bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
         return false;
     }
     
-    Context s = {};
+    Context s = snapshot(ctx);
     
     if (expr != NULL) {
         expect_token(ctx, TOK_SEMICOLON);
@@ -1165,7 +1167,8 @@ bool parse_toplevel(Context *ctx, ASTTopLevel **result) {
     
     ASTBase *stmt = NULL;
     while (parse_pp_directive(ctx, (ASTPPDirective**)&stmt) ||
-           parse_decl_external(ctx, (ASTDeclaration**)&stmt)) {
+           parse_decl_external(ctx, (ASTDeclaration**)&stmt) ||
+           (ctx->parse_mode.allow_toplevel_expressions && parse_stmt_expression(ctx, (ASTStmtExpr**)&stmt))) {
         // Not every successful parse contributes an AST node
         if (stmt == NULL) {
             continue;

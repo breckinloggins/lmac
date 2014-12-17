@@ -31,6 +31,10 @@ typedef struct Context {
     uint32_t line;
     
     struct {
+        bool allow_toplevel_expressions;
+    } parse_mode;
+    
+    struct {
         bool lex_keywords_as_identifiers;
     } lex_mode;
     

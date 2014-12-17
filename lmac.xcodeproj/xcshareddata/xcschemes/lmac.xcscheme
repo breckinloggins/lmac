@@ -60,11 +60,23 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "run"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "interpret"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "repl"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "---- test files ----"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "tests/2_expressions.c"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "tests/4_meta.c"
@@ -76,6 +88,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "tests/6_statements.c"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "tests/7_interpret.c"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>

@@ -77,20 +77,6 @@ int run_compile(Context *ctx, bool run_program) {
         exit(ERR_CC);
     }
     
-    const char *filename = ctx->file;
-    ctx->file = NULL;
-    context_load_file(ctx, filename);
-    
-    // Initialize top scope, builtins, etc. here before parsing
-    context_scope_push(ctx);
-    
-    parser_parse(ctx);
-    
-    // Don't keep parse context around after the full parse tree is created
-    ctx->active_scope = NULL;
-    
-    analyzer_analyze(ctx->ast);
-    
     char *base_filename = strdup(basename((char*)ctx->file));
     char *out_file = NULL;
     asprintf(&out_file, "%s.c", base_filename);

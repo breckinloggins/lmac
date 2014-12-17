@@ -126,6 +126,8 @@ Token lexer_peek_token(Context *ctx) {
 }
 
 Token lexer_next_token_no_state(Context *ctx) {
+    assert(ctx);
+    
     Token t = {};
     t.kind = TOK_UNKOWN;
     t.location.file = ctx->file;

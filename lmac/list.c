@@ -55,3 +55,16 @@ void list_append(List **list, void *item) {
     
     l->item = item;
 }
+
+size_t list_count(List *list) {
+    if (list == NULL) {
+        return 0;
+    }
+    
+    int idx = 0;
+    List_FOREACH(void *, dontcare, list, {
+        ++idx;
+    })
+    
+    return idx;
+}

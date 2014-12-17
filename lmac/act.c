@@ -414,6 +414,8 @@ void act_on_expr_ident(SourceLocation sl, ASTExprIdent **result) {
     AST_BASE(name)->location = sl;
     
     ASTExprIdent *ident = ast_create_expr_ident();
+    AST_BASE(ident)->location = sl;
+    
     name->base.location = sl;
     name->base.parent = (ASTBase*)ident;
     ident->name = name;
@@ -497,6 +499,8 @@ void act_on_expr_binary(SourceLocation sl, ASTExpression *left, ASTExpression *r
     if (result == NULL) return;
     
     ASTExprBinary *binop = ast_create_expr_binary();
+    AST_BASE(binop)->location = sl;
+    
     ASTOperator *op_node = ast_create_operator();
     op_node->base.location = sl;
     op_node->op = op;

@@ -25,6 +25,7 @@ void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
     }
 }
 
+// TODO(bloggins): Use the dispatch override architecture used by interp
 int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     if (phase == VISIT_PRE) {
         assert(node->magic == 0/*AST_MAGIC*/);
@@ -33,7 +34,6 @@ int ast_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
     
     AnalyzeCtx *actx = (AnalyzeCtx*)ctx;
     
-    // TODO(bloggins): It's about time to break this up into a dispatch structure
     if (AST_IS(node, AST_EXPR_IDENT)) {
         list_append(&actx->identifiers, (ASTBase*)((ASTExprIdent*)node)->name);
     } else if (AST_IS(node, AST_DECL_FUNC)) {

@@ -501,6 +501,7 @@ CG_VISIT_FN(AST_PP_PRAGMA, ASTPPPragma) {
 
 #pragma mark API
 
+// TODO(bloggins): Use the dispatch override architecture used by interp
 int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx) {
 #   define CG_DISPATCH_BEGIN(kind)  switch (kind) {
 #   define CG_DISPATCH_END()    default: break; }

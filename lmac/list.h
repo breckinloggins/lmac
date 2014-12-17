@@ -9,6 +9,8 @@
 #ifndef lmac_list_h
 #define lmac_list_h
 
+#include <stdint.h>
+
 typedef struct List {
     void *item;
     
@@ -33,5 +35,7 @@ block                                                                   \
  * yet exist
  */
 void list_append(List **list, void *item);
+
+size_t list_count(List *list);
 
 #endif

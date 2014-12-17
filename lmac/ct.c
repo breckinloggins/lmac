@@ -404,7 +404,10 @@ void ct_autorelease() {
 }
 
 void ct_dump(void *obj) {
-    assert(obj);
+    if (obj == NULL) {
+        fprintf(stderr, "<NULL>\n");
+        return;
+    }
     
     CTInstance *instance = CT_INSTANCE(obj);
     assert(instance->magic == CTI_MAGIC);
