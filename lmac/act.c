@@ -79,8 +79,7 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2, Token r
         // TODO(bloggins): Pull out into a strip routine
         while (*header_path != '"') {
             if (*header_path == 0) {
-                diag_printf(DIAG_ERROR, &rest.location, "invalid header path");
-                exit(ERR_PARSE);
+                diag_emit(DIAG_ERROR, ERR_PARSE, &rest.location, "invalid header path");
             }
             ++header_path;
         }
@@ -89,8 +88,7 @@ void act_on_pp_pragma(SourceLocation sl, ASTIdent *arg1, ASTIdent *arg2, Token r
         char *hp_end = header_path;
         while (*hp_end != '"') {
             if (*hp_end == 0) {
-                diag_printf(DIAG_ERROR, &rest.location, "invalid header path");
-                exit(ERR_PARSE);
+                diag_emit(DIAG_ERROR, ERR_PARSE, &rest.location, "invalid header path");
             }
             ++hp_end;
         }

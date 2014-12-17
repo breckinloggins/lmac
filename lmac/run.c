@@ -73,8 +73,7 @@ int run_compile(Context *ctx, bool run_program) {
     // TODO(bloggins): Extract to a driver struct
     const char *cc_path = lookup_cmd("cc");
     if (cc_path == NULL) {
-        diag_printf(DIAG_ERROR, NULL, "can't find c compiler (cc)");
-        exit(ERR_CC);
+        diag_emit(DIAG_ERROR, ERR_CC, NULL, "can't find c compiler (cc)");
     }
     
     char *base_filename = strdup(basename((char*)ctx->file));

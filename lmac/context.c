@@ -63,8 +63,7 @@ void context_load_file(Context *ctx, const char *filename) {
     assert(!ctx->file && "context shouldn't already have a file");
     
     if (access(filename, R_OK) == -1) {
-        diag_printf(DIAG_ERROR, NULL, "input file not found (%s)", filename);
-        exit(ERR_FILE_NOT_FOUND);
+        diag_emit(DIAG_ERROR, ERR_FILE_NOT_FOUND, NULL, "input file not found (%s)", filename);
     }
     
     // TODO(bloggins): this is probably not the most memory efficient thing we could do

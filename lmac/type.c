@@ -15,18 +15,14 @@ ASTTypeExpression *infer(ASTBase *node);
 void type_error(ASTBase *node, const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    char *msg = NULL;
-    vasprintf(&msg, fmt, ap);
-    va_end(ap);
     
     SourceLocation *sl = NULL;
     if (node != NULL) {
         sl = &node->location;
     }
     
-    diag_printf(DIAG_ERROR, sl, "%s", msg);
-    free(msg);
-    exit(ERR_TYPECHECK);
+    diag_vfemit(DIAG_ERROR, ERR_TYPECHECK, sl, stderr, fmt, ap);
+    va_end(ap);
 }
 
 #define TC_INFER_FN(kind, type) ASTTypeExpression *tc_infer_##kind(type *node)

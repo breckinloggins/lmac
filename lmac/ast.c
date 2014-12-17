@@ -540,16 +540,14 @@ ASTTypeExpression *ast_type_get_canonical_type(ASTTypeExpression *type) {
                 Spelling sp = AST_BASE(type_name)->location.spelling;
                 ASTDeclaration *type_decl = ast_nearest_spelling_definition(sp, (ASTBase*)type_name);
                 if (type_decl == NULL) {
-                    diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
+                    diag_emit(DIAG_ERROR, ERR_ANALYZE, &AST_BASE(type_name)->location,
                                 "undefined type '%s'",
                                 spelling_cstring(sp));
-                    exit(ERR_ANALYZE);
                 } else {
-                    diag_printf(ERR_ANALYZE, &AST_BASE(type_name)->location,
+                    diag_emit(DIAG_ERROR, ERR_ANALYZE, &AST_BASE(type_name)->location,
                                "'%s' is a %s, not a type",
                                 spelling_cstring(sp),
                                 ast_get_kind_name(AST_BASE(type_decl)->kind));
-                    exit(ERR_ANALYZE);
                 }
             }
             

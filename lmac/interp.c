@@ -93,8 +93,7 @@
 #include "clite.h"
 
 #define CI_ERROR(sl, ...)                                              \
-diag_printf(DIAG_ERROR, sl, __VA_ARGS__);                               \
-exit(ERR_INTERPRET);
+diag_emit(DIAG_ERROR, ERR_INTERPRET, sl, __VA_ARGS__);
 
 #pragma mark ByteStream
 

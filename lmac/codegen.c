@@ -10,8 +10,7 @@
 
 int cg_visitor(ASTBase *node, VisitPhase phase, void *ctx);
 
-#define CODGEGEN_FATAL(...) diag_printf(DIAG_FATAL, NULL, __VA_ARGS__); \
-                            exit(ERR_CODEGEN);
+#define CODGEGEN_FATAL(...) diag_emit(DIAG_FATAL, ERR_CODEGEN, NULL, __VA_ARGS__);
 
 // Codegen pragmas we respect
 #define FCG_EXPLICIT_PARENS "fcg_explicit_parens"
@@ -62,9 +61,8 @@ CG_VISIT_FN(AST_TYPE_NAME, ASTTypeName) {
     }
     
     if (node->resolved_type == NULL) {
-        diag_printf(DIAG_FATAL, &AST_BASE(node)->location, "type name %s "
+        diag_emit(DIAG_FATAL, ERR_CODEGEN, &AST_BASE(node)->location, "type name %s "
                     "was never resolved", spelling_cstring(node->name->base.location.spelling));
-        exit(ERR_CODEGEN);
     }
     
     ASTTypeExpression *type = ast_type_get_canonical_type(node->resolved_type);
@@ -94,11 +92,10 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                 case 32: CG("float"); break;
                 case 64: CG("double"); break;
                 default:
-                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                    diag_emit(DIAG_ERROR, ERR_CODEGEN, &AST_BASE(node)->location,
                                 "Cannot generate storage for a floating point "
                                 "type of size %d bit",
                                 node->bit_size);
-                    exit(ERR_CODEGEN);
                     break;
  
             }
@@ -109,10 +106,9 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                 case 8: CG("char"); break;
                 case 16: CG("wchar_t"); break;
                 default:
-                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                    diag_emit(DIAG_ERROR, ERR_CODEGEN, &AST_BASE(node)->location,
                                 "Don't know how to make a %d-bit character",
                                 node->bit_size);
-                    exit(ERR_CODEGEN);
                     break;
             }
             
@@ -125,10 +121,9 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                 case 32: CG("int"); break;
                 case 64: CG("long long"); break;
                 default:
-                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                    diag_emit(DIAG_ERROR, ERR_CODEGEN, &AST_BASE(node)->location,
                                 "Don't know how to make a %d-bit integer",
                                 node->bit_size);
-                    exit(ERR_CODEGEN);
                     break;
             }
             
@@ -144,10 +139,9 @@ CG_VISIT_FN(AST_TYPE_CONSTANT, ASTTypeConstant) {
                 case 32: CG("int32_t"); break;
                 case 64: CG("int64_t"); break;
                 default:
-                    diag_printf(DIAG_ERROR, &AST_BASE(node)->location,
+                    diag_emit(DIAG_ERROR, ERR_CODEGEN, &AST_BASE(node)->location,
                                 "Cannot generate storage for a type of size %d bit",
                                 node->bit_size);
-                    exit(ERR_CODEGEN);
                     break;
             }
         }
@@ -435,9 +429,8 @@ CG_VISIT_FN(AST_STMT_IF, ASTStmtIf) {
         CGVISIT(node->stmt_true);
     } else {
         if (node->stmt_false != NULL) {
-            diag_printf(DIAG_FATAL, &node->stmt_false->location, "codegen error: "
+            diag_emit(DIAG_FATAL, ERR_CODEGEN, &node->stmt_false->location, "codegen error: "
                         "should not have stmt_false without stmt_true");
-            exit(ERR_CODEGEN);
         }
         
         CG(";");
@@ -489,7 +482,7 @@ CG_VISIT_FN(AST_PP_PRAGMA, ASTPPPragma) {
     if (spelling_streq(arg_sp, FCG_EXPLICIT_PARENS)) {
         ctx->explicit_parens = true;
     } else {
-        diag_printf(DIAG_WARNING, &node->arg->base.location,
+        diag_emit(DIAG_WARNING, ERR_NONE, &node->arg->base.location,
                     "Unrecognized pragma '%s'. Supported pragmas: "
                     "[" FCG_EXPLICIT_PARENS "]", spelling_cstring(arg_sp));
     }

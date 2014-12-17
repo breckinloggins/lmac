@@ -85,8 +85,7 @@ Token next_token(Context *ctx) {
         }
         
         if (t.kind == TOK_UNKOWN) {
-            diag_printf(DIAG_FATAL, NULL, "unknown token '%s'", spelling_cstring(t.location.spelling));
-            exit(ERR_LEX);
+            diag_emit(DIAG_FATAL, ERR_LEX, NULL, "unknown token '%s'", spelling_cstring(t.location.spelling));
         }
         
         return t;
@@ -119,8 +118,7 @@ Token expect_token(Context *ctx, TokenKind kind) {
     
     if (IS_TOKEN_NONE(t)) {
         SourceLocation sl = parsed_source_location(ctx, *ctx);
-        diag_printf(DIAG_ERROR, &sl, "expected %s", token_get_name(kind));
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "expected %s", token_get_name(kind));
     }
     
     return t;
@@ -133,12 +131,7 @@ void ap_expect_node_out(Context *ctx, ParseFn parser, ASTBase **result,
     if (!parser(ctx, result)) {
         SourceLocation sl = parsed_source_location(ctx, *ctx);
         
-        char *msg = NULL;
-        vasprintf(&msg, msg_fmt, args);
-        
-        diag_printf(DIAG_ERROR, &sl, msg);
-        free(msg);
-        exit(ERR_PARSE);
+        diag_vfemit(DIAG_ERROR, ERR_PARSE, &sl, stderr, msg_fmt, args);
     }
     
     /* TODO(bloggins): Subkind checking */
@@ -475,10 +468,9 @@ bool parse_expr_cast(Context *ctx, ASTExpression **result) {
     // want to fix if we can)
     if (result == NULL) {
         SourceLocation sl = parsed_source_location(ctx, *ctx);
-        diag_printf(DIAG_FATAL, &sl,
+        diag_emit(DIAG_FATAL, ERR_PARSE, &sl,
                     "parse_expr_cast currently cannot parse correctly "
                     "without AST construction");
-        exit(ERR_PARSE);
     }
     
     if (!AST_IS(*result, AST_EXPR_PAREN)) {
@@ -597,8 +589,7 @@ bool parse_expr_string(Context *ctx, ASTExprString **result) {
     while ((char)*(ctx->pos++) != '"') {
         if ((char)*(ctx->pos) == '\n') {
             SourceLocation sl = parsed_source_location(ctx, s);
-            diag_printf(DIAG_ERROR, &sl, "unterminated string constant");
-            exit(ERR_PARSE);
+            diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "unterminated string constant");
         }
     }
     uint8_t *range_end = ctx->pos;
@@ -651,9 +642,8 @@ bool parse_expr_primary(Context *ctx, ASTExpression **result) {
                     if (parse_pp_directive(ctx, (ASTPPDirective**)result)) {
                         if (result != NULL) {
                             if (!ast_node_is_expression((ASTBase*)*result)) {
-                                diag_printf(DIAG_ERROR, &((ASTBase*)*result)->location,
+                                diag_emit(DIAG_ERROR, ERR_PARSE, &((ASTBase*)*result)->location,
                                             "expected expression from preprocessor");
-                                exit(ERR_PARSE);
                             }
                         }
                     } else {
@@ -752,8 +742,7 @@ bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
             type_id |= TYPE_FLAG_UNIT;
         } else {
             // TODO(bloggins): Implement them!
-            diag_printf(DIAG_FATAL, &tnum.location, "singleton types are not yet implemented");
-            exit(ERR_PARSE);
+            diag_emit(DIAG_FATAL, ERR_PARSE, &tnum.location, "singleton types are not yet implemented");
         }
         
         expect_token(ctx, TOK_RPAREN);
@@ -788,18 +777,16 @@ bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
                     bit_flags &= ~(BIT_FLAG_SIGNED);
                 } break;
                 default: {
-                    diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
+                    diag_emit(DIAG_ERROR, ERR_PARSE, &ttype_desc.location, "type constant "
                                 "description '%s' is invalid. Unrecognized "
                                 " option '%c'", desc, desc[0]);
-                    exit(ERR_PARSE);
                 } break;
             }
             
             if (!isdigit(desc[1])) {
-                diag_printf(DIAG_ERROR, &ttype_desc.location, "type constant "
+                diag_emit(DIAG_ERROR, ERR_PARSE, &ttype_desc.location, "type constant "
                             "description '%s' is invalid. Expected bit size"
                             , desc);
-                exit(ERR_PARSE);
             }
             
             bit_size = strtoul(desc+1, NULL, 10);
@@ -815,9 +802,8 @@ bool parse_type_constant(Context *ctx, ASTTypeConstant **result) {
         sl.range_start = tdollar.location.range_start;
         
         if (bit_size > WORD_BIT) {
-            diag_printf(DIAG_ERROR, &sl, "invalid type size. %d is greater "
+            diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "invalid type size. %d is greater "
                         "than the machine word size of %d bits", bit_size, WORD_BIT);
-            exit(ERR_PARSE);
         }
     }
     
@@ -847,10 +833,9 @@ bool parse_decl_var(Context *ctx, ASTDeclVar **result) {
     ASTTypeExpression *type = NULL;
     if (!parse_type_expression(ctx, &type)) {
         if (is_const) {
-            diag_printf(DIAG_ERROR, &t.location,
+            diag_emit(DIAG_ERROR, ERR_PARSE, &t.location,
                         "expected type name after '%s'",
                         spelling_cstring(t.location.spelling));
-            exit(ERR_PARSE);
         } else {
             goto fail_parse;
         }
@@ -859,10 +844,9 @@ bool parse_decl_var(Context *ctx, ASTDeclVar **result) {
     ASTIdent *name = NULL;
     if (!parse_ident(ctx, &name)) {
         if (is_const) {
-            diag_printf(DIAG_ERROR, &t.location,
+            diag_emit(DIAG_ERROR, ERR_PARSE, &t.location,
                         "expected variable name after '%s'",
                         spelling_cstring(t.location.spelling));
-            exit(ERR_PARSE);
         } else {
             goto fail_parse;
         }
@@ -925,9 +909,8 @@ bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
         
         if (varargs_found) {
             SourceLocation sl = parsed_source_location(ctx, s);
-            diag_printf(DIAG_ERROR, &sl, "variable argument parameter "
+            diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "variable argument parameter "
                         "must be the last parameter in a function");
-            exit(ERR_PARSE);
         }
     }
     
@@ -940,9 +923,8 @@ bool parse_decl_fn(Context *ctx, ASTDeclFunc **result) {
     } else {
         if (varargs_found) {
             SourceLocation sl = parsed_source_location(ctx, s);
-            diag_printf(DIAG_ERROR, &sl, "functions with variable arguments "
+            diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "functions with variable arguments "
                         "can be declared but can not currently be defined");
-            exit(ERR_PARSE);
         }
     }
     
@@ -1223,23 +1205,20 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
     ASTIdent *arg1 = NULL;
     if (!parse_ident(ctx, &arg1) || arg1->base.location.line != lineof_directive) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "argument expected after pragma");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "argument expected after pragma");
     }
     
     if (!spelling_streq(arg1->base.location.spelling, "CLITE")) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "unsupported argument '%s' after pragma. Only 'CLITE' is supported",
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "unsupported argument '%s' after pragma. Only 'CLITE' is supported",
                     spelling_cstring(arg1->base.location.spelling));
-        exit(ERR_PARSE);
     }
     
     // This is the actual argument to be used for directives
     ASTIdent *arg2 = NULL;
     if (!parse_ident(ctx, &arg2) || arg2->base.location.line != lineof_directive) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "second argument expected after pragma");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "second argument expected after pragma");
     }
     
     // Anything after the 2nd argument will have to be taken care of by the
@@ -1254,8 +1233,7 @@ bool parse_pp_pragma(Context *ctx, ASTPPPragma **result) {
 bool parse_pp_run(Context *ctx, ASTBase **result) {
     Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
     if (chunk.kind != TOK_CHUNK) {
-        diag_printf(DIAG_FATAL, &chunk.location, "parse error parsing run directive");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_FATAL, ERR_PARSE, &chunk.location, "parse error parsing run directive");
     }
     
     act_on_pp_run(chunk.location, ctx, chunk, '\\', (ParseFn)parse_expression, result);
@@ -1270,8 +1248,7 @@ bool parse_pp_include(Context *ctx, ASTBase **result) {
     if (!IS_TOKEN_NONE(accept_token(ctx, TOK_LANGLE))) {
         Token chunk = lexer_lex_chunk(ctx, '>', 0);
         if (chunk.kind != TOK_CHUNK) {
-            diag_printf(DIAG_ERROR, &chunk.location, "syntax error after #include");
-            exit(ERR_PARSE);
+            diag_emit(DIAG_ERROR, ERR_PARSE, &chunk.location, "syntax error after #include");
         }
         Spelling sp_chunk = chunk.location.spelling;
         sp_chunk.end--; // Get rid of the '>'
@@ -1282,9 +1259,8 @@ bool parse_pp_include(Context *ctx, ASTBase **result) {
                                          "syntax error after #include");
         include_file = strdup(spelling_cstring(AST_BASE(str)->location.spelling));
         if (include_file == NULL || include_file[0] == 0) {
-            diag_printf(DIAG_ERROR, &AST_BASE(str)->location,
+            diag_emit(DIAG_ERROR, ERR_PARSE, &AST_BASE(str)->location,
                         "include directive must name a file");
-            exit(ERR_PARSE);
         }
     }
     
@@ -1304,8 +1280,7 @@ bool parse_pp_define(Context *ctx, ASTPPDefinition **result) {
     
     Token chunk = lexer_lex_chunk(ctx, '\n', '\\');
     if (chunk.kind != TOK_CHUNK) {
-        diag_printf(DIAG_FATAL, &chunk.location, "parse error parsing run directive");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_FATAL, ERR_PARSE, &chunk.location, "parse error parsing run directive");
     }
     
     act_on_pp_define(parsed_source_location(ctx, s), name, chunk.location.spelling,
@@ -1355,8 +1330,7 @@ bool parse_pp_if(Context *ctx, ASTPPIf **result) {
     ASTIdent *kw = (ASTIdent*)expect_node(ctx, (ParseFn)parse_ident, "expected identifier");
     if (!spelling_streq(kw->base.location.spelling, "defined")) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "expected 'defined' (temporary restriction)");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "expected 'defined' (temporary restriction)");
     }
     
     expect_token(ctx, TOK_LPAREN);
@@ -1395,7 +1369,7 @@ bool parse_pp_warning(Context *ctx, ASTPPDirective **result) {
     sl.spelling.end = 0;
     
     // TODO(bloggins): move to action
-    diag_printf(DIAG_WARNING, &sl, "%s", t.kind == TOK_CHUNK ?
+    diag_emit(DIAG_WARNING, ERR_NONE, &sl, "%s", t.kind == TOK_CHUNK ?
                 spelling_cstring(t.location.spelling) : "");
     
     return true;
@@ -1445,15 +1419,13 @@ bool parse_pp_directive(Context *ctx, ASTPPDirective **result) {
     
     if (parse_fn == NULL) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "unrecognized preprocessor directive '%s'",
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "unrecognized preprocessor directive '%s'",
                     spelling_cstring(directive->base.location.spelling));
-        exit(ERR_PARSE);
     }
     
     if (!parse_fn(ctx, (void**)result)) {
         SourceLocation sl = parsed_source_location(ctx, s);
-        diag_printf(DIAG_ERROR, &sl, "invalid syntax following preprocessor directive");
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, &sl, "invalid syntax following preprocessor directive");
     }
 
 done:
@@ -1476,7 +1448,6 @@ void parser_parse(Context *ctx) {
     
     // NOTE(bloggins): Sanity check
     if (ctx->pos - ctx->buf < ctx->buf_size) {
-        diag_printf(DIAG_ERROR, NULL, "unexpected end of input", ctx->file);
-        exit(ERR_PARSE);
+        diag_emit(DIAG_ERROR, ERR_PARSE, NULL, "unexpected end of input", ctx->file);
     }
 }

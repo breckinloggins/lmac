@@ -61,8 +61,7 @@ void lex_number(Context *ctx) {
         if (isalpha(ch)) {
             // TODO(bloggins): Extract error reporting system
             SourceLocation sl = lexed_source_location(ctx);
-            diag_printf(DIAG_ERROR, &sl, "invalid digit '%c' in number", ch);
-            exit(ERR_LEX);
+            diag_emit(DIAG_ERROR, ERR_LEX, &sl, "invalid digit '%c' in number", ch);
         }
         
         --ctx->pos;

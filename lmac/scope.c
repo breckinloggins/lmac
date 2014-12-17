@@ -45,9 +45,8 @@ void scope_declaration_add(Scope *scope, ASTDeclaration *decl) {
                            decl->name->base.location.spelling)) {
             SourceLocation *sl = &(AST_BASE(decl)->location);
             Spelling sp = decl->name->base.location.spelling;
-            diag_printf(DIAG_ERROR, sl, "something named '%s' was "
+            diag_emit(DIAG_ERROR, ERR_ANALYZE, sl, "something named '%s' was "
                         "already declared in this scope", spelling_cstring(sp));
-            exit(ERR_ANALYZE);
         }
     })
     
@@ -65,9 +64,8 @@ void scope_label_add(Scope *scope, ASTBase *labeled_node) {
                            labeled->label->base.location.spelling)) {
             SourceLocation *sl = &(AST_BASE(labeled)->location);
             Spelling sp = labeled->label->base.location.spelling;
-            diag_printf(DIAG_ERROR, sl, "another label named '%s' was "
+            diag_emit(DIAG_ERROR, ERR_ANALYZE, sl, "another label named '%s' was "
                         "already declared in this scope", spelling_cstring(sp));
-            exit(ERR_ANALYZE);
         }
     })
     

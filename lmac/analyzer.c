@@ -13,8 +13,7 @@ typedef struct {
 } AnalyzeCtx;
 
 #define ANALYZE_ERROR(sl, ...)                                              \
-    diag_printf(DIAG_ERROR, sl, __VA_ARGS__);                               \
-    exit(ERR_ANALYZE);
+    diag_emit(DIAG_ERROR, ERR_ANALYZE, sl, __VA_ARGS__);
 
 void check_supported_type(ASTBase *loc_node, Spelling sp_type) {
     bool is_void_type = spelling_streq(sp_type, "void");

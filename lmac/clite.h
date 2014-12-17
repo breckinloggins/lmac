@@ -54,8 +54,11 @@
 void dump(void *obj);
 
 const char *diag_get_name(DiagKind kind);
+void diag_vfemit(DiagKind kind, int error, SourceLocation* loc, FILE *f, const char *fmt, va_list args);
+void diag_emit(DiagKind kind, int error, SourceLocation *loc, const char *fmt, ...);
 void diag_printf(DiagKind kind, SourceLocation* loc, const char *fmt, ...);
 extern int diag_errno;
+extern void *diag_exception_env;
 
 Token lexer_next_token(Context *ctx);
 Token lexer_peek_token(Context *ctx);

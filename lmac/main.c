@@ -9,6 +9,7 @@
 #include "clite.h"
 
 #include <unistd.h>
+#include <setjmp.h>
 
 typedef struct {
     int indent_level;
@@ -52,6 +53,13 @@ int do_repl() {
     Scope *outer_scope = scope_create();
     
     while (true) {
+        jmp_buf diag_exception;
+        diag_exception_env = diag_exception;
+        int res = ERR_NONE;
+        if ((res = setjmp(diag_exception_env))) {
+            goto repl_error;
+        }
+
         fprintf(f_out, "> ");
         char *user_input = NULL;
         size_t input_size = 0;
@@ -85,12 +93,11 @@ int do_repl() {
         if (result != NULL) {
             ct_dump(result);
         }
-        
+    
+    repl_error:
         ct_autorelease();
         
         free(user_input);
-        
-        
     }
     
     return ERR_NONE;
@@ -129,8 +136,14 @@ int main(int argc, const char * argv[]) {
     
     atexit(exit_handler);
     
-    // Shortcut to the repl if that action is specified
+    jmp_buf diag_exception;
+    diag_exception_env = diag_exception;
     int res = ERR_NONE;
+    if ((res = setjmp(diag_exception_env))) {
+        goto finish;
+    }
+    
+    // Shortcut to the repl if that action is specified
     if (action == ACTION_REPL) {
         res = do_repl();
         goto finish;
@@ -140,11 +153,12 @@ int main(int argc, const char * argv[]) {
     const char *file = NULL;
     if (needs_file) {
         if (argc != 3) {
-            diag_printf(DIAG_FATAL, NULL, "you must specify a file when you %s", action_str);
-            return ERR_USAGE;
+            diag_emit(DIAG_FATAL, ERR_USAGE, NULL, "you must specify a file when you %s", action_str);
         }
         file = argv[2];
     }
+    
+    
     
     Context *ctx = context_create();
     ctx->file = file;
