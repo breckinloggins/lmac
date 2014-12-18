@@ -50,7 +50,8 @@ int do_repl() {
     fprintf(f_out, "Cx REPL v.whatever\n");
     fprintf(f_out, "\n");
     
-    Scope *outer_scope = scope_create();
+    // TODO(bloggins): Keeping the same outer scope causes crashes
+    //Scope *outer_scope = scope_create();
     
     while (true) {
         jmp_buf diag_exception;
@@ -77,7 +78,8 @@ int do_repl() {
         user_input[chars_read-1] = ';';
         
         Context *ctx = context_create();
-        ctx->active_scope = outer_scope;
+        context_scope_push(ctx);
+        //ctx->active_scope = outer_scope;
         ctx->file = "<repl>";
         ctx->parse_mode.allow_toplevel_expressions = true;
         
@@ -196,7 +198,6 @@ int main(int argc, const char * argv[]) {
     }
 
 finish:
-    ct_dump(ctx->ast);
     ct_autorelease();
     return res;
 }

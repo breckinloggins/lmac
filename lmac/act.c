@@ -264,6 +264,7 @@ void act_on_stmt_expression(SourceLocation sl, ASTExpression *expr,
     if (expr == NULL) {
         // Expression statements can be empty
         expr = (ASTExpression*)ast_create_expr_empty();
+        AST_BASE(expr)->location = sl;
     }
     
     ASTStmtExpr *stmt = ast_create_stmt_expr();

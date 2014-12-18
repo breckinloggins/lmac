@@ -998,6 +998,12 @@ bool parse_stmt_declaration(Context *ctx, ASTStmtDecl **result) {
 
 bool parse_stmt_expression(Context *ctx, ASTStmtExpr **result) {
     ASTExpression *expr = NULL;
+    Token t = accept_token(ctx, TOK_SEMICOLON);
+    if (!IS_TOKEN_NONE(t)) {
+        act_on_stmt_expression(t.location, NULL, result);
+        return true;
+    }
+    
     if (!parse_expression(ctx, &expr)) {
         return false;
     }

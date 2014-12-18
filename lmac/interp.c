@@ -340,7 +340,9 @@ CI_VISITOR(AST_TOPLEVEL, ASTTopLevel) {
     
     if (phase == VISIT_PRE) {
         ++tl_count;
-        assert(tl_count == 1 && "nested top levels (e.g. from #include) are not yet supported");
+        if (tl_count != 1) {
+            diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "nested top levels (e.g. from #include) are not supported yet");
+        }
     } else {
         --tl_count;
     }
@@ -399,6 +401,14 @@ CI_VISITOR(AST_OPERATOR, ASTOperator) {
     return VISIT_OK;
 }
 
+CI_VISITOR(AST_EXPR_EMPTY, ASTExprEmpty) {
+    if (phase == VISIT_PRE) {
+        
+    }
+    
+    return VISIT_OK;
+}
+
 CI_VISITOR(AST_EXPR_NUMBER, ASTExprNumber) {
     
     if (phase == VISIT_PRE) {
@@ -422,8 +432,10 @@ CI_VISITOR(AST_EXPR_IDENT, ASTExprIdent) {
 }
 
 CI_VISITOR(AST_EXPR_BINARY, ASTExprBinary) {
-    assert(node->op->op.kind == TOK_PLUS && "only addition supported right now");
-    
+    if (node->op->op.kind != TOK_PLUS) {
+        diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "only addition supported right now");
+    }
+
     if (phase == VISIT_POST) {
         asm_single_op(stream, CIO_BINOP);
     }
@@ -611,8 +623,7 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
                 PUSH(ip - stream->data);
                 
                 // Jump to function handler
-                fprintf(stderr, "Can't call function yet\n");
-                exit(ERR_INTERPRET);
+                diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "can't call functions yet (sorry) :-(\n");
                
             } break;
             case CIO_JUMP: {
@@ -697,17 +708,18 @@ bool interp_interpret(ASTBase *node, ASTBase **result) {
             } break;
             default: {
                 uint8_t op = *ip;
+                const char *opcode = "unknown";
                 if (op < CIO_LAST) {
-                    fprintf(stderr, "Unrecognized opcode %s\n", g_opcode_names[op]);
+                    opcode = g_opcode_names[op];
                 }
-                assert(false && "unrecognized opcode");
+                diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "unrecognized opcode %s\n", opcode);
             }
         }
         
         if (sp < 1) {
-            assert("stack underflow");
+            diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "stack underflow");
         } else if (sp > 256) {
-            assert("stack overflow");
+            diag_emit(DIAG_ERROR, ERR_INTERPRET, NULL, "stack overflow");
         }
     }
     
